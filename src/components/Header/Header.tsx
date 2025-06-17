@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import authService from "../../services/Authentication.service";
 import "./Header.css";
 
 interface User {
@@ -13,11 +14,15 @@ const Header: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const storedUser = localStorage.getItem("user");
+  // Remove this block - it's causing infinite re-renders
+  /*
+  const storedUser = authService.getUser();
+    if (storedUser) {
+      setUser(storedUser);
+    }
 
   if (storedUser) {
     try {
-      const user = JSON.parse(storedUser);
       console.log("Parsed user:", user);
     } catch (err) {
       console.error("Failed to parse user from localStorage", err);
@@ -25,19 +30,20 @@ const Header: React.FC = () => {
   } else {
     console.log("user null");
   }
+  */
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    // Only get user from authService once on mount
     try {
+      const storedUser = authService.getUser();
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        if (parsedUser && typeof parsedUser === "object") {
-          setUser(parsedUser);
-        }
+        setUser(storedUser);
+        console.log("Parsed user:", storedUser); // Log the storedUser directly
+      } else {
+        console.log("user null");
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem("user"); // optional: clean invalid entry
     }
 
     // Close dropdown when clicking outside
@@ -51,13 +57,10 @@ const Header: React.FC = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, []); // Empty dependency array - runs only once
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    navigate("/login");
-    window.location.reload(); // optional, force UI refresh
+    authService.logout();
   };
 
   const toggleDropdown = () => {
@@ -73,7 +76,7 @@ const Header: React.FC = () => {
       <div className="header-container">
         {/* Logo */}
         <div className="logo">
-          <img src="/logo.png" alt="Logo" className="logo-image" />
+          <img src="/logo.png" alt="Logo" className="site-logo" />
           <span className="logo-text">
             VolunteerHub
             <br />
@@ -101,7 +104,7 @@ const Header: React.FC = () => {
               <img
                 src={user.avatar || "user-default.png"}
                 alt="User"
-                className="logo-image"
+                className="user-avatar"
                 onClick={toggleDropdown}
               />
               <span className="user-fullname" onClick={toggleDropdown}>
