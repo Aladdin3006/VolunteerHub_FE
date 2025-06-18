@@ -18,7 +18,7 @@ const Header: React.FC = () => {
   if (storedUser) {
     try {
       const user = JSON.parse(storedUser);
-      console.log("Parsed user:", user);
+      // console.log("Parsed user:", user);
     } catch (err) {
       console.error("Failed to parse user from localStorage", err);
     }
