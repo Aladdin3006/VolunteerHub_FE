@@ -15,6 +15,9 @@ import Unauthorized from "../components/common/Unauthorized";
 import authService from "../services/Authentication.service";
 import ManagerUser from "../pages/admin/ManagerUser";
 import UserLayout from "../layouts/UserLayout";
+import ManagerNews from "../pages/admin/ManagerNews";
+import CreateNews from "../pages/admin/CreateNews";
+import EditNews from "../pages/admin/EditNews";
 
 const AppRoutes = () => (
   <Routes>
@@ -274,7 +277,23 @@ const AppRoutes = () => (
               path="news"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="admin">
-                  <News />
+                  <ManagerNews />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="news/create"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="admin">
+                  <CreateNews />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="news/edit/:id"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="admin">
+                  <EditNews />
                 </LayoutWrapper>
               }
             />

@@ -51,7 +51,7 @@ const AdminHeader: React.FC = () => {
 
           <div className="user-menu" ref={dropdownRef}>
             <div className="user-info-header">
-              <p className="user-name">{user?.name || "AdminAd"}</p>
+              <p className="user-name">{user?.fullName || "AdminAd"}</p>
               <p className="user-role">{user?.role || "Administrator"}</p>
             </div>
 
