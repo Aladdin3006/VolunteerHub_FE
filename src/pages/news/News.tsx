@@ -1,114 +1,39 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import "./News.css";
 import { useNavigate } from "react-router-dom";
-
-interface NewsArticle {
-  id: number;
-  title: string;
-  excerpt: string;
-  readTime: string;
-  image: string;
-  category: string;
-  publishDate: string;
-  author: string;
-}
+import newsService, { NewsItem } from "../../apis/news"; // Import the news service
 
 const News: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<'ongoing' | 'finished'>('ongoing');
+  const [activeTab, setActiveTab] = useState<"ongoing" | "finished">("ongoing");
+  const [newsArticles, setNewsArticles] = useState<NewsItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample news data - replace with your API data
-  const newsArticles: NewsArticle[] = [
-    {
-      id: 1,
-      title:
-        "Bạn Có Đang Lắng Nghe Tình Nguyện Viên? Chiến Lược Phản Hồi Giúp Giảm Sự Mất Kết Nối",
-      excerpt:
-        "Tìm hiểu những chiến lược hiệu quả để thu thập và sử dụng phản hồi từ tình nguyện viên, giúp tăng cường sự gắn kết và giảm thiểu tình trạng rời bỏ hoạt động tình nguyện.",
-      readTime: "5 phút đọc",
-      image: "/campaign1.jpg",
-      category: "Quản lý tình nguyện viên",
-      publishDate: "2024-03-15",
-      author: "Nguyễn Minh Anh",
-    },
-    {
-      id: 2,
-      title: "Tạo Trải Nghiệm Tình Nguyện Mà Họ Yêu Thích",
-      excerpt:
-        "Khám phá cách thiết kế các chương trình tình nguyện hấp dẫn và có ý nghĩa, tạo ra những trải nghiệm đáng nhớ cho tình nguyện viên.",
-      readTime: "7 phút đọc",
-      image: "/campaign2.jpg",
-      category: "Phát triển chương trình",
-      publishDate: "2024-03-12",
-      author: "Trần Văn Hùng",
-    },
-    {
-      id: 3,
-      title: "Theo Dõi Công Bằng Mồ Hôi với VolunteerHub",
-      excerpt:
-        "Cách các chương trình Habitat for Humanity có thể dễ dàng theo dõi và quản lý giờ làm việc của tình nguyện viên một cách hiệu quả.",
-      readTime: "3 phút đọc",
-      image: "/campaign3.jpg",
-      category: "Công nghệ",
-      publishDate: "2024-03-10",
-      author: "Lê Thị Mai",
-    },
-    {
-      id: 4,
-      title: "So Sánh VolunteerHub và VOMO",
-      excerpt:
-        "Phân tích chi tiết về hai nền tảng quản lý tình nguyện viên hàng đầu để giúp bạn đưa ra lựa chọn phù hợp nhất.",
-      readTime: "6 phút đọc",
-      image: "/campaign4.jpg",
-      category: "So sánh sản phẩm",
-      publishDate: "2024-03-08",
-      author: "Phạm Quốc Duy",
-    },
-    {
-      id: 5,
-      title: "Quản Lý Giờ Tình Nguyện Tương Đương 20 Nhân Viên Full-time",
-      excerpt:
-        "Partners for World Health chia sẻ kinh nghiệm quản lý một lượng lớn tình nguyện viên hiệu quả với VolunteerHub.",
-      readTime: "4 phút đọc",
-      image: "/campaign5.jpg",
-      category: "Câu chuyện thành công",
-      publishDate: "2024-03-05",
-      author: "Hoàng Thị Lan",
-    },
-    {
-      id: 6,
-      title: "Chi Phí Ẩn Của Việc Quản Lý Sai Tình Nguyện Viên",
-      excerpt:
-        "Tìm hiểu những tổn thất không mong muốn từ việc quản lý tình nguyện viên không hiệu quả và cách khắc phục.",
-      readTime: "6 phút đọc",
-      image: "/campaign1.jpg",
-      category: "Quản lý tình nguyện viên",
-      publishDate: "2024-03-03",
-      author: "Vũ Minh Tâm",
-    },
-  ];
+  // Fetch news from API
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const data = await newsService.getAllNews();
+        setNewsArticles(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load news");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const categories = [
-    "all",
-    "Quản lý tình nguyện viên",
-    "Phát triển chương trình",
-    "Công nghệ",
-    "So sánh sản phẩm",
-    "Câu chuyện thành công",
-  ];
+    fetchNews();
+  }, []);
 
-  const filteredArticles =
-    selectedCategory === "all"
-      ? newsArticles
-      : newsArticles.filter((article) => article.category === selectedCategory);
-
-  const handleArticleClick = (articleId: number) => {
-    navigate(`/news/${articleId}`);
+  // Handle article click to navigate to detail page
+  const handleArticleClick = (id: string) => {
+    navigate(`/news/${id}`);
   };
 
+  // Format date to Vietnamese locale
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("vi-VN", {
@@ -116,6 +41,20 @@ const News: React.FC = () => {
       month: "long",
       day: "numeric",
     });
+  };
+
+  // Strip HTML tags and create excerpt
+  const createExcerpt = (html: string, maxLength = 150) => {
+    const text = html.replace(/<[^>]*>/g, "");
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
+  };
+
+  // Calculate reading time based on word count
+  const calculateReadTime = (content: string) => {
+    const words = content.split(/\s+/).length;
+    const minutes = Math.ceil(words / 200);
+    return `${minutes} phút đọc`;
   };
 
   return (
@@ -138,13 +77,13 @@ const News: React.FC = () => {
             className={activeTab === "ongoing" ? "active" : ""}
             onClick={() => setActiveTab("ongoing")}
           >
-            Tin tức 
+            Tin tức
           </li>
           <li
             className={activeTab === "finished" ? "active" : ""}
             onClick={() => setActiveTab("finished")}
           >
-            Diễn đàn 
+            Diễn đàn
           </li>
         </ul>
       </div>
@@ -154,107 +93,140 @@ const News: React.FC = () => {
           <div className="contentWrapper">
             <div className="mainContent">
               <div className="categoryFilter">
-                <h2>Khám phá bài viết</h2>
-                <div className="filterButtons">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      className={`filterButton ${
-                        selectedCategory === category ? "active" : ""
-                      }`}
-                      onClick={() => setSelectedCategory(category)}
+                <h2>Khám phá Tin tức</h2>
+              </div>
+
+              {isLoading ? (
+                <div className="loadingState">
+                  <svg
+                    className="animate-spin h-8 w-8"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <p>Đang tải Tin tức...</p>
+                </div>
+              ) : error ? (
+                <div className="errorState">
+                  <svg
+                    className="w-12 h-12"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p>{error}</p>
+                </div>
+              ) : (
+                <div className="articlesGrid">
+                  {newsArticles.map((article) => (
+                    <article
+                      key={article.id}
+                      className="articleCard"
+                      onClick={() => handleArticleClick(article.id)}
                     >
-                      {category === "all" ? "Tất cả" : category}
-                    </button>
+                      <div className="articleImage">
+                        {article.images && article.images.length > 0 ? (
+                          <img
+                            src={article.images[0]}
+                            alt={article.title}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const fallback = document.createElement("div");
+                              fallback.className = "no-image-fallback";
+                              fallback.textContent = "Không có hình ảnh";
+                              target.parentNode?.appendChild(fallback);
+                            }}
+                          />
+                        ) : (
+                          <div className="no-image-fallback">
+                            Không có hình ảnh
+                          </div>
+                        )}
+                        <div className="readTime">
+                          {calculateReadTime(article.content)}
+                        </div>
+                      </div>
+                      <div className="articleContent">
+                        <div className="articleMeta">
+                          <span className="date">
+                            {formatDate(article.createdAt)}
+                          </span>
+                        </div>
+                        <h3 className="articleTitle">{article.title}</h3>
+                        <p className="articleExcerpt">
+                          {createExcerpt(article.content)}
+                        </p>
+                      </div>
+                    </article>
                   ))}
                 </div>
-              </div>
+              )}
 
-              <div className="articlesGrid">
-                {filteredArticles.map((article) => (
-                  <article
-                    key={article.id}
-                    className="articleCard"
-                    onClick={() => handleArticleClick(article.id)}
-                  >
-                    <div className="articleImage">
-                      <img src={article.image} alt={article.title} />
-                      <div className="readTime">{article.readTime}</div>
-                    </div>
-                    <div className="articleContent">
-                      <div className="articleMeta">
-                        <span className="category">{article.category}</span>
-                        <span className="date">
-                          {formatDate(article.publishDate)}
-                        </span>
-                      </div>
-                      <h3 className="articleTitle">{article.title}</h3>
-                      <p className="articleExcerpt">{article.excerpt}</p>
-                      <div className="articleFooter">
-                        <span className="author">Bởi {article.author}</span>
-                        <span className="readMore">Đọc thêm →</span>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              {filteredArticles.length === 0 && (
+              {!isLoading && !error && newsArticles.length === 0 && (
                 <div className="noArticles">
-                  <h3>Không có bài viết nào</h3>
-                  <p>Hiện tại chưa có bài viết nào trong danh mục này.</p>
+                  <h3>Không có Tin tức nào</h3>
+                  <p>Hiện tại chưa có Tin tức nào.</p>
                 </div>
               )}
             </div>
 
             <div className="sidebar">
               <div className="sidebarWidget">
-                <h3>Bài viết phổ biến</h3>
-                <div className="popularArticles">
-                  {newsArticles.slice(0, 3).map((article) => (
-                    <div
-                      key={article.id}
-                      className="popularArticle"
-                      onClick={() => handleArticleClick(article.id)}
-                    >
-                      <img src={article.image} alt={article.title} />
-                      <div className="popularArticleContent">
-                        <h4>{article.title}</h4>
-                        <span className="popularReadTime">
-                          {article.readTime}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="sidebarWidget">
-                <h3>Danh mục</h3>
-                <div className="categoryList">
-                  {categories
-                    .filter((cat) => cat !== "all")
-                    .map((category) => (
-                      <button
-                        key={category}
-                        className={`categoryItem ${
-                          selectedCategory === category ? "active" : ""
-                        }`}
-                        onClick={() => setSelectedCategory(category)}
+                <h3>Tin tức phổ biến</h3>
+                {!isLoading && !error && newsArticles.length > 0 && (
+                  <div className="popularArticles">
+                    {newsArticles.slice(0, 3).map((article) => (
+                      <div
+                        key={article.id}
+                        className="popularArticle"
+                        onClick={() => handleArticleClick(article.id)}
                       >
-                        {category}
-                        <span className="articleCount">
-                          (
-                          {
-                            newsArticles.filter(
-                              (article) => article.category === category
-                            ).length
-                          }
-                          )
-                        </span>
-                      </button>
+                        {article.images && article.images.length > 0 ? (
+                          <img
+                            src={article.images[0]}
+                            alt={article.title}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const fallback = document.createElement("div");
+                              fallback.className = "no-image-small";
+                              target.parentNode?.appendChild(fallback);
+                            }}
+                          />
+                        ) : (
+                          <div className="no-image-small"></div>
+                        )}
+                        <div className="popularArticleContent">
+                          <h4>{article.title}</h4>
+                          <span className="popularReadTime">
+                            {calculateReadTime(article.content)}
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div className="sidebarWidget">

@@ -18,6 +18,7 @@ import UserLayout from "../layouts/UserLayout";
 import ManagerNews from "../pages/admin/ManagerNews";
 import CreateNews from "../pages/admin/CreateNews";
 import EditNews from "../pages/admin/EditNews";
+import DetailNews from "../pages/news/DetailNews";
 
 const AppRoutes = () => (
   <Routes>
@@ -108,6 +109,14 @@ const AppRoutes = () => (
       element={
         <LayoutWrapper>
           <News />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/news/:id"
+      element={
+        <LayoutWrapper>
+          <DetailNews />
         </LayoutWrapper>
       }
     />

@@ -6,7 +6,7 @@
 }
 
 .heroSection {
-  background: url("/public/org.png") center/cover no-repeat;
+  background: url("/org.png") center/cover no-repeat;
   min-height: 250px;
   display: flex;
   flex-direction: column;
@@ -473,6 +473,56 @@
 
 .subscribeButton:hover {
   background: #5a67d8;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #4a5568;
+}
+
+.loadingState svg {
+  margin-bottom: 16px;
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #e53e3e;
+  text-align: center;
+}
+
+.errorState svg {
+  margin-bottom: 16px;
+  color: #e53e3e;
+}
+
+.no-image-fallback {
+  width: 100%;
+  height: 100%;
+  background-color: #f7fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+.no-image-small {
+  width: 60px;
+  height: 60px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+}
+
+.articleMeta {
+  justify-content: flex-end;
 }
 
 /* Responsive Design */
