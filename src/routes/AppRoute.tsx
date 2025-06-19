@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/home/Home";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
-import HomeDetail from "../pages/homedetail/HomeDetail";
+import CampaignHome from '../pages/campaign/CampaignHome';
+import CampaignDetail from"../pages/campaignDetail/CampaignDetail";
 import AboutUs from "../pages/about-us/aboutus";
 import DonatePage from "../pages/about-us/DonatePage";
 import ForgotPW from "../pages/login/ForgotPW";
@@ -81,10 +82,18 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/detail"
+      path="/campaigns/:campaignId"
       element={
         <LayoutWrapper>
-          <HomeDetail />
+          <CampaignDetail />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/campaigns"
+      element={
+        <LayoutWrapper>
+          <CampaignHome />
         </LayoutWrapper>
       }
     />
