@@ -89,7 +89,7 @@ const Header: React.FC = () => {
           <Link to="/" className="nav-link">
             Trang Chủ
           </Link>
-          <Link to="/campagin" className="nav-link">
+          <Link to="/campaigns" className="nav-link">
             Chiến Dịch
           </Link>
           <Link to="/about-us" className="nav-link">
