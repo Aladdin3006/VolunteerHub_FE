@@ -4,6 +4,7 @@ import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import "./CampaignDetail.css";
 import getCampaignDetail, { Campaign, DonationTransaction } from "../../apis/campaign";
+import DonationModal from "./DonationModal"; // đường dẫn phù hợp
 
 const CampaignDetail: React.FC = () => {
     const { campaignId } = useParams<{ campaignId: string }>();
@@ -14,6 +15,7 @@ const CampaignDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [showModal, setShowModal] = useState(false);
 
     useEffect(() => {
         const fetchCampaign = async () => {
@@ -126,7 +128,7 @@ const CampaignDetail: React.FC = () => {
                                             <span className="currency">VNĐ</span>
                                             <input type="number" placeholder="Nhập số tiền" />
                                         </div>
-                                        <button className="donate-btn">Ủng hộ ngay</button>
+                                        <button className="donate-btn" onClick={() => setShowModal(true)}>Ủng hộ ngay</button>
                                         <button className="ambassador-btn">Trở thành sứ giả</button>
                                     </div>
                                 </div>
@@ -200,6 +202,11 @@ const CampaignDetail: React.FC = () => {
                     </div>
                 </>
             )}
+            <DonationModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                campaignId={campaignId!}
+            />
             <Footer />
         </div>
     );
