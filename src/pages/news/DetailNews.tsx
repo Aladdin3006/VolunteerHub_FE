@@ -36,6 +36,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import "./DetailNews.css";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
+import ImageGallery from "../../components/image/ImageGallery";
 
 interface ReplyState {
   [commentId: string]: string;
@@ -521,8 +522,8 @@ const DetailNews: React.FC = () => {
             {news.title}
           </Typography>
 
-          {news.images && news.images.length > 0 && renderImages(news.images)}
-
+          {/* {news.images && news.images.length > 0 && renderImages(news.images)} */}
+          <ImageGallery images={news.images}/>
           <div
             className="news-content"
             dangerouslySetInnerHTML={{ __html: news.content }}
