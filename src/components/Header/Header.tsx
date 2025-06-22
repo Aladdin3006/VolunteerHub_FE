@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authService from "../../services/Authentication.service";
 import "./Header.css";
+import NotificationBell from "../Notification/NotificationBell";
 
 interface User {
   fullName: string;
@@ -100,30 +101,31 @@ const Header: React.FC = () => {
           </Link>
 
           {user ? (
-            <div className="nav-user" ref={dropdownRef}>
-              <img
-                src={user.avatar || "user-default.png"}
-                alt="User"
-                className="user-avatar"
-                onClick={toggleDropdown}
-              />
-              <span className="user-fullname" onClick={toggleDropdown}>
-                {user.fullName}
-              </span>
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/profile")}
-                  >
-                    Profile
+            <>
+              <NotificationBell />
+
+              <div className="nav-user" ref={dropdownRef}>
+                <img
+                  src={user.avatar || 'user-default.png'}
+                  alt="User"
+                  className="user-avatar"
+                  onClick={toggleDropdown}
+                />
+                <span className="user-fullname" onClick={toggleDropdown}>
+                  {user.fullName}
+                </span>
+                {isDropdownOpen && (
+                  <div className="dropdown-menu">
+                    <div className="dropdown-item" onClick={() => navigate('/profile')}>
+                      Profile
+                    </div>
+                    <div className="dropdown-item" onClick={handleLogout}>
+                      Logout
+                    </div>
                   </div>
-                  <div className="dropdown-item" onClick={handleLogout}>
-                    Logout
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           ) : (
             <>
               <Link to="/login" className="nav-link">

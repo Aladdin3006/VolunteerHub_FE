@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/Authentication.service";
 import "./AdminHeader.css";
+import NotificationBell from "../Notification/NotificationBell";
 
 const AdminHeader: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -33,21 +34,9 @@ const AdminHeader: React.FC = () => {
         <div className="header-left">{/* Breadcrumb or title */}</div>
 
         <div className="header-right">
-          <button className="notification-btn">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-3.5-7L15 17zm-8-3l1.5-3L7 14l1.5-3L10 17H4l3.5-7zM19 4v3h-3V4h3zM7 4v3H4V4h3z"
-              />
-            </svg>
-          </button>
+          <div className="notification-bell-wrapper">
+            <NotificationBell color="#000" />
+          </div>
 
           <div className="user-menu" ref={dropdownRef}>
             <div className="user-info-header">
