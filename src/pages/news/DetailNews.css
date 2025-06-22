@@ -24,7 +24,7 @@
 
 .loading-spinner {
   border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #173330;
+  border-left-color: #fcf8f2;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -57,7 +57,7 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: 10px;
-  background: #173330;
+  background: #fcf8f2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,7 +76,7 @@
 .news-source {
   font-weight: bold;
   font-size: 1rem;
-  color: #173330;
+  color: #fcf8f2;
 }
 
 .news-time {
@@ -188,7 +188,7 @@
 
 .comment-author {
   font-weight: bold;
-  color: #173330;
+  color: #1a202c;
   margin-right: 5px;
 }
 
@@ -239,7 +239,7 @@
   font-size: 1.1rem;
   font-weight: 700;
   margin-bottom: 10px;
-  color: #173330;
+  color: #fcf8f2;
 }
 
 .related-list {
