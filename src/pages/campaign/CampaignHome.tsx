@@ -2,48 +2,27 @@ import React, { useEffect, useState } from "react";
 import "./CampaignHome.css";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { getCampaigns,Campaign } from "../../apis/campaign"; // ✅ THAY VÌ axios trực tiếp
 
 
-
-interface Campaign {
-    _id: string;
-    image: string;
-    name: string; // "name" trong backend tương ứng với "title"
-    createdBy?: any;
-    description?: string;
-    categories?: any[]; // sẽ tắt cảnh báo, nhưng mất kiểm soát kiểu dữ liệu
-    raised: number;
-    target: number;
-    // Thêm các trường cần nếu muốn
-}
-
-
-
-const CampaignList: React.FC = () => {
-
+const CampaignHome: React.FC = () => {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const navigate = useNavigate(); // <-- Dòng này rất quan trọng
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchCampaigns = async () => {
-            try {
-                const res = await axios.get("http://localhost:4000/campaigns");
-                const campaignData = res.data.result?.campaigns;
+    const fetchCampaigns = async () => {
+        try {
+            const data = await getCampaigns(); // ✅ Dùng API đã tách
+            setCampaigns(data);
+        } catch (error) {
+            console.error("Lỗi khi fetch campaigns:", error);
+        }
+    };
 
-                if (Array.isArray(campaignData)) {
-                    setCampaigns(campaignData);
-                } else {
-                    console.error("Campaigns API không trả về mảng:", res.data.result);
-                }
-            } catch (error) {
-                console.error("Lỗi khi fetch campaigns:", error);
-            }
-        };
+    fetchCampaigns();
+}, []);
 
-        fetchCampaigns();
-    }, []);
     return (
         <div className="campaign-list-container">
             <Header />
@@ -58,8 +37,6 @@ const CampaignList: React.FC = () => {
                 <div className="campaign-tab">Dự án đã kết thúc</div>
             </div>
 
-
-
             <h2 className="section-title">Các dự án đang gây quỹ</h2>
             <p className="section-description">
                 Hãy lựa chọn dự án trong lĩnh vực mà bạn đang quan tâm nhất
@@ -67,10 +44,9 @@ const CampaignList: React.FC = () => {
 
             <div className="campaign-grid">
                 {campaigns.map((campaign) => {
-                    const raised = campaign.raised ?? 5000000; // nếu không có raised, dùng 5 triệu
-                    const target = campaign.target ?? 20000000; // nếu không có target, dùng 20 triệu
-                    const progress = target > 0 ? (raised / target) * 100 : 0
-
+                    const raised = campaign.currentAmount ?? 5000000;
+                    const target = campaign.goalAmount ?? 20000000;
+                    const progress = target > 0 ? (raised / target) * 100 : 0;
 
                     return (
                         <div
@@ -80,27 +56,28 @@ const CampaignList: React.FC = () => {
                             style={{ cursor: "pointer" }}
                         >
                             <div className="image-wrapper">
-                                <img src={campaign.image} alt={campaign.name} />
+                                <img
+                                    src={campaign.thumbnail || "https://via.placeholder.com/300x200"}
+                                    alt={campaign.title}
+                                />
                                 <span className="tag">
-                                    {(campaign.categories && campaign.categories[0]?.name) || "Khác"}
+                                    {(campaign.tags && campaign.tags[0]?.name) || "Khác"}
                                 </span>
                             </div>
                             <div className="campaign-info">
                                 <p className="organization">
-                                    {campaign.createdBy?.name || "Tổ chức ẩn danh"}
+                                    {campaign.createdBy?.fullName || "Tổ chức ẩn danh"}
                                 </p>
-                                <h3 className="title">{campaign.name}</h3>
+                                <h3 className="title">{campaign.title}</h3>
                                 <div className="progress-bar">
                                     <div
                                         className="progress-fill"
                                         style={{ width: `${progress}%` }}
                                     ></div>
                                 </div>
-                                <p className="raised">
-                                    {(campaign.raised || 0).toLocaleString()}đ
-                                </p>
+                                <p className="raised">{raised.toLocaleString()}đ</p>
                                 <p className="target">
-                                    với mục tiêu {(campaign.target || 0).toLocaleString()}đ
+                                    Với mục tiêu <span>{target.toLocaleString()}đ</span>
                                 </p>
                                 <p className="percentage">{progress.toFixed(1)}%</p>
                             </div>
@@ -114,4 +91,4 @@ const CampaignList: React.FC = () => {
     );
 };
 
-export default CampaignList;
+export default CampaignHome;

@@ -1,0 +1,185 @@
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6); /* Lớp phủ tối hơn một chút */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out; /* Hiệu ứng mờ dần mượt mà cho lớp phủ */
+}
+
+/* Modal Content */
+.modal-content {
+  background: white;
+  padding: 2.5rem 2rem; /* Tăng padding */
+  width: 95%; /* Hơi rộng hơn trên màn hình nhỏ */
+  max-width: 550px; /* Tăng chiều rộng tối đa */
+  border-radius: 12px; /* Góc bo tròn hơn */
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15); /* Đổ bóng rõ hơn */
+  animation: slideIn 0.3s ease-out; /* Hiệu ứng trượt vào mượt mà cho nội dung */
+  box-sizing: border-box; /* Bao gồm padding trong chiều rộng */
+}
+
+/* Modal Header */
+.modal-content h3 {
+  font-size: 1.8rem; /* Tiêu đề lớn hơn */
+  color: #333;
+  margin-bottom: 0.8rem; /* Khoảng cách bên dưới tiêu đề */
+  text-align: center;
+}
+
+.modal-description {
+  font-size: 0.95rem;
+  color: #666;
+  text-align: center;
+  margin-bottom: 1.5rem; /* Khoảng cách bên dưới mô tả */
+}
+
+/* Form Groups */
+.donation-form .form-group {
+  margin-bottom: 1.25rem; /* Tăng khoảng cách giữa các nhóm form */
+}
+
+.donation-form label {
+  display: block; /* Nhãn trên một dòng riêng */
+  margin-bottom: 0.5rem;
+  font-weight: 600; /* Nhãn đậm hơn */
+  color: #444;
+  font-size: 0.9rem;
+}
+
+.donation-form input[type="text"],
+.donation-form input[type="email"],
+.donation-form input[type="tel"], /* Đã thêm loại tel */
+.donation-form input[type="number"] {
+  width: 100%;
+  padding: 0.8rem 1rem; /* Nhiều padding hơn bên trong input */
+  border: 1px solid #ddd; /* Viền nhạt hơn */
+  border-radius: 8px; /* Các trường input bo tròn hơn */
+  font-size: 1rem;
+  box-sizing: border-box; /* Bao gồm padding trong chiều rộng */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.donation-form input:focus {
+  border-color: #ff2e48; /* Nổi bật khi focus */
+  box-shadow: 0 0 0 3px rgba(255, 46, 72, 0.2); /* Đổ bóng focus nhẹ */
+  outline: none; /* Xóa outline mặc định */
+}
+
+/* Checkbox Group */
+.form-group.checkbox-group {
+  display: block; /* Hiển thị như khối riêng biệt */
+  width: 100%;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  text-align: left; /* Canh trái nội dung */
+  padding-left: 0.2rem; /* Một chút khoảng cách trái nếu cần */
+}
+
+
+.form-group.checkbox-group input[type="checkbox"] {
+  margin-right: 0.5rem;
+  transform: scale(1.2);
+  vertical-align: middle;
+}
+
+.form-group.checkbox-group label {
+  display: inline;
+  font-weight: normal;
+  color: #555;
+  cursor: pointer;
+}
+
+/* Amount Group */
+.form-group.amount-group input {
+  background-color: #f8f8f8; /* Nền khác biệt cho số tiền bị vô hiệu hóa */
+  color: #777;
+  font-weight: bold;
+}
+
+/* Donate Button */
+.donate-button {
+  background-color: #ff2e48;
+  color: white;
+  padding: 1rem 1.5rem; /* Nhiều padding hơn cho nút */
+  border: none;
+  border-radius: 8px; /* Nút bo tròn hơn */
+  width: 100%;
+  font-weight: bold;
+  font-size: 1.1rem; /* Cỡ chữ lớn hơn cho nút */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+  margin-top: 1.5rem; /* Khoảng cách phía trên nút */
+}
+
+.donate-button:hover {
+  background-color: #e0283f; /* Tối hơn khi hover */
+  transform: translateY(-1px); /* Nâng nhẹ khi hover */
+}
+
+.donate-button:active {
+  transform: translateY(0); /* Đặt lại khi click */
+}
+
+/* Terms and Conditions */
+.terms {
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 1.5rem; /* Nhiều khoảng cách hơn phía trên điều khoản */
+  color: #777;
+}
+
+.terms a {
+  color: #ff2e48; /* Màu liên kết nổi bật */
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.terms a:hover {
+  text-decoration: underline;
+}
+
+/* Close Button */
+.close-button {
+  position: absolute;
+  top: 1rem; /* Định vị hơi vào trong */
+  right: 1.2rem;
+  background: none;
+  border: none;
+  font-size: 2rem; /* Chữ 'x' lớn hơn để dễ nhìn */
+  color: #aaa; /* Màu mềm hơn */
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+}
+
+.close-button:hover {
+  color: #333; /* Tối hơn khi hover */
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
