@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   IconButton,
   Badge,
@@ -8,43 +8,33 @@ import {
   Divider,
   Avatar,
   Stack,
+  Button,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import { io } from "socket.io-client";
 import axios from "axios";
 import authService from "../../services/Authentication.service";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { useNavigate } from "react-router-dom";
+
+dayjs.extend(relativeTime);
 
 const API_URL = "http://localhost:4000";
 const SOCKET_URL = "http://localhost:4000";
 
-interface NotificationBellProps {
-  color?: string; 
-}
-
-let socket;
-
-const NotificationBell: React.FC<NotificationBellProps> = ({ color = "#fff" }) => {
+const NotificationBell: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [token, setToken] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const navigate = useNavigate();
 
   const open = Boolean(anchorEl);
 
-  useEffect(() => {
-    const user = authService.getUser();
-    const _token = authService.getToken();
+  const fetchNotifications = async (token: string) => {
 
-    if (user && _token) {
-      setUserId(user._id);
-      setToken(`Bearer ${_token}`);
-    }
-  }, []);
-
-  const fetchNotifications = async () => {
     try {
-      if (!token) return;
-
       const axiosClient = axios.create({
         baseURL: API_URL,
         headers: {
@@ -56,57 +46,86 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "#fff" }) =
       const res = await axiosClient.get("/notification");
       const data = Array.isArray(res.data) ? res.data : [];
       setNotifications(data);
-    } catch (err) {
-      console.error("❌ Lỗi khi gọi API thông báo:", err);
-    }
+      const unread = data.filter((n) => !n.isRead).length;
+      setUnreadCount(unread);
+    } catch (err) { }
   };
 
   useEffect(() => {
-    if (!userId || !token) return;
+    const user = authService.getUser();
+    const rawToken = authService.getToken();
+    const userId = user?._id || user?.id;
 
-    fetchNotifications();
+    if (!userId || !rawToken) return;
 
-    const socket = io(SOCKET_URL, {
+    const token = `Bearer ${rawToken}`;
+
+    fetchNotifications(token);
+
+    const socketInstance = io(SOCKET_URL, {
       query: { userId },
       transports: ["websocket"],
     });
-    
-     socket.on("connect", () => {
-      console.log("🟢 Socket connected:", socket.id);
-    });
 
-    socket.on("notification", (data) => {
+    socketInstance.on("connect", () => { });
+
+    socketInstance.on("notification", (data) => {
       setNotifications((prev) => [data, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => { });
+      }
     });
 
     return () => {
-      socket.disconnect();
+      socketInstance.disconnect();
     };
-  }, [userId, token]);
+  }, []);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  useEffect(() => {
+    audioRef.current = new Audio("/sounds/notification.wav");
+    audioRef.current.load();
+
+    const enableAudio = () => {
+      audioRef.current?.play().then(() => {
+        audioRef.current?.pause();
+        audioRef.current!.currentTime = 0;
+        document.removeEventListener("click", enableAudio);
+      });
+    };
+
+    document.addEventListener("click", enableAudio);
+  }, []);
+
 
   const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
-    fetchNotifications();
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
   };
 
   return (
     <>
       <IconButton onClick={handleOpen}>
         <Badge badgeContent={unreadCount} color="error">
-          <NotificationsIcon sx={{ color }} />
+          <NotificationsIcon color="action" />
         </Badge>
       </IconButton>
 
       <Popover
         open={open}
         anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
+        onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{ sx: { width: 350, p: 1 } }}
+        PaperProps={{ sx: { width: 380, maxHeight: 500, p: 1 } }}
       >
+        <Box px={2} py={1}>
+          <Typography fontWeight="bold">Thông báo</Typography>
+        </Box>
+        <Divider />
         {notifications.length === 0 ? (
           <Box p={2}>
             <Typography variant="body2">Không có thông báo</Typography>
@@ -116,20 +135,19 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "#fff" }) =
             <Box
               key={noti._id}
               component="a"
-              href={noti.link}
+              href={noti.link || "#"}
               target="_blank"
               rel="noreferrer"
               sx={{
+                display: "block",
                 textDecoration: "none",
                 color: "inherit",
+                backgroundColor: noti.isRead ? "#fff" : "#e3f2fd",
                 px: 2,
-                py: 1,
+                py: 1.5,
                 borderRadius: 1,
-                display: "block",
-                transition: "background-color 0.2s ease",
                 "&:hover": {
-                  backgroundColor: "#f0f0f0",
-                  cursor: "pointer",
+                  backgroundColor: "#f5f5f5",
                 },
               }}
             >
@@ -141,15 +159,20 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "#fff" }) =
                 />
                 <Box>
                   <Typography variant="subtitle2" fontWeight={600}>
-                    {noti.title}
+                    {noti.title} • {dayjs(noti.createdAt).fromNow()}
                   </Typography>
                   <Typography variant="body2">{noti.content}</Typography>
                 </Box>
               </Stack>
-              <Divider sx={{ mt: 1 }} />
             </Box>
           ))
         )}
+        <Divider sx={{ my: 1 }} />
+        <Box textAlign="center" pb={1}>
+          <Button size="small" >
+            XEM TẤT CẢ
+          </Button>
+        </Box>
       </Popover>
     </>
   );
