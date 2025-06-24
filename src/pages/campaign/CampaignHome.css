@@ -74,10 +74,10 @@
 }
 
 .title {
-    font-size: 18px;
+    font-size: 18px !important;
     font-weight: bold;
     margin-bottom: 20px;
-    color: #000;
+    color: #000 !important;
 }
 
 .progress-bar {

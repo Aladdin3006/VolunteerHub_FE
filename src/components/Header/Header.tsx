@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authService from "../../services/Authentication.service";
+import {
+  FaUserEdit,
+  FaBell,
+  FaCog,
+  FaShieldAlt,
+  FaQuestionCircle,
+  FaDesktop,
+  FaSignOutAlt,
+} from "react-icons/fa";
 import "./Header.css";
 import NotificationBell from "../Notification/NotificationBell";
 
@@ -13,25 +22,9 @@ const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [hasNotification, setHasNotification] = useState(true);
+  const [notificationCount, setNotificationCount] = useState(1)
   const navigate = useNavigate();
-
-  // Remove this block - it's causing infinite re-renders
-  /*
-  const storedUser = authService.getUser();
-    if (storedUser) {
-      setUser(storedUser);
-    }
-
-  if (storedUser) {
-    try {
-      console.log("Parsed user:", user);
-    } catch (err) {
-      console.error("Failed to parse user from localStorage", err);
-    }
-  } else {
-    console.log("user null");
-  }
-  */
 
   useEffect(() => {
     // Only get user from authService once on mount
@@ -101,27 +94,71 @@ const Header: React.FC = () => {
           </Link>
 
           {user ? (
-            <>
-              <NotificationBell />
+  <NotificationBell />
 
-              <div className="nav-user" ref={dropdownRef}>
-                <img
-                  src={user.avatar || 'user-default.png'}
-                  alt="User"
-                  className="user-avatar"
-                  onClick={toggleDropdown}
-                />
-                <span className="user-fullname" onClick={toggleDropdown}>
-                  {user.fullName}
-                </span>
-                {isDropdownOpen && (
-                  <div className="dropdown-menu">
-                    <div className="dropdown-item" onClick={() => navigate('/profile')}>
-                      Profile
-                    </div>
-                    <div className="dropdown-item" onClick={handleLogout}>
-                      Logout
-                    </div>
+  <div className="nav-user" ref={dropdownRef}>
+    <img
+      src={user.avatar || "user-default.png"}
+      alt="User"
+      className="user-avatar"
+      onClick={toggleDropdown}
+    />
+    <span className="user-fullname" onClick={toggleDropdown}>
+      {user.fullName}
+    </span>
+
+    {isDropdownOpen && (
+      <div className="dropdown-menu">
+        {/* Profile */}
+        <div className="dropdown-item" onClick={() => navigate("/profile")}>
+          <FaUserEdit className="dropdown-icon" />
+          <span>Chỉnh sửa hồ sơ</span>
+        </div>
+
+        {/* Notifications */}
+        <div
+          className="dropdown-item notification-item"
+          onClick={() => navigate("/notifications")}
+        >
+          <FaBell className="dropdown-icon" />
+          <span>Thông báo</span>
+          {notificationCount > 0 && (
+            <span className="notification-count">
+              {notificationCount}
+            </span>
+          )}
+        </div>
+
+        {/* Settings */}
+        <div className="dropdown-item" onClick={() => navigate("/settings")}>
+          <FaCog className="dropdown-icon" />
+          <span>Cài đặt & bảo mật</span>
+        </div>
+
+        {/* Help */}
+        <div className="dropdown-item" onClick={() => navigate("/help")}>
+          <FaQuestionCircle className="dropdown-icon" />
+          <span>Trợ giúp & hỗ trợ</span>
+        </div>
+
+        {/* Accessibility */}
+        <div
+          className="dropdown-item"
+          onClick={() => navigate("/accessibility")}
+        >
+          <FaDesktop className="dropdown-icon" />
+          <span>Hiển thị & trợ năng</span>
+        </div>
+
+        {/* Logout */}
+        <div className="dropdown-item" onClick={handleLogout}>
+          <FaSignOutAlt className="dropdown-icon" />
+          <span>Đăng xuất</span>
+        </div>
+      </div>
+    )}
+  </div>
+</>
                   </div>
                 )}
               </div>
