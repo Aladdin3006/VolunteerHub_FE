@@ -11,6 +11,7 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import "./Header.css";
+import NotificationBell from "../Notification/NotificationBell";
 
 interface User {
   fullName: string;
@@ -93,76 +94,75 @@ const Header: React.FC = () => {
           </Link>
 
           {user ? (
-            <div className="nav-user" ref={dropdownRef}>
-              <img
-                src={user.avatar || "user-default.png"}
-                alt="User"
-                className="user-avatar"
-                onClick={toggleDropdown}
-              />
-              <span className="user-fullname" onClick={toggleDropdown}>
-                {user.fullName}
-              </span>
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  {/* Profile */}
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/profile")}
-                  >
-                    <FaUserEdit className="dropdown-icon" />
-                    <span>Chỉnh sửa hồ sơ</span>
-                  </div>
+  <NotificationBell />
 
-                  {/* Notifications with badge */}
-                  <div
-                    className="dropdown-item notification-item"
-                    onClick={() => navigate("/notifications")}
-                  >
-                    <FaBell className="dropdown-icon" />
-                    <span>Thông báo</span>
-                    {notificationCount > 0 && (
-                      <span className="notification-count">
-                        {notificationCount}
-                      </span>
-                    )}
-                  </div>
+  <div className="nav-user" ref={dropdownRef}>
+    <img
+      src={user.avatar || "user-default.png"}
+      alt="User"
+      className="user-avatar"
+      onClick={toggleDropdown}
+    />
+    <span className="user-fullname" onClick={toggleDropdown}>
+      {user.fullName}
+    </span>
 
-                  {/* Settings */}
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/settings")}
-                  >
-                    <FaCog className="dropdown-icon" />
-                    <span>Cài đặt & bảo mật</span>
-                  </div>
+    {isDropdownOpen && (
+      <div className="dropdown-menu">
+        {/* Profile */}
+        <div className="dropdown-item" onClick={() => navigate("/profile")}>
+          <FaUserEdit className="dropdown-icon" />
+          <span>Chỉnh sửa hồ sơ</span>
+        </div>
 
-                  {/* Help */}
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/help")}
-                  >
-                    <FaQuestionCircle className="dropdown-icon" />
-                    <span>Trợ giúp & hỗ trợ</span>
-                  </div>
+        {/* Notifications */}
+        <div
+          className="dropdown-item notification-item"
+          onClick={() => navigate("/notifications")}
+        >
+          <FaBell className="dropdown-icon" />
+          <span>Thông báo</span>
+          {notificationCount > 0 && (
+            <span className="notification-count">
+              {notificationCount}
+            </span>
+          )}
+        </div>
 
-                  {/* Display */}
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/accessibility")}
-                  >
-                    <FaDesktop className="dropdown-icon" />
-                    <span>Hiển thị & trợ năng</span>
-                  </div>
+        {/* Settings */}
+        <div className="dropdown-item" onClick={() => navigate("/settings")}>
+          <FaCog className="dropdown-icon" />
+          <span>Cài đặt & bảo mật</span>
+        </div>
 
-                  {/* Logout */}
-                  <div className="dropdown-item" onClick={handleLogout}>
-                    <FaSignOutAlt className="dropdown-icon" />
-                    <span>Đăng xuất</span>
+        {/* Help */}
+        <div className="dropdown-item" onClick={() => navigate("/help")}>
+          <FaQuestionCircle className="dropdown-icon" />
+          <span>Trợ giúp & hỗ trợ</span>
+        </div>
+
+        {/* Accessibility */}
+        <div
+          className="dropdown-item"
+          onClick={() => navigate("/accessibility")}
+        >
+          <FaDesktop className="dropdown-icon" />
+          <span>Hiển thị & trợ năng</span>
+        </div>
+
+        {/* Logout */}
+        <div className="dropdown-item" onClick={handleLogout}>
+          <FaSignOutAlt className="dropdown-icon" />
+          <span>Đăng xuất</span>
+        </div>
+      </div>
+    )}
+  </div>
+</>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           ) : (
             <>
               <Link to="/login" className="nav-link">
