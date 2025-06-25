@@ -32,9 +32,7 @@ import getCampaignDetail, { Campaign, DonationTransaction } from "../../apis/cam
 import DonationModal from "./DonationModal";
 import ImageGallery from "../../components/image/ImageGallery";
 import { io } from "socket.io-client";
-import { useEffect, useState, useRef } from "react";
-
-
+import { useEffect, useState } from "react";
 
 const CampaignDetail: React.FC = () => {
     const { campaignId } = useParams<{ campaignId: string }>();
@@ -51,7 +49,7 @@ const CampaignDetail: React.FC = () => {
 
         const socketInstance = io("http://localhost:4000", {
             query: {
-                userId: "guest", 
+                userId: "guest",
                 campaignId: campaignId
             }
         });
@@ -75,7 +73,6 @@ const CampaignDetail: React.FC = () => {
         };
 
         const handleNewDonate = (newDonation: { transaction: DonationTransaction }) => {
-            console.log("📢 Nhận new_donation từ socket:", newDonation);
             setDonations2((prev) => [newDonation.transaction, ...prev]);
             setCampaign((prev) =>
                 prev
@@ -85,12 +82,11 @@ const CampaignDetail: React.FC = () => {
         };
 
         fetchCampaign();
-
         socketInstance.on("new_donation", handleNewDonate);
 
         return () => {
             socketInstance.off("new_donation", handleNewDonate);
-            socketInstance.disconnect(); 
+            socketInstance.disconnect();
         };
     }, [campaignId]);
 
@@ -141,8 +137,6 @@ const CampaignDetail: React.FC = () => {
                                         </Typography>
                                     </Box>
                                     <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4, my: 1 }} />
-                                    <Typography variant="caption" color="text.secondary" textAlign="right">
-                                    </Typography>
                                     <Box display="flex" justifyContent="space-between">
                                         <Typography variant="subtitle2" fontWeight={600}>✅ Đã đạt:</Typography>
                                         <Typography color="success.main" fontWeight={700}>
@@ -168,13 +162,27 @@ const CampaignDetail: React.FC = () => {
                                         >
                                             Ủng hộ ngay
                                         </Button>
-                                        <Button
-                                            fullWidth
-                                            variant="outlined"
-                                            sx={{ mt: 1 }}
-                                        >
-                                            Trở thành sứ giả
-                                        </Button>
+
+                                        <Typography variant="body2" fontWeight={600} mt={2} mb={1}>
+                                            Chọn nhanh số tiền
+                                        </Typography>
+
+                                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                                            {[1000, 5000, 10000, 50000].map((amount) => (
+                                                <Button
+                                                    key={amount}
+                                                    variant="outlined"
+                                                    onClick={() => setDonationAmount(amount)}
+                                                    sx={{
+                                                        minWidth: 90,
+                                                        fontWeight: 600,
+                                                        borderRadius: 2,
+                                                    }}
+                                                >
+                                                    {amount.toLocaleString("vi-VN")} Vnđ
+                                                </Button>
+                                            ))}
+                                        </Stack>
                                     </Box>
                                 </CardContent>
                             </Card>
@@ -239,7 +247,6 @@ const CampaignDetail: React.FC = () => {
                         </Box>
                     ) : (
                         <Box sx={{ mt: 2 }}>
-
                             <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
                                 <Table>
                                     <TableHead>
@@ -276,6 +283,7 @@ const CampaignDetail: React.FC = () => {
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
                 campaignId={campaignId!}
+                presetAmount={donationAmount}
             />
             <Footer />
         </Box>
