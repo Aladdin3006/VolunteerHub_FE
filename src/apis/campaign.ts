@@ -1,6 +1,7 @@
 const API_BASE = "http://localhost:4000";
 import axios from "axios";
 
+/* ---------- Kiểu dữ liệu ---------- */
 export interface Campaign {
   _id: string;
   title: string;
@@ -33,6 +34,22 @@ export interface CampaignDetailResponse {
   transactions: DonationTransaction[];
 }
 
+/** ✅ Đổi tên từ Campaign2 thành CampaignVolunteer */
+export interface CampaignVolunteer {
+  _id: string;
+  name: string;
+  description: string;
+  image?: string;
+  startDate?: string;
+  endDate?: string;
+  location?: { address?: string };
+  status?: "upcoming" | "in-progress" | "completed";
+  volunteers?: unknown[];      // thêm nếu cần
+}
+
+
+/* ---------- API ---------- */
+
 export const getCampaigns = async (): Promise<Campaign[]> => {
   try {
     const res = await axios.get("http://localhost:4000/donate");
@@ -49,8 +66,9 @@ export const getCampaigns = async (): Promise<Campaign[]> => {
   }
 };
 
-
-const getCampaignDetail = async (campaignId: string): Promise<CampaignDetailResponse> => {
+const getCampaignDetail = async (
+  campaignId: string
+): Promise<CampaignDetailResponse> => {
   const response = await fetch(`${API_BASE}/donate/${campaignId}`);
   if (!response.ok) {
     const errorText = await response.text();
@@ -61,5 +79,20 @@ const getCampaignDetail = async (campaignId: string): Promise<CampaignDetailResp
   return data.data;
 };
 
-export default getCampaignDetail;
+/** ✅ getCampaigns2 trả về CampaignVolunteer */
+export const getCampaignVolunteer = async (): Promise<CampaignVolunteer[]> => {
+  const res = await axios.get(`${API_BASE}/campaigns`);
 
+  // Lấy đúng mảng campaigns trong result
+  const campaigns = res.data?.result?.campaigns;
+
+  if (Array.isArray(campaigns)) {
+    return campaigns;
+  }
+
+  // Nếu backend lỗi cấu trúc, trả mảng rỗng để tránh crash
+  console.error("Unexpected volunteer campaigns payload:", res.data);
+  return [];
+};
+
+export default getCampaignDetail;
