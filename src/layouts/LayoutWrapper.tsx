@@ -5,6 +5,7 @@ import authService from "../services/Authentication.service";
 import AdminLayout from "./AdminLayout";
 import UserLayout from "./UserLayout";
 import DefaultLayout from "./DefaultLayout";
+import ManagerLayout from "./ManagerLayout";
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -81,7 +82,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({
       case "admin":
         return <AdminLayout>{children}</AdminLayout>;
       case "manager":
-        return <AdminLayout>{children}</AdminLayout>;
+        return <ManagerLayout>{children}</ManagerLayout>;
       case "organization":
         return <AdminLayout>{children}</AdminLayout>;
       case "user":
