@@ -21,6 +21,7 @@ import CreateNews from "../pages/admin/CreateNews";
 import EditNews from "../pages/admin/EditNews";
 import DetailNews from "../pages/news/DetailNews";
 import ThankYou from "../pages/campaignDetail/Thanhyou";
+import CampaignVolunteer from "../pages/campaignDetail/CampaignVolunteerDetail";
 
 const AppRoutes = () => (
   <Routes>
@@ -103,6 +104,14 @@ const AppRoutes = () => (
       element={
         <LayoutWrapper>
           <ThankYou />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/volunteer/:campaignId"
+      element={
+        <LayoutWrapper>
+          <CampaignVolunteer/>
         </LayoutWrapper>
       }
     />

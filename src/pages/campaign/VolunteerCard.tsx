@@ -29,7 +29,10 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
         "&:hover": { transform: "translateY(-4px)", boxShadow: 20 },
       }}
     >
-      <CardActionArea onClick={() => navigate(`/campaigns/${campaign._id}`)}>
+      <CardActionArea
+        component="div" // ✅ thêm dòng này để tránh HTML lỗi
+        onClick={() => navigate(`/volunteer/${campaign._id}`)} // nhớ thêm ID nếu cần
+      >
         <CardMedia
           component="img"
           height="200"
