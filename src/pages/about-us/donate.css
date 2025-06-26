@@ -1,0 +1,163 @@
+.donatePage {
+  background: #f5f6f8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.donateHero {
+  background: url('/public/campaign2.jpg') center/cover no-repeat;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  position: relative;
+}
+
+.donateHeroContent {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 0 30px 0;
+  text-align: center;
+  color: #fff;
+  position: relative;
+  z-index: 2;
+}
+
+.donateTitle {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.donateBreadcrumbs {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  margin-bottom: 0;
+}
+
+.donateBreadcrumbDivider {
+  margin: 0 8px;
+  color: #bdbdbd;
+}
+
+.donateCurrent {
+  color: #fff;
+  font-weight: 500;
+}
+
+.donateContent {
+  max-width: 600px;
+  margin: 48px auto 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  padding: 40px 32px 32px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.donateLogo {
+  width: 180px;
+  margin-bottom: 18px;
+}
+
+.donateDesc {
+  font-size: 1.18rem;
+  color: #444;
+  margin-bottom: 32px;
+  font-weight: 600;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.donateExplain {
+  font-size: 1.08rem;
+  color: #555;
+  margin: 18px 0 0 0;
+  line-height: 1.7;
+  text-align: left;
+  font-weight: 400;
+}
+
+.donateExplain strong {
+  color: #2d3848;
+  font-weight: 600;
+}
+
+.donateThanks {
+  font-size: 1.08rem;
+  color: #2d3848;
+  margin-top: 24px;
+  font-style: italic;
+  text-align: right;
+  font-weight: 500;
+}
+
+.donateQRBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.donateQR {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 10px;
+}
+
+.donateBank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.donateBankLogo {
+  width: 90px;
+  margin-bottom: 4px;
+}
+
+.donateBankInfo {
+  text-align: center;
+}
+.donateBankName {
+  font-weight: bold;
+  font-size: 1.15rem;
+  color: #222;
+}
+.donateBankNumber {
+  font-size: 1.1rem;
+  color: #222;
+  font-weight: 600;
+}
+.donateBankBranch {
+  font-size: 1rem;
+  color: #888;
+}
+
+@media (max-width: 700px) {
+  .donateContent {
+    max-width: 98vw;
+    padding: 18px 4vw 24px 4vw;
+  }
+  .donateQR {
+    width: 140px;
+    height: 140px;
+  }
+  .donateDesc, .donateExplain, .donateThanks {
+    font-size: 1rem;
+    text-align: center;
+  }
+} 

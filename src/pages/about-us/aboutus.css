@@ -1,0 +1,257 @@
+.aboutusPage {
+    background: #f5f6f8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .heroSection {
+    background: url('/public/campaign2.jpg') center/cover no-repeat;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    position: relative;
+  }
+  
+  .heroContent {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 0 30px 0;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    z-index: 2;
+  }
+  
+  .title {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  
+  .breadcrumbs {
+    font-size: 1.1rem;
+    color: #e0e0e0;
+    margin-bottom: 0;
+  }
+  
+  .breadcrumbDivider {
+    margin: 0 8px;
+    color: #bdbdbd;
+  }
+  
+  .current {
+    color: #fff;
+    font-weight: 500;
+  }
+  
+  .contentSection {
+    max-width: 900px;
+    margin: 40px auto 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    padding: 40px 32px 32px 32px;
+    text-align: left;
+  }
+  
+  .textBlock p {
+    font-size: 1.18rem;
+    color: #444;
+    margin-bottom: 18px;
+    line-height: 1.7;
+  }
+  
+  .buttonGroup {
+    display: flex;
+    gap: 20px;
+    margin-top: 30px;
+    justify-content: center;
+  }
+  
+  .primaryBtn {
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .primaryBtn:hover {
+    background: #495057;
+  }
+  
+  .secondaryBtn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .secondaryBtn:hover {
+    background: #495057;
+  }
+
+  .partnersSection {
+    background: #fafbfc;
+    padding: 48px 0 56px 0;
+    margin-top: 0;
+  }
+
+  .partnersContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .partnersTitle {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .partnersSubtitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 36px;
+  }
+
+  .partnersGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 32px 36px;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .partnersGrid img {
+    max-width: 120px;
+    max-height: 80px;
+    object-fit: contain;
+    filter: grayscale(0.2);
+    transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .partnersGrid img:hover {
+    transform: translateY(-6px) scale(1.07);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+    filter: grayscale(0);
+  }
+
+  .foundersSection {
+    background: #fff;
+    padding: 56px 0 64px 0;
+  }
+
+  .foundersContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .foundersTitle {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3848;
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .foundersGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 36px 32px;
+    justify-items: center;
+    align-items: flex-start;
+  }
+
+  .founderCard {
+    background: #f8f9fa;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    padding: 28px 18px 24px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .founderCard:hover {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    transform: translateY(-6px) scale(1.03);
+  }
+
+  .founderImg {
+    width: 220px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 22px;
+    background: #fff;
+  }
+
+  .founderInfo {
+    text-align: center;
+  }
+
+  .founderName {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #2d3848;
+    margin-bottom: 8px;
+  }
+
+  .founderRole {
+    font-size: 1.1rem;
+    color: #6c757d;
+    margin-bottom: 18px;
+    min-height: 48px;
+  }
+
+  .founderSocials {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .founderSocials a {
+    color: #e63946;
+    font-size: 1.3rem;
+    transition: color 0.2s, transform 0.2s;
+  }
+  .founderSocials a:hover {
+    color: #457b9d;
+    transform: scale(1.18);
+  }
+
+  @media (max-width: 900px) {
+    .foundersGrid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .founderImg {
+      width: 150px;
+      height: 150px;
+    }
+  } 

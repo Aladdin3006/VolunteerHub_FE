@@ -1,0 +1,106 @@
+.resetPWPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.logo {
+  width: 160px;
+  margin-bottom: 20px;
+}
+
+.resetBox {
+  width: 100%;
+  max-width: 400px;
+  background-color: white;
+  padding: 30px 25px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.resetBox h2 {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.signInButton {
+  width: 100%;
+  background-color: #1877f2;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: background-color 0.3s;
+}
+
+.signInButton:hover:not(:disabled) {
+  background-color: #165fbe;
+}
+
+.signInButton:disabled {
+  background-color: #a5c5f8;
+  cursor: not-allowed;
+}
+
+.joinNow {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.joinNow a {
+  color: #1877f2;
+  text-decoration: none;
+}
+
+.joinNow a:hover {
+  text-decoration: underline;
+}
+
+.errorContainer,
+.successContainer {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.errorText {
+  color: #b00020;
+}
+
+.successText {
+  color: #2e7d32;
+}
+
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordWrapper .input {
+  flex: 1;
+}
+
+.showLink {
+  cursor: pointer;
+  margin-left: 8px;
+  color: #007bff;
+  user-select: none;
+}
+
