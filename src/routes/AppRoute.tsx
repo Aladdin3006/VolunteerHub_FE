@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/home/Home";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
-import CampaignHome from '../pages/campaign/CampaignHome';
+import CampaignHome from "../pages/campaign/CampaignHome";
 import CampaignDetail from "../pages/campaignDetail/CampaignDetail";
 import AboutUs from "../pages/about-us/aboutus";
 import DonatePage from "../pages/about-us/DonatePage";
@@ -21,7 +21,12 @@ import CreateNews from "../pages/admin/CreateNews";
 import EditNews from "../pages/admin/EditNews";
 import DetailNews from "../pages/news/DetailNews";
 import ThankYou from "../pages/campaignDetail/Thanhyou";
+
 import CampaignVolunteer from "../pages/campaignDetail/CampaignVolunteerDetail";
+
+import ManagerDashboard from "../pages/manager/ManagerDashboard";
+import ManagerCampaign from "../pages/manager/ManagerCampaign";
+
 
 const AppRoutes = () => (
   <Routes>
@@ -378,14 +383,15 @@ const AppRoutes = () => (
               path="dashboard"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="manager">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Manager Dashboard
-                    </h1>
-                    <p className="text-gray-600">
-                      Analytics and reporting dashboard.
-                    </p>
-                  </div>
+                  <ManagerDashboard /> {/* Updated to use ManagerDashboard */}
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="campaigns"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="manager">
+                  <ManagerCampaign />
                 </LayoutWrapper>
               }
             />
