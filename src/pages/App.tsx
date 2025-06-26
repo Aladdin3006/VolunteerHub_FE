@@ -9,6 +9,7 @@ import DonatePage from "../pages/about-us/DonatePage";
 import ForgotPW from "./login/ForgotPW";
 import ResetPW from "./login/ResetPW";
 import Profile from "./profile/Profile";
+import ForumPage from "./forum/ForumPage";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -26,6 +27,8 @@ const App: React.FC = () => {
           <Route path="/detail" element={<HomeDetail />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/donate" element={<DonatePage />} />
+
+          <Route path="/forum" element={<ForumPage />} />
         </Routes>
       </div>
     </BrowserRouter>
