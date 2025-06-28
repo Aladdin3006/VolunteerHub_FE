@@ -42,13 +42,16 @@ export interface CampaignVolunteer {
   image?: string;
   startDate?: string;
   endDate?: string;
-  location?: { address?: string };
+  location?: {
+    type: "Point";
+    coordinates: [number, number];
+    address?: string;
+  };
   status?: "upcoming" | "in-progress" | "completed";
   volunteers?: unknown[];      // thêm nếu cần
+  
 }
 
-
-/* ---------- API ---------- */
 
 export const getCampaigns = async (): Promise<Campaign[]> => {
   try {
@@ -94,5 +97,29 @@ export const getCampaignVolunteer = async (): Promise<CampaignVolunteer[]> => {
   console.error("Unexpected volunteer campaigns payload:", res.data);
   return [];
 };
+
+
+export const getCampaignVolunteerDetail = async (
+  campaignId: string
+): Promise<CampaignVolunteer> => {
+  const res = await fetch(`${API_BASE}/campaigns/${campaignId}`);
+  if (!res.ok) {
+    throw new Error(`Lỗi khi lấy campaign: ${await res.text()}`);
+  }
+
+  const raw = await res.json();
+  console.log("Kết quả từ API:", raw); // ✅ in ra full response
+
+  // Cách 1: nếu backend trả về { data: {...} }
+  if (raw.data) return raw.data;
+
+  // Cách 2: nếu backend trả về {...} trực tiếp
+  return raw;
+};
+
+
+
+
+
 
 export default getCampaignDetail;
