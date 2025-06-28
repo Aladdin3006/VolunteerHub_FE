@@ -22,6 +22,11 @@ import {
   Chip,
   IconButton,
   InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  SelectChangeEvent  
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
@@ -34,7 +39,6 @@ const ManagerUser: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showManagerModal, setShowManagerModal] = useState(false);
-  const [showStaffModal, setShowStaffModal] = useState(false);
   const [managerForm, setManagerForm] = useState({
     fullName: "",
     email: "",
@@ -44,21 +48,13 @@ const ManagerUser: React.FC = () => {
     date_of_birth: "",
     communeId: "",
   } as { fullName: string; email: string; password: string; confirmPassword: string; phone: string; date_of_birth: string; communeId: string });
-  const [staffForm, setStaffForm] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-    date_of_birth: "",
-  } as { fullName: string; email: string; password: string; confirmPassword: string; phone: string; date_of_birth: string });
   const [showManagerPassword, setShowManagerPassword] = useState(false);
   const [showManagerConfirmPassword, setShowManagerConfirmPassword] = useState(false);
-  const [showStaffPassword, setShowStaffPassword] = useState(false);
-  const [showStaffConfirmPassword, setShowStaffConfirmPassword] = useState(false);
+  const [communes, setCommunes] = useState<{ id: string; name: string; district: string; province: string }[]>([]);
 
   useEffect(() => {
     fetchUsers();
+    fetchCommunes();
   }, []);
 
   const fetchUsers = async () => {
@@ -75,18 +71,26 @@ const ManagerUser: React.FC = () => {
     }
   };
 
+  const fetchCommunes = async () => {
+    try {
+      const fetchedCommunes = await usersService.getAllCommunes();
+      setCommunes(fetchedCommunes);
+      setError(null);
+    } catch (err: any) {
+      setError("Failed to load communes");
+      console.error("Fetch communes error:", err.message);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleManagerInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setManagerForm({ ...managerForm, [e.target.name]: e.target.value });
-  };
-
-  const handleStaffInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setStaffForm({ ...staffForm, [e.target.name]: e.target.value });
+  const handleManagerInputChange = (e: ChangeEvent<HTMLInputElement | { name?: string; value: string }>) => {
+    const { name, value } = e.target as any;
+    setManagerForm((prev) => ({ ...prev, [name || ""]: value }));
   };
 
   const handleCreateManager = async (e: React.FormEvent) => {
@@ -102,7 +106,7 @@ const ManagerUser: React.FC = () => {
         password: managerForm.password,
         phone: managerForm.phone,
         date_of_birth: managerForm.date_of_birth,
-        communeId: managerForm.communeId || "",
+        communeId: managerForm.communeId,
       };
       const newManager = await usersService.createManager(managerData);
       setUsers([...users, newManager]);
@@ -161,6 +165,19 @@ const ManagerUser: React.FC = () => {
       setError("Failed to disable user");
       console.error("Disable user error:", err.message);
     }
+  };
+
+  const formatDate = (isoDate: string) => {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const handleCommuneChange = (event: SelectChangeEvent) => {
+    setManagerForm(prev => ({ ...prev, communeId: event.target.value }));
   };
 
   return (
@@ -225,7 +242,6 @@ const ManagerUser: React.FC = () => {
                 <TableCell>Phone</TableCell>
                 <TableCell>Birth Date</TableCell>
                 <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -236,15 +252,8 @@ const ManagerUser: React.FC = () => {
                   <TableCell>{user.fullName}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.phone}</TableCell>
-                  <TableCell>{user.date_of_birth}</TableCell>
+                  <TableCell>{formatDate(user.date_of_birth)}</TableCell>
                   <TableCell>{user.role}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.status}
-                      color={user.status === "active" ? "success" : "error"}
-                      size="small"
-                    />
-                  </TableCell>
                   <TableCell>
                     <Box display="flex" gap={1}>
                       {user.status === "active" ? (
@@ -359,13 +368,21 @@ const ManagerUser: React.FC = () => {
               fullWidth
               InputLabelProps={{ shrink: true }}
             />
-            {/* <TextField
-              label="Commune ID"
-              name="communeId"
-              value={managerForm.communeId}
-              onChange={handleManagerInputChange}
-              fullWidth
-            /> */}
+            <FormControl fullWidth required>
+              <InputLabel>Commune</InputLabel>
+              <Select
+                name="communeId"
+                value={managerForm.communeId}
+                onChange={handleCommuneChange}
+                label="Commune"
+              >
+                {communes.map((commune) => (
+                  <MenuItem key={commune.id} value={commune.id}>
+                    {`${commune.name}, ${commune.district}, ${commune.province}`}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>
