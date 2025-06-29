@@ -22,7 +22,6 @@ const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [notificationCount, setNotificationCount] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,9 +91,7 @@ const Header: React.FC = () => {
           </Link>
 
           {user ? (
-            <>
-              <NotificationBell />
-
+            <>             
               <div className="nav-user" ref={dropdownRef}>
                 <img
                   src={user.avatar || "user-default.png"}
@@ -113,12 +110,9 @@ const Header: React.FC = () => {
                       <span>Chỉnh sửa hồ sơ</span>
                     </div>
 
-                    <div className="dropdown-item notification-item" onClick={() => navigate("/notifications")}>
-                      <FaBell className="dropdown-icon" />
+                    <div className="dropdown-item" >
+                      <NotificationBell />
                       <span>Thông báo</span>
-                      {notificationCount > 0 && (
-                        <span className="notification-count">{notificationCount}</span>
-                      )}
                     </div>
 
                     <div className="dropdown-item" onClick={() => navigate("/settings")}>
