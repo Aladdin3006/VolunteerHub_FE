@@ -8,8 +8,8 @@
 }
 
 .header-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 1400px;
+  margin: 0 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   gap: 2rem;
-  margin-left: 250px;
+  margin-left: 500px;
 }
 
 .nav-link {
@@ -75,6 +75,7 @@
 .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+  color: #ff6b9d;
 }
 
 /* User avatar + fullname container */
@@ -184,8 +185,6 @@
 
 /* Contact Button Styles */
 .contact-btn {
-  background: #210906;
-  color: #ff6b9d;
   border: none;
   padding: 0.75rem 0.75rem;
   border-radius: 25px;
@@ -196,7 +195,7 @@
 }
 
 .contact-btn:hover {
-  background: #f8f9fa;
+  background: #ff6b9d;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
 }
