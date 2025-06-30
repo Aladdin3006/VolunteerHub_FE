@@ -11,14 +11,15 @@
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.1.2",
     "@mui/material": "^7.1.2",
     "@mui/x-date-pickers": "^8.5.3",
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.10.0",
-    "leaflet": "^1.9.4",
     "dayjs": "^1.11.13",
+    "framer-motion": "^12.19.2",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -26,8 +27,10 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.6.1",
     "react-slick": "^0.30.3",
+    "react-webcam": "^7.2.0",
     "slick-carousel": "^1.8.1",
     "socket.io-client": "^4.8.1",
+    "styled-components": "^6.1.19",
     "swiper": "^11.2.8"
   },
   "devDependencies": {

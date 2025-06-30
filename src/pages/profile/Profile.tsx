@@ -14,6 +14,8 @@ import "./Profile.css";
 import Header from "../../components/Header/Header";
 import { updateUserAvatar } from "../../apis/profile";
 import ImageGallery from "../../components/image/ImageGallery";
+import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js"
+import CheckinFace from "../../components/image/uploadFaceRecognize/CheckinFace.js";
 
 interface UserProfile {
   id: string;
@@ -182,8 +184,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }
     } catch (error) {
       alert(
-        `Avatar upload failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Avatar upload failed: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
 
@@ -290,6 +291,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                     )}
                   </button>
                 )}
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -298,6 +300,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                   className="file-input"
                 />
               </div>
+                <RegisterFaceModal />
+
+
               <div className="profile-details">
                 <h1 className="profile-name">{currentData.fullName}</h1>
                 <p className="profile-bio">
@@ -422,8 +427,8 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                       <span>
                         {currentData.dateOfBirth
                           ? new Date(
-                              currentData.dateOfBirth
-                            ).toLocaleDateString()
+                            currentData.dateOfBirth
+                          ).toLocaleDateString()
                           : "Not provided"}
                       </span>
                     </div>
@@ -470,88 +475,85 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
               </div>
             </div>
           </div>
-
           <div className="card card-certificates">
             <h2 className="card-title">Certificates</h2>
             <div className="certificates-container">
               {currentData.certificates.length > 0 ? (
                 <ImageGallery
                   images={currentData.certificates}
-                  // onImageClick={(img) => window.open(img, "_blank")}
+                // onImageClick={(img) => window.open(img, "_blank")}
                 />
               ) : (
                 <p className="no-certificates">No certificates available</p>
               )}
             </div>
           </div>
-
           {/* Skills and Volunteer Stats */}
-            <div className="card-half-row reduced-spacing">
-              {/* Skills Card */}
-              <div className="card card-half">
-                <h3 className="card-subtitle">Skills</h3>
-                <div className="tags-container">
-                  {currentData.skills.length > 0 ? (
-                    currentData.skills.map((skill, index) => (
-                      <span key={index} className="tag tag-skills">
-                        {skill}
-                        {isEditing && (
-                          <button
-                            onClick={() => removeSkill(skill)}
-                            className="tag-remove"
-                            disabled={loading}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="skills-note">
-                      <small>No skills added yet.</small>
-                    </p>
-                  )}
-                  {isEditing && (
-                    <div className="add-tag-container">
-                      <input
-                        type="text"
-                        value={newSkill}
-                        onChange={(e) => setNewSkill(e.target.value)}
-                        placeholder="Add new skill"
-                        className="add-tag-input"
-                        disabled={loading}
-                      />
-                      <button
-                        onClick={addSkill}
-                        className="add-tag-btn"
-                        disabled={loading}
-                      >
-                        Add
-                      </button>
-                    </div>
-                  )}
-                </div>
+          <div className="card-half-row reduced-spacing">
+            {/* Skills Card */}
+            <div className="card card-half">
+              <h3 className="card-subtitle">Skills</h3>
+              <div className="tags-container">
+                {currentData.skills.length > 0 ? (
+                  currentData.skills.map((skill, index) => (
+                    <span key={index} className="tag tag-skills">
+                      {skill}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeSkill(skill)}
+                          className="tag-remove"
+                          disabled={loading}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  ))
+                ) : (
+                  <p className="skills-note">
+                    <small>No skills added yet.</small>
+                  </p>
+                )}
+                {isEditing && (
+                  <div className="add-tag-container">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      placeholder="Add new skill"
+                      className="add-tag-input"
+                      disabled={loading}
+                    />
+                    <button
+                      onClick={addSkill}
+                      className="add-tag-btn"
+                      disabled={loading}
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* Volunteer Stats Card */}
-              <div className="card card-half">
-                <h3 className="card-subtitle">Volunteer Stats</h3>
-                <div className="stats-container">
-                  <div className="stat-item">
-                    <span className="stat-label">Hours Volunteered</span>
-                    <span className="stat-value stat-blue">245</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Projects Completed</span>
-                    <span className="stat-value stat-green">12</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Member Since</span>
-                    <span className="stat-value stat-purple">2023</span>
-                  </div>
+            <div className="card card-half">
+              <h3 className="card-subtitle">Volunteer Stats</h3>
+              <div className="stats-container">
+                <div className="stat-item">
+                  <span className="stat-label">Hours Volunteered</span>
+                  <span className="stat-value stat-blue">245</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Projects Completed</span>
+                  <span className="stat-value stat-green">12</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Member Since</span>
+                  <span className="stat-value stat-purple">2023</span>
                 </div>
               </div>
             </div>
+          </div>
         </div>
       </div>
     </div>
