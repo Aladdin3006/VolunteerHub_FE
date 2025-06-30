@@ -33,6 +33,13 @@ export interface ImportStaffData {
   role: string;
 }
 
+export interface Commune {
+  id: string;
+  name: string;
+  district: string;
+  province: string;
+}
+
 const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   return {
@@ -62,6 +69,29 @@ export const usersService = {
       id: item._id || item.id,
       date_of_birth: item.date_of_birth || "",
       status: item.status || "active",
+    }));
+  },
+
+  // Get all communes
+  getAllCommunes: async (): Promise<Commune[]> => {
+    const response = await fetch(`${API_BASE}/users/commune`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch communes");
+    }
+
+    const data = await response.json();
+    return data.map((item: any) => ({
+      id: item._id || item.id,
+      name: item.name || "",
+      district: item.district || "",
+      province: item.province || "",
     }));
   },
 

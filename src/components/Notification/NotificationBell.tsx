@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  IconButton,
   Badge,
   Popover,
   Box,
@@ -10,7 +9,7 @@ import {
   Stack,
   Button,
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
+import { FaBell } from "react-icons/fa"; // Use react-icons like other dropdown items
 import { io } from "socket.io-client";
 import axios from "axios";
 import authService from "../../services/Authentication.service";
@@ -33,7 +32,6 @@ const NotificationBell: React.FC = () => {
   const open = Boolean(anchorEl);
 
   const fetchNotifications = async (token: string) => {
-
     try {
       const axiosClient = axios.create({
         baseURL: API_URL,
@@ -48,7 +46,7 @@ const NotificationBell: React.FC = () => {
       setNotifications(data);
       const unread = data.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
-    } catch (err) { }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -67,13 +65,13 @@ const NotificationBell: React.FC = () => {
       transports: ["websocket"],
     });
 
-    socketInstance.on("connect", () => { });
+    socketInstance.on("connect", () => {});
 
     socketInstance.on("notification", (data) => {
       setNotifications((prev) => [data, ...prev]);
       setUnreadCount((prev) => prev + 1);
       if (audioRef.current) {
-        audioRef.current.play().catch(() => { });
+        audioRef.current.play().catch(() => {});
       }
     });
 
@@ -82,24 +80,22 @@ const NotificationBell: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    audioRef.current = new Audio("/sounds/notification.wav");
-    audioRef.current.load();
+  const handleOpen = (e: React.MouseEvent<SVGElement>) => {
+    setAnchorEl(e.currentTarget as unknown as HTMLElement);
 
-    const enableAudio = () => {
-      audioRef.current?.play().then(() => {
-        audioRef.current?.pause();
-        audioRef.current!.currentTime = 0;
-        document.removeEventListener("click", enableAudio);
-      });
-    };
+    if (!audioRef.current) {
+      audioRef.current = new Audio("/sounds/notification.wav");
+      audioRef.current.load();
 
-    document.addEventListener("click", enableAudio);
-  }, []);
-
-
-  const handleOpen = (e: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(e.currentTarget);
+      // Play silently to unlock audio context
+      audioRef.current
+        .play()
+        .then(() => {
+          audioRef.current?.pause();
+          audioRef.current!.currentTime = 0;
+        })
+        .catch(() => {});
+    }
   };
 
   const handleClose = () => {
@@ -108,11 +104,36 @@ const NotificationBell: React.FC = () => {
 
   return (
     <>
-      <IconButton onClick={handleOpen}>
-        <Badge badgeContent={unreadCount} color="error">
-          <NotificationsIcon color="action" />
-        </Badge>
-      </IconButton>
+      {/* Use the same structure as other dropdown items */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <FaBell 
+          className="dropdown-icon" 
+          onClick={handleOpen}
+          style={{ cursor: 'pointer', width: '24px', height: '19.2px' }}
+        />
+        {unreadCount > 0 && (
+          <span
+            style={{
+              position: 'absolute',
+              top: '-8px',
+              right: '-8px',
+              backgroundColor: '#f44336',
+              color: 'white',
+              borderRadius: '50%',
+              width: '18px',
+              height: '18px',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              minWidth: '18px'
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </div>
 
       <Popover
         open={open}
@@ -169,9 +190,7 @@ const NotificationBell: React.FC = () => {
         )}
         <Divider sx={{ my: 1 }} />
         <Box textAlign="center" pb={1}>
-          <Button size="small" >
-            XEM TẤT CẢ
-          </Button>
+          <Button size="small">XEM TẤT CẢ</Button>
         </Box>
       </Popover>
     </>
