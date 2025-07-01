@@ -26,6 +26,7 @@ interface IProps extends CardProps<any> {
 }
 
 const MAX_TEXT_LENGTH = 500;
+const MAX_IMAGES = 5;
 
 export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
   (props, ref) => {
@@ -48,9 +49,10 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
           )
       );
 
-      setImages((prev) => [...prev, ...newFiles]);
+      // Update images, but limit to max images
+      setImages((prev) => [...prev.slice(0, MAX_IMAGES - 1), ...newFiles]);
       setImagePreviews((prev) => [
-        ...prev,
+        ...prev.slice(0, MAX_IMAGES - 1),
         ...newFiles.map((file) => URL.createObjectURL(file)),
       ]);
 
@@ -195,6 +197,9 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
               }}
             />
           )}
+          <Typography align="right" color="text.secondary" fontSize={12}>
+            {images.length}/{MAX_IMAGES}
+          </Typography>
         </Stack>
 
         <Divider sx={{ my: 2 }} />

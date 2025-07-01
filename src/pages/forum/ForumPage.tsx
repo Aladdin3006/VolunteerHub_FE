@@ -16,11 +16,16 @@ import {
 import ForumLeftSide from "./ForumLeftSide";
 import { IComment, IForumPost } from "../../apis/forum";
 import { EditOutlined } from "@mui/icons-material";
+import {
+  IImageViewerDialogRef,
+  ImageViewerDialog,
+} from "../../components/forum/ImageViewerDialog";
 
 export default function ForumPage() {
   const { posts } = userForumData();
   const forumPostDialogRef = useRef<IForumPostDialogRef | null>(null);
   const forumPostNewDialogRef = useRef<IForumPostNewDialogRef | null>(null);
+  const imageViewerDialogRef = useRef<IImageViewerDialogRef | null>(null);
 
   const [saveds, setSaveds] = useState<IForumPost[]>([]);
 
@@ -47,10 +52,8 @@ export default function ForumPage() {
           upvotes: [],
         },
       ];
-      // setPosts([...posts]);
       forumPostDialogRef.current &&
         forumPostDialogRef.current.open({ ...post });
-      console.log(post);
     }
   };
 
@@ -95,6 +98,7 @@ export default function ForumPage() {
               onSaveClick={() => {
                 setSaveds([...saveds, post]);
               }}
+              onImageClick={imageViewerDialogRef.current?.open}
             />
           ))}
         </Stack>
@@ -102,7 +106,7 @@ export default function ForumPage() {
         <Tooltip title="Tạo bài viết" placement="left" arrow>
           <SpeedDial
             ariaLabel="Add action"
-            sx={{ position: "fixed", bottom: 24, right: 24 }}
+            sx={{ position: "fixed", bottom: 104, right: 24 }}
             icon={<EditOutlined />}
             onClick={() => {
               forumPostNewDialogRef.current &&
@@ -128,6 +132,7 @@ export default function ForumPage() {
         avatarUrl=""
         userName="Huy"
       />
+      <ImageViewerDialog ref={imageViewerDialogRef} />
     </Box>
   );
 }

@@ -49,6 +49,9 @@ export const ForumPostImages = forwardRef<HTMLDivElement, IProps>(
               onClick={() => {
                 onImageClick && onImageClick(images, index);
               }}
+              sx={{
+                cursor: onImageClick ? "pointer" : "default",
+              }}
             >
               <Box
                 sx={{
@@ -90,7 +93,10 @@ export const ForumPostImages = forwardRef<HTMLDivElement, IProps>(
           {extraCount > 0 && (
             <ImageListItem
               onClick={() => {
-                onImageClick && onImageClick(images, 0);
+                onImageClick && onImageClick(images, showCount);
+              }}
+              sx={{
+                cursor: onImageClick ? "pointer" : "default",
               }}
             >
               <Box
