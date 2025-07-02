@@ -1,5 +1,14 @@
 export const getAccessToken = (): string | null => {
-  return localStorage.getItem("token");
+  const userVal = localStorage.getItem("user");
+  if (userVal) {
+    try {
+      const user: any = JSON.parse(userVal);
+      return user.token;
+    } catch (error) {
+      return null;
+    }
+  }
+  return null;
 };
 
 export const handleResponse = async <Data, Result>(
@@ -16,4 +25,18 @@ export const handleResponse = async <Data, Result>(
     throw new Error(data.message);
   }
   return success ? success(data) : data;
+};
+
+export const toBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      resolve(reader.result as string);
+    };
+
+    reader.onerror = (error) => reject(error);
+
+    reader.readAsDataURL(file);
+  });
 };
