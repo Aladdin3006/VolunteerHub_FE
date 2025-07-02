@@ -565,9 +565,8 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       <Stack direction="row" spacing={1} justifyContent="center" mt={2}>
         <Button
           component="label"
-          startIcon={<PhotoCamera />}
           variant="contained"
-          sx={{ borderRadius: 8, width: { xs: "100%", sm: "250px" } }}
+          sx={{ width: { xs: "100%", sm: "250px" } }}
           disabled={!onSubmitForm || isSubmitDisabled}
           onClick={submit}
         >

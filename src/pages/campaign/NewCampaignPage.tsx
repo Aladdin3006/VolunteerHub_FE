@@ -2,12 +2,15 @@ import { Box, Stack } from "@mui/material";
 import Footer from "../../components/Footer/Footer";
 import Header from "../../components/Header/Header";
 import { CampaignForm } from "../../components/campaign/CampaignForm";
-import { CAMPAIGN_API, ICampaignData } from "../../apis/campaign";
+import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
+import { useNavigate } from "react-router-dom";
 
 export default function NewCampaignPage() {
-  const handleSubmitNewCampaign = async (data: ICampaignData) => {
+  const navigate = useNavigate();
+  const handleSubmitNewCampaign = async (data: ICampaignDataUpload) => {
     try {
       const res = await CAMPAIGN_API.createCampaign(data);
+      navigate("/campaign");
     } catch (error) {
       console.log(error);
     }
