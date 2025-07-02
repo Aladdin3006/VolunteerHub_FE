@@ -35,6 +35,14 @@ export interface CampaignDetailResponse {
 }
 
 /** ✅ Đổi tên từ Campaign2 thành CampaignVolunteer */
+/** Thông tin mỗi tình nguyện viên đã đăng ký */
+export interface VolunteerRecord {
+  user: { _id: string };                // Có thể bổ sung fullName, avatar...
+  status: "pending" | "approved" | "rejected";
+  registeredAt?: string;
+}
+
+/** Chiến dịch Volunteer */
 export interface CampaignVolunteer {
   _id: string;
   name: string;
@@ -48,9 +56,11 @@ export interface CampaignVolunteer {
     address?: string;
   };
   status?: "upcoming" | "in-progress" | "completed";
-  volunteers?: unknown[];      // thêm nếu cần
-  
+
+  /** 👇 mảng tình nguyện viên */
+  volunteers?: VolunteerRecord[];
 }
+
 
 
 export const getCampaigns = async (): Promise<Campaign[]> => {
@@ -117,6 +127,26 @@ export const getCampaignVolunteerDetail = async (
   return raw;
 };
 
+/* ---------- API JOIN CAMPAIGN ---------- */
+export const joinCampaign = async (campaignId: string): Promise<string> => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const res = await fetch(`${API_BASE}/campaigns/${campaignId}/register`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${user.token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    // backend trả { error: { message } }
+    const err = await res.json();
+    throw new Error(err.error?.message || "Đã có lỗi xảy ra");
+  }
+
+  const data = await res.json();     // { message: "Registration submitted, waiting for admin approval" }
+  return data.message as string;
+};
 
 
 

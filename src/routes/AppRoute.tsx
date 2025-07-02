@@ -2,8 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/home/Home";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
-import CampaignHome from "../pages/campaign/CampaignHome";
-import CampaignDetail from "../pages/campaignDetail/CampaignDetail";
+import CampaignHome from "../pages/campaignDonation/CampaignHome";
+import CampaignDetail from "../pages/campaignVolunteer/CampaignDetail";
 import AboutUs from "../pages/about-us/aboutus";
 import DonatePage from "../pages/about-us/DonatePage";
 import ForgotPW from "../pages/login/ForgotPW";
@@ -20,9 +20,9 @@ import ManagerNews from "../pages/admin/ManagerNews";
 import CreateNews from "../pages/admin/CreateNews";
 import EditNews from "../pages/admin/EditNews";
 import DetailNews from "../pages/news/DetailNews";
-import ThankYou from "../pages/campaignDetail/Thanhyou";
+import ThankYou from "../pages/campaignVolunteer/Thanhyou";
 
-import CampaignVolunteer from "../pages/campaignDetail/CampaignVolunteerDetail";
+import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetail";
 
 import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
