@@ -1,6 +1,16 @@
 import React from "react";
-import { Avatar, Chip, ChipProps } from "@mui/material";
+import { Chip, ChipProps } from "@mui/material";
 import { Tag } from "@mui/icons-material";
+import * as Icons from "lucide-react";
+
+const toPascalCase = (str: string) => {
+  return str
+    .replace(/[-_ ]+/, " ")
+    .replace(/[^\w\s]/g, "")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("");
+};
 
 interface IProps extends Omit<ChipProps, "icon"> {
   tagColor?: string;
@@ -9,21 +19,20 @@ interface IProps extends Omit<ChipProps, "icon"> {
 }
 const CategoryTag = React.forwardRef<HTMLDivElement, IProps>(
   ({ tagColor, name, icon, sx, ...rest }, ref) => {
+    const pascalName = toPascalCase(icon ?? "");
+    const LucideIcon = (Icons as any)[pascalName];
+    console.log(pascalName);
     return (
       <Chip
         ref={ref}
         {...rest}
         label={name}
         icon={
-          icon ? (
-            <Avatar
-              src={icon}
-              sx={{
-                width: 20,
-                height: 20,
-              }}
-            />
-          ) : <Tag fontSize="small" />
+          icon && LucideIcon ? (
+            <LucideIcon color={tagColor} />
+          ) : (
+            <Tag fontSize="small" />
+          )
         }
         sx={{
           borderRadius: "999px",
@@ -31,6 +40,9 @@ const CategoryTag = React.forwardRef<HTMLDivElement, IProps>(
           width: "fit-content",
           px: 1,
           color: tagColor || "primary.main",
+          backgroundColor: "transparent",
+          border: "1px solid",
+          borderColor: tagColor || "primary.main",
           "& .MuiChip-icon": {
             color: tagColor || "primary.main",
           },

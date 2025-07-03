@@ -40,3 +40,8 @@ export const toBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
   });
 };
+
+export interface IDataResponse<Data> {
+  data: Data;
+  message: string;
+}

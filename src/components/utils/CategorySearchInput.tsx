@@ -40,15 +40,10 @@ const CategorySearchInput: React.FC<IProps> = ({
 
   // Fetch categories from API based on the input query
   const fetchCategories = async (query: string) => {
-    if (!query) {
-      setOptions([]);
-      return;
-    }
-
     try {
       setLoading(true);
-      const categories = await CAMPAIGN_API.searchCategories(query);
-      setOptions(categories); // Make sure res.data is an array of Category
+      const res = await CAMPAIGN_API.searchCategories(query);
+      setOptions(res.data); // Make sure res.data is an array of Category
     } catch (err) {
       console.error("Failed to fetch categories:", err);
       setOptions([]);
@@ -69,8 +64,12 @@ const CategorySearchInput: React.FC<IProps> = ({
       options={options}
       loading={loading}
       value={value || null}
-      onChange={(_, newValue) => onChange(newValue)}
+      onChange={(_, newValue) => {
+        setInputValue("");
+        onChange(newValue);
+      }}
       onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
+      onFocus={() => debounceSearch("")}
       renderInput={(params) => (
         <TextField
           {...params}

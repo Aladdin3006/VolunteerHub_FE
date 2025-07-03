@@ -39,8 +39,7 @@ const MIN_AMOUNT = 1000000;
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 const MAX_IMAGES = 10;
 
-const DEFAULT_CAMPAIGN_IMG =
-  "https://assets-global.website-files.com/62b2a013e2866c75039c37cb/62b2deb4f1619a0c63a58be3_home-banner.jpg";
+const DEFAULT_CAMPAIGN_IMG = "/campaign-banner.jpg";
 
 export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const { type, defaultData, onSubmitForm, ...rest } = props;
@@ -55,7 +54,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       description: "",
       images: [],
       title: "",
-      goalAmount: 1000000
+      goalAmount: 1000000,
     }
   );
 
@@ -110,25 +109,21 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   };
 
   const isSubmitDisabled = useMemo(() => {
-    return (
-      !form.title.trim() ||
-      !form.description.trim()
-    );
+    return !form.title.trim() || !form.description.trim();
   }, [form]);
 
   const formatNumber = (value: number) =>
-    new Intl.NumberFormat('fr-FR').format(value);
+    new Intl.NumberFormat("fr-FR").format(value);
 
   const handleGoalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\s/g, '');
+    const raw = e.target.value.replace(/\s/g, "");
     const numericValue = parseInt(raw || "0", 10);
 
     if (!isNaN(numericValue)) {
       setForm({
         ...form,
-        goalAmount: numericValue
-      }
-      )
+        goalAmount: numericValue,
+      });
     }
   };
 
@@ -138,10 +133,25 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     if (clamped !== form.goalAmount) {
       setForm({
         ...form,
-        goalAmount: clamped
-      }
-      )
+        goalAmount: clamped,
+      });
     }
+  };
+
+  const handleChangeCategory = (value: ICategory | null) => {
+    if (value && !form.categories.find((cate) => cate._id === value._id)) {
+      setForm({
+        ...form,
+        categories: [...form.categories, value],
+      });
+    }
+  };
+
+  const handleDeleteCategory = (value: ICategory) => {
+    setForm({
+      ...form,
+      categories: form.categories.filter((cate) => cate._id !== value._id),
+    });
   };
 
   const submit = () => {
@@ -152,7 +162,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         description: form.description,
         images: form.images.map((g) => g.file ?? g.url),
         title: form.title,
-        goalAmount: form.goalAmount
+        goalAmount: form.goalAmount,
       });
   };
 
@@ -185,7 +195,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         <Stack
           direction={"column"}
           sx={{
-            width: ["100%", "450px", "600px"],
+            width: ["100%", "500px", "600px"],
             height: "100%",
             overflowY: "auto",
             justifyContent: "center",
@@ -229,7 +239,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                 backgroundColor: "transparent",
                 p: 0,
                 color: "white",
-                fontFamily: 'Verdana, Geneva, sans-serif',
+                fontFamily: "Verdana, Geneva, sans-serif",
                 fontWeight: 800,
                 lineHeight: 1.2,
               },
@@ -253,13 +263,20 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           />
 
           {/* Goat amount */}
-          <Stack direction={"row"} style={{ color: "white" }} my={1} justifyContent={"center"} alignItems={"center"}>
+          <Stack
+            direction={"row"}
+            style={{ color: "white" }}
+            my={1}
+            justifyContent={"center"}
+            alignItems={"center"}
+          >
             <Typography
               sx={{
                 textTransform: "capitalize",
                 color: "white",
-                fontFamily: 'Verdana, Geneva, sans-serif',
-                fontSize: "1.5em", fontWeight: 700
+                fontFamily: "Verdana, Geneva, sans-serif",
+                fontSize: "1.5em",
+                fontWeight: 700,
               }}
             >
               Mục tiêu:
@@ -275,32 +292,41 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                 disableUnderline: true,
                 endAdornment: (
                   <InputAdornment position="end">
-                    <span style={{ color: 'white', fontSize: '1.2em', textAlign: "end", fontFamily: 'Verdana, Geneva, sans-serif', }}>VNĐ</span>
+                    <span
+                      style={{
+                        color: "white",
+                        fontSize: "1.2em",
+                        textAlign: "end",
+                        fontFamily: "Verdana, Geneva, sans-serif",
+                      }}
+                    >
+                      VNĐ
+                    </span>
                   </InputAdornment>
                 ),
                 sx: {
-                  color: 'white',
-                  backgroundColor: 'transparent',
-                  border: 'none',
+                  color: "white",
+                  backgroundColor: "transparent",
+                  border: "none",
                   px: 0,
                   py: 0,
                 },
               }}
               inputProps={{
                 style: {
-                  color: 'yellow',
-                  textAlign: 'right',
-                  appearance: 'textfield', // Firefox
-                  fontSize: '1.5em',
-                  fontFamily: 'Verdana, Geneva, sans-serif',
+                  color: "yellow",
+                  textAlign: "right",
+                  appearance: "textfield", // Firefox
+                  fontSize: "1.5em",
+                  fontFamily: "Verdana, Geneva, sans-serif",
                 },
               }}
               sx={{
-                backgroundColor: 'transparent',
-                '& .MuiInputBase-root': {
-                  backgroundColor: 'transparent',
+                backgroundColor: "transparent",
+                "& .MuiInputBase-root": {
+                  backgroundColor: "transparent",
                 },
-                width: "250px"
+                width: "250px",
               }}
             />
           </Stack>
@@ -361,14 +387,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           </Button>
 
           <CategorySearchInput
-            onChange={(value) => {
-              if (value) {
-                setForm({
-                  ...form,
-                  categories: [...form.categories, value],
-                });
-              }
-            }}
+            onChange={handleChangeCategory}
             textfieldSx={{
               width: 200,
               borderRadius: 10,
@@ -383,7 +402,13 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           />
         </Stack>
 
-        <Stack direction={"row"} gap={1} justifyContent={"center"} mt={2} sx={{ flexWrap: "wrap" }}>
+        <Stack
+          direction={"row"}
+          gap={1}
+          justifyContent={"center"}
+          mt={2}
+          sx={{ flexWrap: "wrap" }}
+        >
           {/* Tag list */}
           {form.categories.map((cate) => {
             return (
@@ -392,7 +417,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                 name={cate.name}
                 tagColor={cate.color}
                 icon={cate.icon}
-                onDelete={() => { }}
+                onDelete={() => handleDeleteCategory(cate)}
               />
             );
           })}
@@ -402,7 +427,17 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       {/* Content */}
       <Stack alignItems={"center"}>
         {/* Description */}
-        <Stack px={1} py={3} sx={{ color: "black", width: ["100%", "600px", "950px"], borderRadius: 3 }} direction={"column"} boxShadow={1}>
+        <Stack
+          px={1}
+          py={3}
+          sx={{
+            color: "black",
+            width: ["100%", "600px", "950px"],
+            borderRadius: 3,
+          }}
+          direction={"column"}
+          boxShadow={1}
+        >
           <Typography
             sx={{
               textTransform: "capitalize",
@@ -496,6 +531,6 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           Tạo chiến dịch ngay bây giờ
         </Button>
       </Stack>
-    </Stack >
+    </Stack>
   );
 });

@@ -12,7 +12,7 @@ import { Edit } from "lucide-react";
 import DotDivider from "../utils/DotDivider";
 import { PhotoCamera, VolunteerActivism } from "@mui/icons-material";
 import MediaSlider from "../utils/MediaSlider";
-import { DatePicker, DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import CategorySearchInput from "../utils/CategorySearchInput";
@@ -58,8 +58,22 @@ interface IProps extends StackProps {
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 500;
 const MAX_IMAGES = 10;
-const DEFAULT_CAMPAIGN_IMG =
-  "https://assets-global.website-files.com/62b2a013e2866c75039c37cb/62b2deb4f1619a0c63a58be3_home-banner.jpg";
+const DEFAULT_CAMPAIGN_IMG = "/campaign-banner.jpg";
+
+const getDefaultStartDate = () => {
+  const result = new Date();
+  result.setHours(0);
+  result.setMinutes(0);
+  result.setSeconds(0);
+  result.setMilliseconds(0);
+  return result;
+};
+
+const getDefaultEndDate = () => {
+  const result = getDefaultStartDate();
+  result.setDate(result.getDate() + 7);
+  return result;
+};
 
 export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const { type, defaultData, onSubmitForm, ...rest } = props;
@@ -72,14 +86,14 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       },
       categories: [],
       description: "",
-      endDate: new Date(),
+      startDate: getDefaultStartDate(),
+      endDate: getDefaultEndDate(),
       gallery: [],
       location: {
         address: "",
         coordinates: [21.0285, 105.8542],
       },
       name: "",
-      startDate: new Date(),
     }
   );
 
@@ -130,6 +144,22 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     setForm({
       ...form,
       gallery: form.gallery.filter((_, arrIndex) => arrIndex !== index),
+    });
+  };
+
+  const handleChangeCategory = (value: ICategory | null) => {
+    if (value && !form.categories.find((cate) => cate._id === value._id)) {
+      setForm({
+        ...form,
+        categories: [...form.categories, value],
+      });
+    }
+  };
+
+  const handleDeleteCategory = (value: ICategory) => {
+    setForm({
+      ...form,
+      categories: form.categories.filter((cate) => cate._id !== value._id),
     });
   };
 
@@ -230,7 +260,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                 backgroundColor: "transparent",
                 p: 0,
                 color: "white",
-                fontFamily: 'Verdana, Geneva, sans-serif',
+                fontFamily: "Verdana, Geneva, sans-serif",
                 fontWeight: 800,
                 lineHeight: 1.2,
               },
@@ -309,14 +339,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           </Button>
 
           <CategorySearchInput
-            onChange={(value) => {
-              if (value) {
-                setForm({
-                  ...form,
-                  categories: [...form.categories, value],
-                });
-              }
-            }}
+            onChange={handleChangeCategory}
             textfieldSx={{
               width: 200,
               borderRadius: 10,
@@ -331,7 +354,13 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           />
         </Stack>
 
-        <Stack direction={"row"} gap={1} justifyContent={"center"} mt={2} sx={{ flexWrap: "wrap" }}>
+        <Stack
+          direction={"row"}
+          gap={1}
+          justifyContent={"center"}
+          mt={2}
+          sx={{ flexWrap: "wrap" }}
+        >
           {/* Tag list */}
           {form.categories.map((cate) => {
             return (
@@ -340,7 +369,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                 name={cate.name}
                 tagColor={cate.color}
                 icon={cate.icon}
-                onDelete={() => { }}
+                onDelete={() => handleDeleteCategory(cate)}
               />
             );
           })}
@@ -350,8 +379,17 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       {/* Content */}
       <Stack alignItems={"center"}>
         {/* Start date, End date and description */}
-        <Stack px={1} py={3} sx={{ color: "black", width: ["100%", "600px", "950px"], borderRadius: 3 }} boxShadow={1}>
-          <Stack direction={"column"} gap={1} >
+        <Stack
+          px={1}
+          py={3}
+          sx={{
+            color: "black",
+            width: ["100%", "600px", "950px"],
+            borderRadius: 3,
+          }}
+          boxShadow={1}
+        >
+          <Stack direction={"column"} gap={1}>
             <Typography
               sx={{
                 textTransform: "capitalize",
@@ -370,7 +408,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                     fontSize: "1.1em",
                   }}
                 >
-                  Bắt đầu:
+                  Từ:
                 </Typography>
                 <DateTimePicker
                   value={dayjs(form.startDate)}
@@ -393,7 +431,6 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                           border: "none",
                           px: 1,
                         },
-
                       },
                       InputLabelProps: {
                         sx: {
@@ -403,7 +440,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                     },
                   }}
                   sx={{
-                    width: "200px"
+                    width: "200px",
                   }}
                 />
                 <Typography
@@ -413,7 +450,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                     fontSize: "1.1em",
                   }}
                 >
-                  Kết thúc:
+                  Tới:
                 </Typography>
                 <DateTimePicker
                   value={dayjs(form.endDate)}
@@ -445,7 +482,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                     },
                   }}
                   sx={{
-                    width: "200px"
+                    width: "200px",
                   }}
                 />
               </LocalizationProvider>
@@ -510,7 +547,14 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         <Divider variant="middle" />
 
         {/* Location */}
-        <Stack px={1} py={3} mt={3} direction={"column"} sx={{ width: ["100%", "600px", "950px"], borderRadius: 3 }} boxShadow={1}>
+        <Stack
+          px={1}
+          py={3}
+          mt={3}
+          direction={"column"}
+          sx={{ width: ["100%", "600px", "950px"], borderRadius: 3 }}
+          boxShadow={1}
+        >
           <Typography
             sx={{
               textTransform: "capitalize",
@@ -607,6 +651,6 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           Tạo chiến dịch ngay bây giờ
         </Button>
       </Stack>
-    </Stack >
+    </Stack>
   );
 });

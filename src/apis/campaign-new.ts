@@ -1,4 +1,4 @@
-import { getAccessToken, handleResponse, toBase64 } from "./utils";
+import { getAccessToken, handleResponse, IDataResponse, toBase64 } from "./utils";
 
 export interface ILocation {
   /**
@@ -78,7 +78,7 @@ const API_BASE = "http://localhost:4000";
 export const CAMPAIGN_API = {
   async searchCategories(name: string, skip = 0, limit = 20) {
     const response = await fetch(
-      `${API_BASE}/categories?q=${name}&skip=${skip}&limit=${limit}`,
+      `${API_BASE}/category?q=${name}&skip=${skip}&limit=${limit}`,
       {
         method: "GET",
         headers: {
@@ -86,7 +86,10 @@ export const CAMPAIGN_API = {
         },
       }
     );
-    return handleResponse<ICategory[], ICategory[]>(response);
+    return handleResponse<
+      IDataResponse<ICategory[]>,
+      IDataResponse<ICategory[]>
+    >(response);
   },
 
   async createCampaign(data: ICampaignDataUpload) {
