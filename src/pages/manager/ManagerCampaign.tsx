@@ -1,4 +1,3 @@
-// src/pages/manager/ManagerCampaign.tsx
 /// <reference types="vite/client" />
 import React, { useState, useEffect } from "react";
 import {
@@ -22,7 +21,7 @@ import {
 import {
   LocationOn,
   DateRange,
-  Category,
+  Category as CategoryIcon,
   CheckCircle,
   Cancel,
   PlayCircle,
@@ -30,7 +29,8 @@ import {
   Image,
 } from "@mui/icons-material";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
-import { managerCampaignService } from "../../apis/manager"; // Adjust the import path as necessary
+import { managerCampaignService } from "../../apis/manager";
+import { Category } from "../../apis/campaign";
 
 // Map settings
 const mapContainerStyle = {
@@ -50,14 +50,19 @@ interface Campaign {
   startDate: Date;
   endDate: Date;
   gallery: string[];
-  categories: string[];
+  categories: Category[];
   status: "upcoming" | "in-progress" | "completed";
   acceptStatus: "pending" | "approved" | "rejected";
 }
 
 const ManagerCampaign: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
-    "pending" | "approved" | "rejected" | "upcoming" | "in-progress" | "completed"
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "upcoming"
+    | "in-progress"
+    | "completed"
   >("pending");
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
@@ -68,9 +73,7 @@ const ManagerCampaign: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey:
-      import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
-      "",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
   });
 
   // Fetch all campaigns on component mount
@@ -219,10 +222,7 @@ const ManagerCampaign: React.FC = () => {
             startIcon={<Cancel />}
             onClick={(e) => {
               e.stopPropagation();
-              handleAction(
-                managerCampaignService.rejectCampaign,
-                campaign._id
-              );
+              handleAction(managerCampaignService.rejectCampaign, campaign._id);
             }}
           >
             Reject
@@ -230,7 +230,7 @@ const ManagerCampaign: React.FC = () => {
         </>
       );
     }
-    
+
     // For approved campaigns - show start/end buttons based on status
     if (campaign.acceptStatus === "approved") {
       if (campaign.status === "upcoming") {
@@ -249,7 +249,7 @@ const ManagerCampaign: React.FC = () => {
           </Button>
         );
       }
-      
+
       if (campaign.status === "in-progress") {
         return (
           <Button
@@ -267,7 +267,7 @@ const ManagerCampaign: React.FC = () => {
         );
       }
     }
-    
+
     // For rejected campaigns or completed campaigns - no actions
     return null;
   };
@@ -335,7 +335,8 @@ const ManagerCampaign: React.FC = () => {
       {/* Debug Info */}
       <Box sx={{ mb: 2, p: 2, bgcolor: "background.paper", borderRadius: 1 }}>
         <Typography variant="body2" color="text.secondary">
-          Debug: Total campaigns: {allCampaigns.length}, Filtered: {filteredCampaigns.length}, Active tab: {activeTab}
+          Debug: Total campaigns: {allCampaigns.length}, Filtered:{" "}
+          {filteredCampaigns.length}, Active tab: {activeTab}
         </Typography>
       </Box>
 
@@ -410,7 +411,13 @@ const ManagerCampaign: React.FC = () => {
                 onClick={() => openCampaignDetail(campaign)}
               >
                 <CardContent>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 2,
+                    }}
+                  >
                     <Chip
                       label={campaign.acceptStatus.toUpperCase()}
                       color={getStatusColor(campaign.acceptStatus) as any}
@@ -450,7 +457,11 @@ const ManagerCampaign: React.FC = () => {
                     </Box>
 
                     <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <DateRange fontSize="small" color="action" sx={{ mr: 1 }} />
+                      <DateRange
+                        fontSize="small"
+                        color="action"
+                        sx={{ mr: 1 }}
+                      />
                       <Typography variant="caption">
                         {formatDate(campaign.startDate)} -{" "}
                         {formatDate(campaign.endDate)}
@@ -458,15 +469,34 @@ const ManagerCampaign: React.FC = () => {
                     </Box>
 
                     {campaign.categories.length > 0 && (
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Category
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
+                      >
+                        <CategoryIcon
                           fontSize="small"
                           color="action"
                           sx={{ mr: 1 }}
                         />
-                        <Typography variant="caption">
-                          {campaign.categories.join(", ")}
-                        </Typography>
+                        {campaign.categories.map((category) => (
+                          <Chip
+                            key={category._id}
+                            label={category.name}
+                            size="small"
+                            sx={{ backgroundColor: category.color }}
+                            icon={
+                              <img
+                                src={category.icon}
+                                alt={category.name}
+                                style={{ width: 16, height: 16 }}
+                              />
+                            }
+                          />
+                        ))}
                       </Box>
                     )}
                   </Stack>
@@ -562,11 +592,23 @@ const ManagerCampaign: React.FC = () => {
                     gutterBottom
                     sx={{ display: "flex", alignItems: "center" }}
                   >
-                    <Category sx={{ mr: 1 }} /> Categories
+                    <CategoryIcon sx={{ mr: 1 }} /> Categories
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {selectedCampaign.categories.map((category, index) => (
-                      <Chip key={index} label={category} size="small" />
+                    {selectedCampaign.categories.map((category) => (
+                      <Chip
+                        key={category._id}
+                        label={category.name}
+                        size="small"
+                        sx={{ backgroundColor: category.color }}
+                        icon={
+                          <img
+                            src={category.icon}
+                            alt={category.name}
+                            style={{ width: 16, height: 16 }}
+                          />
+                        }
+                      />
                     ))}
                   </Box>
 

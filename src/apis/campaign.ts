@@ -61,7 +61,12 @@ export interface CampaignVolunteer {
   volunteers?: VolunteerRecord[];
 }
 
-
+export interface Category {
+  _id: string;
+  name: string;
+  color: string;
+  icon: string;
+}
 
 export const getCampaigns = async (): Promise<Campaign[]> => {
   try {
@@ -148,8 +153,21 @@ export const joinCampaign = async (campaignId: string): Promise<string> => {
   return data.message as string;
 };
 
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const res = await axios.get(`${API_BASE}/category`);
+    const categoryData = res.data.data;
 
-
+    if (Array.isArray(categoryData)) {
+      return categoryData;
+    } else {
+      throw new Error("Dữ liệu danh mục trả về không phải là mảng");
+    }
+  } catch (error) {
+    console.error("Lỗi khi fetch categories:", error);
+    throw error;
+  }
+};
 
 
 export default getCampaignDetail;

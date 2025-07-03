@@ -1,3 +1,5 @@
+import { Category } from "./campaign";
+
 const API_BASE = "http://localhost:4000";
 
 export interface Campaign {
@@ -12,7 +14,7 @@ export interface Campaign {
   startDate: Date;
   endDate: Date;
   gallery: string[];
-  categories: string[];
+  categories: Category[];
   status: "upcoming" | "in-progress" | "completed";
   acceptStatus: "pending" | "approved" | "rejected";
 }
