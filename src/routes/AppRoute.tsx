@@ -20,13 +20,16 @@ import ManagerNews from "../pages/admin/ManagerNews";
 import CreateNews from "../pages/admin/CreateNews";
 import EditNews from "../pages/admin/EditNews";
 import DetailNews from "../pages/news/DetailNews";
+import StaffLayout from "../layouts/StaffLayout";
+import StaffDashboard from "../pages/staff/StaffDashboard";
 import ThankYou from "../pages/campaignVolunteer/Thanhyou";
 
 import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetail";
 
 import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
-
+import CreatePhaseCampaign from "../pages/staff/CreatePhaseCampaign";
+import DepartmentManager from "../pages/staff/DepartmentManager";
 
 const AppRoutes = () => (
   <Routes>
@@ -116,7 +119,7 @@ const AppRoutes = () => (
       path="/volunteer/:campaignId"
       element={
         <LayoutWrapper>
-          <CampaignVolunteer/>
+          <CampaignVolunteer />
         </LayoutWrapper>
       }
     />
@@ -216,67 +219,31 @@ const AppRoutes = () => (
 
     {/* Organization Routes */}
     <Route
-      path="/organization/*"
+      path="/staff/*"
       element={
         <ProtectedRoute requiredRole="organization">
           <Routes>
             <Route
               path="dashboard"
               element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Organization Dashboard
-                    </h1>
-                    <p className="text-gray-600">
-                      Manage your organization's volunteer programs.
-                    </p>
-                  </div>
-                </LayoutWrapper>
+                <StaffLayout>
+                  <StaffDashboard />
+                </StaffLayout>
               }
             />
             <Route
-              path="events"
+              path="phase-campaigns"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Manage Events
-                    </h1>
-                    <p className="text-gray-600">
-                      Create and manage your volunteer events.
-                    </p>
-                  </div>
+                  <CreatePhaseCampaign />
                 </LayoutWrapper>
               }
             />
-            <Route
-              path="volunteers"
+             <Route
+              path="departments"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Manage Volunteers
-                    </h1>
-                    <p className="text-gray-600">
-                      View and manage your volunteers.
-                    </p>
-                  </div>
-                </LayoutWrapper>
-              }
-            />
-            <Route
-              path="create-event"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Create New Event
-                    </h1>
-                    <p className="text-gray-600">
-                      Create a new volunteer opportunity.
-                    </p>
-                  </div>
+                  <DepartmentManager />
                 </LayoutWrapper>
               }
             />

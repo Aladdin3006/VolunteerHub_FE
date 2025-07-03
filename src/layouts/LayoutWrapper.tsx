@@ -6,6 +6,7 @@ import AdminLayout from "./AdminLayout";
 import UserLayout from "./UserLayout";
 import DefaultLayout from "./DefaultLayout";
 import ManagerLayout from "./ManagerLayout";
+import StaffLayout from "./StaffLayout";
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -84,7 +85,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({
       case "manager":
         return <ManagerLayout>{children}</ManagerLayout>;
       case "organization":
-        return <AdminLayout>{children}</AdminLayout>;
+        return <StaffLayout>{children}</StaffLayout>;
       case "user":
         return <UserLayout>{children}</UserLayout>;
       default:
