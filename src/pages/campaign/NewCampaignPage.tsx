@@ -1,17 +1,21 @@
-import { Box, Stack } from "@mui/material";
+import { Alert, Box, Snackbar, Stack } from "@mui/material";
 import Footer from "../../components/Footer/Footer";
 import Header from "../../components/Header/Header";
 import { CampaignForm } from "../../components/campaign/CampaignForm";
 import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function NewCampaignPage() {
+  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const handleSubmitNewCampaign = async (data: ICampaignDataUpload) => {
     try {
       const res = await CAMPAIGN_API.createCampaign(data);
       navigate("/campaign");
     } catch (error) {
+      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
       console.log(error);
     }
   };
@@ -31,6 +35,22 @@ export default function NewCampaignPage() {
         </Stack>
       </Stack>
       <Footer />
+
+      {/* Error message */}
+      <Snackbar
+        open={Boolean(snackbarMessage)}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarMessage(null)}
+      >
+        <Alert
+          onClose={() => setSnackbarMessage(null)}
+          severity="error"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

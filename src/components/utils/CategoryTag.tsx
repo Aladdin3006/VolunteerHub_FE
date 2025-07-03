@@ -1,5 +1,5 @@
 import React from "react";
-import { Chip, ChipProps } from "@mui/material";
+import { Avatar, Chip, ChipProps } from "@mui/material";
 import { Tag } from "@mui/icons-material";
 
 interface IProps extends Omit<ChipProps, "icon"> {
@@ -12,22 +12,35 @@ const CategoryTag = React.forwardRef<HTMLDivElement, IProps>(
     return (
       <Chip
         ref={ref}
-        label={`${name}`}
-        icon={<Tag fontSize="small" />}
+        {...rest}
+        label={name}
+        icon={
+          icon ? (
+            <Avatar
+              src={icon}
+              sx={{
+                width: 20,
+                height: 20,
+              }}
+            />
+          ) : <Tag fontSize="small" />
+        }
         sx={{
           borderRadius: "999px",
           fontWeight: 500,
           width: "fit-content",
           px: 1,
-          color: "primary.main",
+          color: tagColor || "primary.main",
           "& .MuiChip-icon": {
-            color: "primary.main",
+            color: tagColor || "primary.main",
           },
           "& .MuiChip-deleteIcon": {
-            color: "primary.main",
-            "&:hover": {
-              color: "primary.dark",
-            },
+            color: tagColor || "primary.main",
+            opacity: 0,
+            transition: "opacity 0.2s ease",
+          },
+          "&:hover .MuiChip-deleteIcon": {
+            opacity: 1,
           },
           ...sx,
         }}

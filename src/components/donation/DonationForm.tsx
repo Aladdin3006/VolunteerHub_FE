@@ -2,7 +2,7 @@ import { forwardRef, useMemo, useState } from "react";
 import {
   Box,
   Button,
-  Divider,
+  InputAdornment,
   Stack,
   StackProps,
   TextField,
@@ -12,74 +12,50 @@ import { Edit } from "lucide-react";
 import DotDivider from "../utils/DotDivider";
 import { PhotoCamera, VolunteerActivism } from "@mui/icons-material";
 import MediaSlider from "../utils/MediaSlider";
-import { DatePicker, DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs from "dayjs";
 import CategorySearchInput from "../utils/CategorySearchInput";
 import CategoryTag from "../utils/CategoryTag";
-import { ICampaignDataUpload } from "../../apis/campaign-new";
-import MapLocationPicker from "../utils/MapLocationPicker";
+import { ICategory } from "../../apis/campaign";
+import { IMediaFile } from "../campaign/CampaignForm";
+import { IDonationDataUpload } from "../../apis/donation";
 
-export interface IMediaFile {
-  type: "image";
-  file?: File;
-  url: string;
-  content?: string;
-}
-
-export interface ICategory {
-  _id: string;
-  name: string;
-  color?: string;
-  icon?: string;
-}
-
-export interface ICampaignFormData {
-  name: string;
+export interface IDonationFormData {
+  title: string;
   description: string;
-  location: {
-    // [lat, lng]
-    coordinates: [number, number];
-    address: string;
-  };
-  startDate: Date;
-  endDate: Date;
-  campaignImg: IMediaFile;
-  gallery: IMediaFile[];
+  goalAmount: number;
+  thumbnail: IMediaFile;
+  images: IMediaFile[];
   categories: ICategory[];
 }
 
 interface IProps extends StackProps {
   type?: "create" | "update";
-  defaultData?: ICampaignFormData;
-  onSubmitForm?: (data: ICampaignDataUpload) => void;
+  defaultData?: IDonationFormData;
+  onSubmitForm?: (data: IDonationDataUpload) => void;
 }
 
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 500;
+const MIN_AMOUNT = 1000000;
+const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 const MAX_IMAGES = 10;
+
 const DEFAULT_CAMPAIGN_IMG =
   "https://assets-global.website-files.com/62b2a013e2866c75039c37cb/62b2deb4f1619a0c63a58be3_home-banner.jpg";
 
-export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
+export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const { type, defaultData, onSubmitForm, ...rest } = props;
 
-  const [form, setForm] = useState<ICampaignFormData>(
+  const [form, setForm] = useState<IDonationFormData>(
     defaultData || {
-      campaignImg: {
+      thumbnail: {
         type: "image",
         url: DEFAULT_CAMPAIGN_IMG,
       },
       categories: [],
       description: "",
-      endDate: new Date(),
-      gallery: [],
-      location: {
-        address: "",
-        coordinates: [21.0285, 105.8542],
-      },
-      name: "",
-      startDate: new Date(),
+      images: [],
+      title: "",
+      goalAmount: 1000000
     }
   );
 
@@ -91,8 +67,8 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       const file = files[0];
       setForm({
         ...form,
-        campaignImg: {
-          ...form.campaignImg,
+        thumbnail: {
+          ...form.thumbnail,
           url: URL.createObjectURL(file),
           file: file,
         },
@@ -111,8 +87,8 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       const file = files[0];
       setForm({
         ...form,
-        gallery: [
-          ...form.gallery,
+        images: [
+          ...form.images,
           {
             url: URL.createObjectURL(file),
             file: file,
@@ -126,34 +102,57 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     e.target.value = "";
   };
 
-  const handleRemoveGalleryImage = (index: number) => {
+  const handleRemoveImage = (index: number) => {
     setForm({
       ...form,
-      gallery: form.gallery.filter((_, arrIndex) => arrIndex !== index),
+      images: form.images.filter((_, arrIndex) => arrIndex !== index),
     });
   };
 
   const isSubmitDisabled = useMemo(() => {
     return (
-      !form.name.trim() ||
-      !form.description.trim() ||
-      !form.startDate ||
-      !form.endDate ||
-      !form.location.address.trim()
+      !form.title.trim() ||
+      !form.description.trim()
     );
   }, [form]);
+
+  const formatNumber = (value: number) =>
+    new Intl.NumberFormat('fr-FR').format(value);
+
+  const handleGoalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\s/g, '');
+    const numericValue = parseInt(raw || "0", 10);
+
+    if (!isNaN(numericValue)) {
+      setForm({
+        ...form,
+        goalAmount: numericValue
+      }
+      )
+    }
+  };
+
+  const handleGoalAmountBlur = () => {
+    const clamped = Math.min(Math.max(form.goalAmount, MIN_AMOUNT), MAX_AMOUNT);
+
+    if (clamped !== form.goalAmount) {
+      setForm({
+        ...form,
+        goalAmount: clamped
+      }
+      )
+    }
+  };
 
   const submit = () => {
     onSubmitForm &&
       onSubmitForm({
-        campaignImg: form.campaignImg.file ?? form.campaignImg.url,
+        thumbnail: form.thumbnail.file ?? form.thumbnail.url,
         categories: form.categories.map((cate) => cate._id),
         description: form.description,
-        endDate: form.endDate.toISOString(),
-        startDate: form.startDate.toISOString(),
-        gallery: form.gallery.map((g) => g.file ?? g.url),
-        location: form.location,
-        name: form.name,
+        images: form.images.map((g) => g.file ?? g.url),
+        title: form.title,
+        goalAmount: form.goalAmount
       });
   };
 
@@ -175,7 +174,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         sx={{
           height: ["550px", "600px"],
           backgroundColor: "#2e4049",
-          backgroundImage: `url(${form.campaignImg.url})`,
+          backgroundImage: `url(${form.thumbnail.url})`,
           backgroundPosition: "50%",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
@@ -203,7 +202,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               fontSize: "1.8em",
             }}
           >
-            Chúng tôi cần bạn...
+            Hãy chung tay quyên góp...
           </Typography>
           <TextField
             placeholder={`Tiêu đề của chiến dịch là gì?`}
@@ -212,14 +211,14 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             minRows={2}
             maxRows={8}
             variant="standard"
-            value={form.name}
+            value={form.title}
             spellCheck={false}
             onChange={(e) => {
               const cleanedValue = e.target.value.replace(/[\r\n]+/g, " ");
               if (cleanedValue.length <= MAX_NAME_LENGTH) {
                 setForm({
                   ...form,
-                  name: cleanedValue,
+                  title: cleanedValue,
                 });
               }
             }}
@@ -253,6 +252,59 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             }}
           />
 
+          {/* Goat amount */}
+          <Stack direction={"row"} style={{ color: "white" }} my={1} justifyContent={"center"} alignItems={"center"}>
+            <Typography
+              sx={{
+                textTransform: "capitalize",
+                color: "white",
+                fontFamily: 'Verdana, Geneva, sans-serif',
+                fontSize: "1.5em", fontWeight: 700
+              }}
+            >
+              Mục tiêu:
+            </Typography>
+
+            <TextField
+              variant="standard"
+              value={formatNumber(form.goalAmount)}
+              onChange={handleGoalAmountChange}
+              onBlur={handleGoalAmountBlur}
+              type="text"
+              InputProps={{
+                disableUnderline: true,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <span style={{ color: 'white', fontSize: '1.2em', textAlign: "end", fontFamily: 'Verdana, Geneva, sans-serif', }}>VNĐ</span>
+                  </InputAdornment>
+                ),
+                sx: {
+                  color: 'white',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  px: 0,
+                  py: 0,
+                },
+              }}
+              inputProps={{
+                style: {
+                  color: 'yellow',
+                  textAlign: 'right',
+                  appearance: 'textfield', // Firefox
+                  fontSize: '1.5em',
+                  fontFamily: 'Verdana, Geneva, sans-serif',
+                },
+              }}
+              sx={{
+                backgroundColor: 'transparent',
+                '& .MuiInputBase-root': {
+                  backgroundColor: 'transparent',
+                },
+                width: "250px"
+              }}
+            />
+          </Stack>
+
           <DotDivider label="HELP US" />
           {/* Change banner button area */}
           <Button
@@ -262,7 +314,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             variant="contained"
             sx={{ borderRadius: 8, width: 200 }}
           >
-            Sửa ảnh
+            SỬA ẢNH
             <input
               hidden
               accept="image/*"
@@ -280,13 +332,13 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           transform: "translateY(-25%)",
         }}
       >
-        {/* Gallery slider */}
-        {form.gallery.length > 0 && (
+        {/* Images slider */}
+        {form.images.length > 0 && (
           <Box sx={{ height: "300px" }}>
             <MediaSlider
-              items={form.gallery}
+              items={form.images}
               visibleCount={3}
-              onDelete={handleRemoveGalleryImage}
+              onDelete={handleRemoveImage}
             />
           </Box>
         )}
@@ -297,9 +349,9 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             startIcon={<PhotoCamera />}
             variant="outlined"
             sx={{ borderRadius: 8, width: "200px" }}
-            disabled={form.gallery.length >= 10}
+            disabled={form.images.length >= 10}
           >
-            ẢNH {`${form.gallery.length}/${MAX_IMAGES}`}
+            ẢNH {`${form.images.length}/${MAX_IMAGES}`}
             <input
               hidden
               accept="image/*"
@@ -349,109 +401,18 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
 
       {/* Content */}
       <Stack alignItems={"center"}>
-        {/* Start date, End date and description */}
-        <Stack px={1} py={3} sx={{ color: "black", width: ["100%", "600px", "950px"], borderRadius: 3 }} boxShadow={1}>
-          <Stack direction={"column"} gap={1} >
-            <Typography
-              sx={{
-                textTransform: "capitalize",
-                fontFamily: '"Verdana", sans-serif',
-                fontSize: "1.5em",
-              }}
-            >
-              Thông tin chiến dịch
-            </Typography>
-            <Stack direction={"row"} gap={1} px={1} justifyContent={"end"}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Typography
-                  sx={{
-                    textTransform: "capitalize",
-                    fontFamily: '"Verdana", sans-serif',
-                    fontSize: "1.1em",
-                  }}
-                >
-                  Bắt đầu:
-                </Typography>
-                <DateTimePicker
-                  value={dayjs(form.startDate)}
-                  format="YYYY/MM/DD HH:mm"
-                  onChange={(value) => {
-                    if (value) {
-                      setForm({
-                        ...form,
-                        startDate: value?.toDate(),
-                      });
-                    }
-                  }}
-                  slotProps={{
-                    textField: {
-                      variant: "standard",
-                      InputProps: {
-                        disableUnderline: true,
-                        sx: {
-                          bgcolor: "transparent",
-                          border: "none",
-                          px: 1,
-                        },
-
-                      },
-                      InputLabelProps: {
-                        sx: {
-                          color: "text.secondary",
-                        },
-                      },
-                    },
-                  }}
-                  sx={{
-                    width: "200px"
-                  }}
-                />
-                <Typography
-                  sx={{
-                    textTransform: "capitalize",
-                    fontFamily: '"Verdana", sans-serif',
-                    fontSize: "1.1em",
-                  }}
-                >
-                  Kết thúc:
-                </Typography>
-                <DateTimePicker
-                  value={dayjs(form.endDate)}
-                  format="YYYY/MM/DD HH:mm"
-                  onChange={(value) => {
-                    if (value) {
-                      setForm({
-                        ...form,
-                        endDate: value?.toDate(),
-                      });
-                    }
-                  }}
-                  slotProps={{
-                    textField: {
-                      variant: "standard",
-                      InputProps: {
-                        disableUnderline: true,
-                        sx: {
-                          bgcolor: "transparent",
-                          border: "none",
-                          px: 1,
-                        },
-                      },
-                      InputLabelProps: {
-                        sx: {
-                          color: "text.secondary",
-                        },
-                      },
-                    },
-                  }}
-                  sx={{
-                    width: "200px"
-                  }}
-                />
-              </LocalizationProvider>
-            </Stack>
-          </Stack>
-          <Stack pt={1}>
+        {/* Description */}
+        <Stack px={1} py={3} sx={{ color: "black", width: ["100%", "600px", "950px"], borderRadius: 3 }} direction={"column"} boxShadow={1}>
+          <Typography
+            sx={{
+              textTransform: "capitalize",
+              fontFamily: '"Verdana", sans-serif',
+              fontSize: "1.5em",
+            }}
+          >
+            Thông tin chiến dịch
+          </Typography>
+          <Stack mt={1}>
             <TextField
               placeholder={`Mô tả nội dung chiến dịch...`}
               multiline
@@ -505,78 +466,6 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               {form.description.length}/{MAX_DESCRIPTION_LENGTH}
             </Typography>
           </Stack>
-        </Stack>
-
-        <Divider variant="middle" />
-
-        {/* Location */}
-        <Stack px={1} py={3} mt={3} direction={"column"} sx={{ width: ["100%", "600px", "950px"], borderRadius: 3 }} boxShadow={1}>
-          <Typography
-            sx={{
-              textTransform: "capitalize",
-              fontFamily: '"Verdana", sans-serif',
-              fontSize: "1.5em",
-            }}
-          >
-            Vị trí chiến dịch
-          </Typography>
-          <TextField
-            placeholder={`Mô tả vị trí này`}
-            fullWidth
-            variant="standard"
-            value={form.location.address}
-            onChange={(e) => {
-              setForm({
-                ...form,
-                location: {
-                  ...form.location,
-                  address: e.target.value,
-                },
-              });
-            }}
-            InputProps={{
-              disableUnderline: true,
-              sx: {
-                fontSize: "1em",
-                backgroundColor: "transparent",
-                p: 1,
-                fontFamily: '"Shippori Mincho", sans-serif',
-                lineHeight: 1.2,
-              },
-            }}
-            sx={{
-              mb: 0,
-              ".MuiInputBase-input": {
-                "&::-webkit-scrollbar": {
-                  width: "6px",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  backgroundColor: "#ccc",
-                  borderRadius: "3px",
-                },
-                "&::-webkit-scrollbar-track": {
-                  backgroundColor: "transparent",
-                },
-              },
-            }}
-          />
-
-          <MapLocationPicker
-            mapHeight="400px"
-            defaultLocation={{
-              lat: form.location.coordinates[0],
-              lng: form.location.coordinates[1],
-            }}
-            onPick={(coordinates) => {
-              setForm({
-                ...form,
-                location: {
-                  ...form.location,
-                  coordinates: [coordinates.lat, coordinates.lng],
-                },
-              });
-            }}
-          />
         </Stack>
       </Stack>
 
