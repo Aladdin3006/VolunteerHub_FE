@@ -77,6 +77,7 @@ const ManagerSidebar: React.FC = () => {
     <aside className="manager-sidebar">
       <div className="sidebar-header">
         <img src="/logo.png" alt="Logo" className="logo-image" />
+        <h2 className="sidebar-title">Manager</h2>
       </div>
 
       <div className="sidebar-content">

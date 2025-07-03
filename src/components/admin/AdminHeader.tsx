@@ -35,7 +35,7 @@ const AdminHeader: React.FC = () => {
 
         <div className="header-right">
           <div className="notification-bell-wrapper">
-            <NotificationBell color="#000" />
+            <NotificationBell/>
           </div>
 
           <div className="user-menu" ref={dropdownRef}>

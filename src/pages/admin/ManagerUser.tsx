@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
-import { usersService, User, CreateManagerData } from "../../apis/users";
+import { usersService, User, CreateManagerData } from "../../apis/admin";
 import {
   Box,
   Typography,
