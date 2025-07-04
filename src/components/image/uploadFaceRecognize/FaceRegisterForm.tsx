@@ -15,15 +15,17 @@ import authService from "../../../services/Authentication.service";
 
 const RegisterFaceModal = () => {
   const webcamRef = useRef<Webcam>(null);
+
+  const [currentUser, setCurrentUser] = useState(authService.getUser());
+
+  const userId = currentUser?._id || currentUser?.id;
+  const hasRegistered = currentUser?.faceDescriptor !== null;
+
   const [open, setOpen] = useState(false);
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<{ status?: string; error?: string }>({});
-
-  const user = authService.getUser();
-  const userId = user?._id || user?.id;
-  const hasRegistered = user?.faceDescriptor !== null;
 
   const captureImage = async () => {
     if (!webcamRef.current) return;
@@ -67,6 +69,11 @@ const RegisterFaceModal = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Đăng ký thất bại");
+
+      // ✅ Cập nhật user trong localStorage + local state
+      const updatedUser = { ...currentUser, faceDescriptor: true };
+      authService.setUser(updatedUser);
+      setCurrentUser(updatedUser); // ⚡ để UI re-render ngay
 
       setResponse({ status: data.status });
     } catch (err: any) {
