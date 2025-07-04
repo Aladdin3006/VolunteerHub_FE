@@ -2,7 +2,7 @@ import { Alert, Box, Snackbar, Stack } from "@mui/material";
 import Footer from "../../components/Footer/Footer";
 import Header from "../../components/Header/Header";
 import { CampaignForm } from "../../components/campaign/CampaignForm";
-import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
+import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 

@@ -30,6 +30,8 @@ import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
 import CreatePhaseCampaign from "../pages/staff/CreatePhaseCampaign";
 import DepartmentManager from "../pages/staff/DepartmentManager";
+import NewCampaignPage from "../pages/campaign/NewCampaignPage";
+import NewDonationPage from "../pages/donation/NewDonationPage";
 
 const AppRoutes = () => (
   <Routes>
@@ -244,6 +246,22 @@ const AppRoutes = () => (
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
                   <DepartmentManager />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="campaigns/new"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <NewCampaignPage />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="donations/new"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <NewDonationPage />
                 </LayoutWrapper>
               }
             />

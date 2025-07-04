@@ -32,7 +32,7 @@ const StaffSidebar: React.FC = () => {
       ),
     },
     {
-      path: "/staff/campaigns",
+      path: "/staff/campaigns/new",
       label: "Create Campaign",
       icon: (
         <svg
@@ -51,7 +51,7 @@ const StaffSidebar: React.FC = () => {
       ),
     },
     {
-      path: "/staff/donations",
+      path: "/staff/donations/new",
       label: "Create Donation",
       icon: (
         <svg

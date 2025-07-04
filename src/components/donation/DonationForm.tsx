@@ -14,7 +14,7 @@ import { PhotoCamera, VolunteerActivism } from "@mui/icons-material";
 import MediaSlider from "../utils/MediaSlider";
 import CategorySearchInput from "../utils/CategorySearchInput";
 import CategoryTag from "../utils/CategoryTag";
-import { ICategory } from "../../apis/campaign";
+import { ICategory } from "../../apis/campaign-new";
 import { IMediaFile } from "../campaign/CampaignForm";
 import { IDonationDataUpload } from "../../apis/donation";
 
