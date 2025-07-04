@@ -1,6 +1,4 @@
 import { Alert, Box, Snackbar, Stack } from "@mui/material";
-import Footer from "../../components/Footer/Footer";
-import Header from "../../components/Header/Header";
 import { useNavigate } from "react-router-dom";
 import { DonationForm } from "../../components/donation/DonationForm";
 import { DONATION_API, IDonationDataUpload } from "../../apis/donation";
@@ -10,7 +8,9 @@ export default function NewDonationPage() {
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
 
     const navigate = useNavigate();
+    
     const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
+        console.log("data", data);
         try {
             const res = await DONATION_API.createDonation(data);
             navigate("/donate");
@@ -22,7 +22,6 @@ export default function NewDonationPage() {
 
     return (
         <Box className="page-wrapper" sx={{ position: "relative" }}>
-            <Header />
             <Stack direction={"row"} gap={0.5} pt={0} justifyContent={"center"}>
                 <Stack
                     direction={"column"}
@@ -34,7 +33,6 @@ export default function NewDonationPage() {
                     <DonationForm onSubmitForm={handleSubmitNewDonation} />
                 </Stack>
             </Stack>
-            <Footer />
 
             {/* Error message */}
             <Snackbar

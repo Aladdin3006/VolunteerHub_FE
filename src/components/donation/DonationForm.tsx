@@ -195,6 +195,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         <Stack
           direction={"column"}
           sx={{
+            marginLeft: "auto",
             width: ["100%", "500px", "600px"],
             height: "100%",
             overflowY: "auto",

@@ -1,6 +1,4 @@
 import { Alert, Box, Snackbar, Stack } from "@mui/material";
-import Footer from "../../components/Footer/Footer";
-import Header from "../../components/Header/Header";
 import { CampaignForm } from "../../components/campaign/CampaignForm";
 import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +20,6 @@ export default function NewCampaignPage() {
 
   return (
     <Box className="page-wrapper" sx={{ position: "relative" }}>
-      <Header />
       <Stack direction={"row"} gap={0.5} pt={0} justifyContent={"center"}>
         <Stack
           direction={"column"}
@@ -34,7 +31,6 @@ export default function NewCampaignPage() {
           <CampaignForm onSubmitForm={handleSubmitNewCampaign} />
         </Stack>
       </Stack>
-      <Footer />
 
       {/* Error message */}
       <Snackbar

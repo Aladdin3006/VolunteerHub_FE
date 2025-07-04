@@ -30,8 +30,8 @@ import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
 import CreatePhaseCampaign from "../pages/staff/CreatePhaseCampaign";
 import DepartmentManager from "../pages/staff/DepartmentManager";
-import NewCampaignPage from "../pages/campaign/NewCampaignPage";
-import NewDonationPage from "../pages/donation/NewDonationPage";
+import NewCampaignPage from "../pages/staff/NewCampaignPage";
+import NewDonationPage from "../pages/staff/NewDonationPage";
 
 const AppRoutes = () => (
   <Routes>

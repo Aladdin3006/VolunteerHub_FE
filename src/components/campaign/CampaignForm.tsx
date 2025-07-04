@@ -208,7 +208,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           backgroundImage: `url(${form.campaignImg.url})`,
           backgroundPosition: "50%",
           backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
+          backgroundSize: "50%",
           position: "relative",
         }}
       >
@@ -216,6 +216,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         <Stack
           direction={"column"}
           sx={{
+            marginLeft: "auto",
             width: ["100%", "450px", "600px"],
             height: "100%",
             overflowY: "auto",
