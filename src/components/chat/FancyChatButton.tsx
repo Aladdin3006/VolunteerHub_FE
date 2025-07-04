@@ -10,7 +10,7 @@ const FancyChatButton = ({ onClick }: { onClick: () => void }) => {
           style={{ "--i": "#56CCF2", "--j": "#2F80ED" } as React.CSSProperties}
         >
           <span className="icon">💬</span>
-          <span className="title">Mở Chat</span>
+          <span className="title">Hỏi VHHT</span>
         </li>
       </ul>
     </StyledWrapper>

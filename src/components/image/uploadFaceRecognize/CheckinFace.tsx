@@ -1,5 +1,9 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Box,
   Button,
   Typography,
@@ -7,34 +11,45 @@ import {
   Alert,
 } from "@mui/material";
 import Webcam from "react-webcam";
-
 import authService from "../../../services/Authentication.service";
 
-const CheckinFace = () => {
+const CheckinFaceModal = () => {
   const webcamRef = useRef<Webcam>(null);
-  const [userId, setUserId] = useState<string>("");
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ status?: string; distance?: number; error?: string }>({});
 
-  useEffect(() => {
-    const user = authService.getUser();
-    const id = user?._id || user?.id;
-    if (id) setUserId(id);
-    else setResult({ error: "Không tìm thấy user ID, vui lòng đăng nhập lại." });
-  }, []);
+  const handleOpen = () => {
+    setResult({});
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setResult({});
+    setOpen(false);
+  };
 
   const captureAndCheckin = async () => {
-    if (!userId || !webcamRef.current) {
-      setResult({ error: "Không có user ID hoặc webcam không hoạt động." });
+    const user = authService.getUser();
+    const userId = user?._id || user?.id;
+    const hasDescriptor = user?.faceDescriptor !== null;
+
+    if (!userId) {
+      setResult({ error: "Không tìm thấy user ID, vui lòng đăng nhập lại." });
+      return;
+    }
+
+    if (!hasDescriptor) {
+      setResult({ error: "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trước khi check-in." });
+      return;
+    }
+
+    if (!webcamRef.current || !webcamRef.current.video) {
+      setResult({ error: "Webcam không hoạt động hoặc không có hình ảnh." });
       return;
     }
 
     const video = webcamRef.current.video;
-    if (!video) {
-      setResult({ error: "Không tìm thấy video từ webcam." });
-      return;
-    }
-
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -72,66 +87,71 @@ const CheckinFace = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 500, mx: "auto", mt: 4, p: 2 }}>
-      <Typography variant="h5" gutterBottom>
+    <Box sx={{ mt: 4 }}>
+      <Button variant="contained" color="primary" onClick={handleOpen}>
         Check-in bằng khuôn mặt
-      </Typography>
-
-      <Box sx={{ position: "relative", width: "100%", aspectRatio: "4 / 3" }}>
-        <Webcam
-          ref={webcamRef}
-          screenshotFormat="image/jpeg"
-          videoConstraints={{ facingMode: "user" }}
-          style={{
-            width: "100%",
-            height: "100%",
-            borderRadius: 8,
-            transform: "scaleX(-1)",
-            objectFit: "cover",
-          }}
-        />
-        <Box
-          component="img"
-          src="/image/overlay/sucucu.png"
-          alt="face frame"
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: 220,
-            height: 300,
-            transform: "translate(-50%, -50%)",
-            pointerEvents: "none",
-            opacity: 0.9,
-          }}
-        />
-      </Box>
-
-      <Button
-        variant="contained"
-        color="primary"
-        fullWidth
-        onClick={captureAndCheckin}
-        sx={{ mt: 2 }}
-        disabled={loading}
-      >
-        {loading ? <CircularProgress size={24} /> : "Chụp và Check-in"}
       </Button>
 
-      {result.status && (
-        <Alert severity="success" sx={{ mt: 2 }}>
-          {result.status} <br />
-          📏 Khoảng cách: {result.distance?.toFixed(4)}
-        </Alert>
-      )}
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Check-in bằng khuôn mặt</DialogTitle>
+        <DialogContent>
+          <Box sx={{ position: "relative", width: "100%", aspectRatio: "4 / 3", mt: 1 }}>
+            <Webcam
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              videoConstraints={{ facingMode: "user" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: 8,
+                transform: "scaleX(-1)",
+                objectFit: "cover",
+              }}
+            />
+            <Box
+              component="img"
+              src="/image/overlay/sucucu.png"
+              alt="face frame"
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: 220,
+                height: 300,
+                transform: "translate(-50%, -50%)",
+                pointerEvents: "none",
+                opacity: 0.9,
+              }}
+            />
+          </Box>
 
-      {result.error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {result.error}
-        </Alert>
-      )}
+          {result.status && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              ✅ {result.status} <br />
+              📏 Khoảng cách: {result.distance?.toFixed(4)}
+            </Alert>
+          )}
+
+          {result.error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              ❌ {result.error}
+            </Alert>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleClose}>Đóng</Button>
+          <Button
+            variant="contained"
+            onClick={captureAndCheckin}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={20} /> : "Chụp và Check-in"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
 
-export default CheckinFace;
+export default CheckinFaceModal;

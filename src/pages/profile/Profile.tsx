@@ -15,7 +15,7 @@ import Header from "../../components/Header/Header";
 import { updateUserAvatar } from "../../apis/profile";
 import ImageGallery from "../../components/image/ImageGallery";
 import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js"
-import CheckinFace from "../../components/image/uploadFaceRecognize/CheckinFace.js";
+import CheckinFaceModal from "../../components/image/uploadFaceRecognize/CheckinFace.js";
 
 interface UserProfile {
   id: string;
@@ -300,8 +300,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                   className="file-input"
                 />
               </div>
-                <RegisterFaceModal />
-
 
               <div className="profile-details">
                 <h1 className="profile-name">{currentData.fullName}</h1>
@@ -342,7 +340,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
             </div>
           </div>
         </div>
-
+                <RegisterFaceModal />       
+                <p>testcheckin: </p>
+                <CheckinFaceModal/>
         <div className="profile-content">
           {/* Personal Information */}
           <div className="main-content">
