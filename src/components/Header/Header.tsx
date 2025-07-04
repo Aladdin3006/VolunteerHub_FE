@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import authService from "../../services/Authentication.service";
+import {
+  FaUserEdit,
+  FaBell,
+  FaCog,
+  FaShieldAlt,
+  FaQuestionCircle,
+  FaDesktop,
+  FaSignOutAlt,
+} from "react-icons/fa";
 import "./Header.css";
+import NotificationBell from "../Notification/NotificationBell";
 
 interface User {
   fullName: string;
@@ -13,34 +24,19 @@ const Header: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const storedUser = localStorage.getItem("user");
-
-  if (storedUser) {
-    try {
-      const user = JSON.parse(storedUser);
-      console.log("Parsed user:", user);
-    } catch (err) {
-      console.error("Failed to parse user from localStorage", err);
-    }
-  } else {
-    console.log("user null");
-  }
-
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
     try {
+      const storedUser = authService.getUser();
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        if (parsedUser && typeof parsedUser === "object") {
-          setUser(parsedUser);
-        }
+        setUser(storedUser);
+        console.log("Parsed user:", storedUser);
+      } else {
+        console.log("user null");
       }
     } catch (error) {
       console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem("user"); // optional: clean invalid entry
     }
 
-    // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -54,10 +50,8 @@ const Header: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
+    authService.logout();
     navigate("/login");
-    window.location.reload(); // optional, force UI refresh
   };
 
   const toggleDropdown = () => {
@@ -73,7 +67,7 @@ const Header: React.FC = () => {
       <div className="header-container">
         {/* Logo */}
         <div className="logo">
-          <img src="/logo.png" alt="Logo" className="logo-image" />
+          <img src="/logo.png" alt="Logo" className="site-logo" />
           <span className="logo-text">
             VolunteerHub
             <br />
@@ -86,47 +80,68 @@ const Header: React.FC = () => {
           <Link to="/" className="nav-link">
             Trang Chủ
           </Link>
-          <Link to="/campagin" className="nav-link">
+          <Link to="/campaigns" className="nav-link">
             Chiến Dịch
           </Link>
           <Link to="/about-us" className="nav-link">
             Về Chúng Tôi
           </Link>
-          <Link to="/forum" className="nav-link">
-            Diễn Đàn
+          <Link to="/news" className="nav-link">
+            Cộng đồng
           </Link>
 
           {user ? (
-            <div className="nav-user" ref={dropdownRef}>
-              <img
-                src={user.avatar || "user-default.png"}
-                alt="User"
-                className="logo-image"
-                onClick={toggleDropdown}
-              />
-              <span className="user-fullname" onClick={toggleDropdown}>
-                {user.fullName}
-              </span>
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  <div
-                    className="dropdown-item"
-                    onClick={() => navigate("/profile")}
-                  >
-                    Profile
+            <>             
+              <div className="nav-user" ref={dropdownRef}>
+                <img
+                  src={user.avatar || "user-default.png"}
+                  alt="User"
+                  className="user-avatar"
+                  onClick={toggleDropdown}
+                />
+                <span className="user-fullname" onClick={toggleDropdown}>
+                  {user.fullName}
+                </span>
+
+                {isDropdownOpen && (
+                  <div className="dropdown-menu">
+                    <div className="dropdown-item" onClick={() => navigate("/profile")}>
+                      <FaUserEdit className="dropdown-icon" />
+                      <span>Chỉnh sửa hồ sơ</span>
+                    </div>
+
+                    <div className="dropdown-item" >
+                      <NotificationBell />
+                      <span>Thông báo</span>
+                    </div>
+
+                    <div className="dropdown-item" onClick={() => navigate("/settings")}>
+                      <FaCog className="dropdown-icon" />
+                      <span>Cài đặt & bảo mật</span>
+                    </div>
+
+                    <div className="dropdown-item" onClick={() => navigate("/help")}>
+                      <FaQuestionCircle className="dropdown-icon" />
+                      <span>Trợ giúp & hỗ trợ</span>
+                    </div>
+
+                    <div className="dropdown-item" onClick={() => navigate("/accessibility")}>
+                      <FaDesktop className="dropdown-icon" />
+                      <span>Hiển thị & trợ năng</span>
+                    </div>
+
+                    <div className="dropdown-item" onClick={handleLogout}>
+                      <FaSignOutAlt className="dropdown-icon" />
+                      <span>Đăng xuất</span>
+                    </div>
                   </div>
-                  <div className="dropdown-item" onClick={handleLogout}>
-                    Logout
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link to="/login" className="nav-link">
-                Đăng Nhập
-              </Link>
+                )}
+              </div>
             </>
+          ) : (
+            <Link to="/login" className="nav-link">
+              Đăng Nhập
+            </Link>
           )}
 
           <button

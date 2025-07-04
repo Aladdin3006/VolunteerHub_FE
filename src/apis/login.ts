@@ -28,6 +28,7 @@ export const loginUser = async (data: {
       id: result.id,
       role: result.role,
       token: result.access_token,
+      expiresAt: result.expires_at,
     },
   };
 };

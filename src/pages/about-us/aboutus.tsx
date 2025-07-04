@@ -59,7 +59,7 @@ const AboutUs: React.FC = () => {
           <div className="foundersGrid">
             {/* Thành viên 1 */}
             <div className="founderCard">
-              <img src="/public/user1.png" alt="Nhật Nguyễn" className="founderImg" />
+              <img src="user1.png" alt="Nhật Nguyễn" className="founderImg" />
               <div className="founderInfo">
                 <h3 className="founderName">Nhật Nguyễn</h3>
                 <p className="founderRole">Chuyên gia gây quỹ cộng đồng</p>
@@ -73,7 +73,7 @@ const AboutUs: React.FC = () => {
             </div>
             {/* Thành viên 2 */}
             <div className="founderCard">
-              <img src="/public/user2.png" alt="Tài Linh" className="founderImg" />
+              <img src="user2.png" alt="Tài Linh" className="founderImg" />
               <div className="founderInfo">
                 <h3 className="founderName">Tài Linh</h3>
                 <p className="founderRole">Trưởng phòng trải nghiệm<br/>Viettel Money</p>
@@ -87,7 +87,7 @@ const AboutUs: React.FC = () => {
             </div>
             {/* Thành viên 3 */}
             <div className="founderCard">
-              <img src="/public/user3.png" alt="Đình Tuấn" className="founderImg" />
+              <img src="user3.png" alt="Đình Tuấn" className="founderImg" />
               <div className="founderInfo">
                 <h3 className="founderName">Đình Tuấn</h3>
                 <p className="founderRole">CEO CMAT Group</p>
@@ -101,7 +101,7 @@ const AboutUs: React.FC = () => {
             </div>
             {/* Thành viên 4 */}
             <div className="founderCard">
-              <img src="/public/user4.png" alt="Minh Đức" className="founderImg" />
+              <img src="user4.png" alt="Minh Đức" className="founderImg" />
               <div className="founderInfo">
                 <h3 className="founderName">Minh Đức</h3>
                 <p className="founderRole">Nguyên Giám đốc sáng tạo FPT</p>

@@ -6,7 +6,7 @@
   }
   
   .heroSection {
-    background: url('/public/campaign2.jpg') center/cover no-repeat;
+    background: url('/campaign2.jpg') center/cover no-repeat;
     min-height: 250px;
     display: flex;
     flex-direction: column;
