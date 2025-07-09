@@ -21,7 +21,6 @@ const CategoryTag = React.forwardRef<HTMLDivElement, IProps>(
   ({ tagColor, name, icon, sx, ...rest }, ref) => {
     const pascalName = toPascalCase(icon ?? "");
     const LucideIcon = (Icons as any)[pascalName];
-    console.log(pascalName);
     return (
       <Chip
         ref={ref}

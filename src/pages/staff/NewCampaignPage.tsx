@@ -1,8 +1,8 @@
 import { Alert, Box, Snackbar, Stack } from "@mui/material";
-import { CampaignForm } from "../../components/campaign/CampaignForm";
 import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { CampaignForm } from "../../components/campaign/CampaignForm";
 
 export default function NewCampaignPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
@@ -19,13 +19,13 @@ export default function NewCampaignPage() {
   };
 
   return (
-    <Box className="page-wrapper" sx={{ position: "relative" }}>
+    <Box className="page-wrapper" sx={{ position: "relative", pt: "80px" }}>
       <Stack direction={"row"} gap={0.5} pt={0} justifyContent={"center"}>
         <Stack
           direction={"column"}
           gap={3}
           sx={{
-            width: ["100%"],
+            width: ["100%", "550px"],
           }}
         >
           <CampaignForm onSubmitForm={handleSubmitNewCampaign} />
@@ -42,7 +42,7 @@ export default function NewCampaignPage() {
           onClose={() => setSnackbarMessage(null)}
           severity="error"
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbarMessage}
         </Alert>
