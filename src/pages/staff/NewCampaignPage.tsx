@@ -11,7 +11,11 @@ export default function NewCampaignPage() {
   const handleSubmitNewCampaign = async (data: ICampaignDataUpload) => {
     try {
       const res = await CAMPAIGN_API.createCampaign(data);
-      navigate("/campaign");
+      if (typeof res === "object" && (res as any).error != null) {
+        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+      } else {
+        navigate("/staff/dashboard");
+      }
     } catch (error) {
       setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
       console.log(error);

@@ -13,7 +13,11 @@ export default function NewDonationPage() {
     console.log("data", data);
     try {
       const res = await DONATION_API.createDonation(data);
-      navigate("/donate");
+      if (typeof res === "object" && (res as any).error != null) {
+        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+      } else {
+        navigate("/staff/dashboard");
+      }
     } catch (error) {
       setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
       console.log(error);
