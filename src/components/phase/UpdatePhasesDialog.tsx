@@ -361,7 +361,7 @@ export const UpdatePhasesDialog = forwardRef<IUpdatePhasesDialogRef, IProps>(
         return "";
       const errorData = errorPhases[phaseIndex];
       if (typeof errorData === "string") return "";
-      return errorData.startDate && String(errorData.startDate);
+      return errorData?.startDate && String(errorData?.startDate);
     };
 
     const getPhaseEndDateHelperText = (
