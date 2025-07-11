@@ -41,7 +41,8 @@ export const toBase64 = (file: File): Promise<string> => {
   });
 };
 
-export interface IDataResponse<Data> {
-  data: Data;
+export interface IDataResponse<Data, Error = unknown> {
+  data?: Data;
   message: string;
+  error?: Error;
 }

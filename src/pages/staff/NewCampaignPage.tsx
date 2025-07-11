@@ -32,7 +32,7 @@ export default function NewCampaignPage() {
             width: ["100%", "550px"],
           }}
         >
-          <CampaignForm onSubmitForm={handleSubmitNewCampaign} />
+          <CampaignForm onSubmitForm={handleSubmitNewCampaign} type="create" />
         </Stack>
       </Stack>
 

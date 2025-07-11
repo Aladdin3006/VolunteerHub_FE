@@ -1,5 +1,7 @@
 import { forwardRef, useRef } from "react";
 import {
+  Accordion,
+  AccordionSummary,
   Box,
   Button,
   ImageList,
@@ -13,7 +15,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import CategorySearchInput from "../utils/CategorySearchInput";
 import CategoryTag from "../utils/CategoryTag";
-import { ICampaignDataUpload } from "../../apis/campaign-new";
+import { ICampaignDataUpload, IPhaseData } from "../../apis/campaign-new";
 import * as Yup from "yup";
 import { useFormik } from "formik";
 import ImageUploadPlaceholder from "../utils/ImageUploadPlacehoder";
@@ -23,7 +25,11 @@ import {
   ImageViewerDialog,
 } from "../forum/ImageViewerDialog";
 import MapLocationPicker from "../utils/MapLocationPicker";
-import { VolunteerActivism } from "@mui/icons-material";
+import { Add, ExpandMore, VolunteerActivism } from "@mui/icons-material";
+import {
+  IUpdatePhasesDialogRef,
+  UpdatePhasesDialog,
+} from "../phase/UpdatePhasesDialog";
 
 export interface IMediaFile {
   type: "image";
@@ -52,6 +58,7 @@ export interface ICampaignFormData {
   campaignImg: IMediaFile;
   gallery: IMediaFile[];
   categories: ICategory[];
+  phases: IPhaseData[];
 }
 
 interface IProps extends StackProps {
@@ -91,6 +98,7 @@ const initialValue: ICampaignFormData = {
   campaignImg: { url: "", type: "image" },
   gallery: [],
   categories: [],
+  phases: [],
 };
 
 const validationSchema = Yup.object({
@@ -113,6 +121,7 @@ const validationSchema = Yup.object({
 export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const { type, defaultData, onSubmitForm, ...rest } = props;
   const imageViewerDialogRef = useRef<IImageViewerDialogRef | null>(null);
+  const updatePhasesDialogRef = useRef<IUpdatePhasesDialogRef | null>(null);
 
   const submit = async (values: ICampaignFormData) => {
     if (onSubmitForm) {
@@ -125,6 +134,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         gallery: values.gallery.map((g) => g.file ?? g.url),
         location: values.location,
         name: values.name,
+        phases: values.phases,
       });
     }
   };
@@ -222,6 +232,10 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       "categories",
       formik.values.categories.filter((cate) => cate._id !== value._id)
     );
+  };
+
+  const handleUpdatePhases = (phases: IPhaseData[]) => {
+    formik.setFieldValue("phases", phases);
   };
 
   const values = formik.values;
@@ -394,7 +408,9 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             </Stack>
 
             <Typography color="error" fontSize="0.8rem">
-              {(formik.errors.categories && formik.errors.categories && String(formik.errors.categories)) ||
+              {(formik.errors.categories &&
+                formik.errors.categories &&
+                String(formik.errors.categories)) ||
                 " "}
             </Typography>
           </Box>
@@ -468,6 +484,40 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             </Typography>
           </Box>
 
+          {type === "update" && (
+            <Box>
+              <Typography variant="subtitle1">Giai đoạn chiến dịch</Typography>
+              {values.phases.map((phase) => {
+                return (
+                  <Accordion key={phase._id} expanded={false}>
+                    <AccordionSummary
+                      expandIcon={<ExpandMore />}
+                      onClick={() => {
+                        updatePhasesDialogRef.current?.open(values.phases, {
+                          defaultExpand: phase._id,
+                        });
+                      }}
+                    >
+                      <Typography variant="subtitle1">{phase.name}</Typography>
+                    </AccordionSummary>{" "}
+                  </Accordion>
+                );
+              })}
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                onClick={() => {
+                  updatePhasesDialogRef.current?.open(values.phases, {
+                    createNew: true,
+                  });
+                }}
+                sx={{ mt: 2 }}
+              >
+                Thêm giai đoạn
+              </Button>
+            </Box>
+          )}
+
           <Button
             type="submit"
             variant="contained"
@@ -489,11 +539,15 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               },
             }}
           >
-            Tạo chiến dịch
+            {type === "create" ? "Tạo chiến dịch" : "Cập nhật chiến dịch"}
           </Button>
         </Stack>
       </form>
       <ImageViewerDialog ref={imageViewerDialogRef} />
+      <UpdatePhasesDialog
+        ref={updatePhasesDialogRef}
+        onSave={handleUpdatePhases}
+      />
     </Stack>
   );
 });

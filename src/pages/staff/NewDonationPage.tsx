@@ -10,7 +10,6 @@ export default function NewDonationPage() {
   const navigate = useNavigate();
 
   const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
-    console.log("data", data);
     try {
       const res = await DONATION_API.createDonation(data);
       if (typeof res === "object" && (res as any).error != null) {
@@ -34,7 +33,7 @@ export default function NewDonationPage() {
             width: ["100%", "550px"],
           }}
         >
-          <DonationForm onSubmitForm={handleSubmitNewDonation} />
+          <DonationForm onSubmitForm={handleSubmitNewDonation} type="create" />
         </Stack>
       </Stack>
 
