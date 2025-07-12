@@ -12,7 +12,7 @@ import {
   CircularProgress,
   Snackbar,
 } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ShareIcon from "@mui/icons-material/Share";
@@ -29,39 +29,24 @@ import {
 } from "../../apis/campaign";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
+import VolunteerTaskList, { Task } from "./VolunteerTaskList"; 
 
 const CampaignVolunteerDetail: React.FC = () => {
   const { campaignId } = useParams();
-  const navigate = useNavigate();
 
+  /* -------------------- state -------------------- */
   const [campaign, setCampaign] = useState<CampaignVolunteer | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinMessage, setJoinMessage] = useState<string | null>(null);
 
-  // Lấy user từ localStorage
+  /* -------------------- user -------------------- */
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const currentUserId = user._id || user.id;
   const isLoggedIn = !!currentUserId;
 
-  // Tìm bản ghi volunteer hiện tại (nếu có)
-  const myVolunteer = campaign?.volunteers?.find(
-    (v) => v.user?._id === currentUserId
-  );
-
-  // Đặt label và disable theo trạng thái
-  let joinLabel = "Gửi yêu cầu tham gia";
-  let joinDisabled = joinLoading;
-
-  if (myVolunteer?.status === "pending") {
-    joinLabel = "Đã gửi yêu cầu (chờ duyệt)";
-    joinDisabled = true;
-  } else if (myVolunteer?.status === "approved") {
-    joinLabel = "Đã tham gia";
-    joinDisabled = true;
-  }
-
+  /* -------------------- fetch campaign -------------------- */
   useEffect(() => {
     if (!campaignId) return;
     (async () => {
@@ -74,26 +59,39 @@ const CampaignVolunteerDetail: React.FC = () => {
     })();
   }, [campaignId]);
 
+  /* -------------------- volunteer & status -------------------- */
+  const myVolunteer = campaign?.volunteers?.find(
+    (v) => v.user?._id === currentUserId
+  );
+  const isVolunteerApproved = myVolunteer?.status === "approved";
+  const isCampaignRunning = campaign?.status === "in-progress";
+  const showTaskUI = isVolunteerApproved && isCampaignRunning;
+
+  /* -------------------- mock tasks (sẽ thay = campaign.tasks) -------------------- */
+  const [tasks] = useState<Task[]>([
+    { _id: "1", name: "Chuẩn bị dụng cụ", status: "todo" },
+    { _id: "2", name: "Phát quà khu A", status: "doing", description: "Khu A" },
+  ]);
+
+  /* -------------------- join handler -------------------- */
   const handleJoin = async () => {
     if (!isLoggedIn) {
       setJoinMessage("Bạn cần đăng nhập để tham gia chiến dịch!");
       return;
     }
-
     try {
       setJoinLoading(true);
       const msg = await joinCampaign(campaignId!);
       setJoinMessage(msg);
-
       setCampaign((prev) =>
         prev
           ? {
-            ...prev,
-            volunteers: [
-              ...(prev.volunteers || []),
-              { user: { _id: currentUserId }, status: "pending" } as any,
-            ],
-          }
+              ...prev,
+              volunteers: [
+                ...(prev.volunteers || []),
+                { user: { _id: currentUserId }, status: "pending" } as any,
+              ],
+            }
           : prev
       );
     } catch (err) {
@@ -103,24 +101,43 @@ const CampaignVolunteerDetail: React.FC = () => {
     }
   };
 
-
-  if (loading) {
+  /* -------------------- loading & not-found -------------------- */
+  if (loading)
     return (
       <Box sx={{ pt: 15, display: "flex", justifyContent: "center" }}>
         <CircularProgress />
       </Box>
     );
-  }
-
-  if (!campaign) {
+  if (!campaign)
     return (
       <Box sx={{ pt: 15, textAlign: "center" }}>
         <Typography color="error">Không tìm thấy chiến dịch.</Typography>
       </Box>
     );
+
+  /* ============================================================
+     =========== 1. MÀN HÌNH NHIỆM VỤ (khi showTaskUI) ==========
+     ============================================================ */
+  if (showTaskUI) {
+    return <VolunteerTaskList tasks={tasks} />;
   }
 
+  /* ============================================================
+     =========== 2. MÀN HÌNH CHI TIẾT CHIẾN DỊCH GỐC ============
+     ============================================================ */
   const { name, description, startDate, endDate, image, location } = campaign;
+  const phases = campaign.phases ?? [];
+
+  /* ------------ nhãn & disable button tham gia ------------ */
+  let joinLabel = "Gửi yêu cầu tham gia";
+  let joinDisabled = joinLoading;
+  if (myVolunteer?.status === "pending") {
+    joinLabel = "Đã gửi yêu cầu (chờ duyệt)";
+    joinDisabled = true;
+  } else if (myVolunteer?.status === "approved") {
+    joinLabel = "Đã tham gia";
+    joinDisabled = true;
+  }
 
   return (
     <Box sx={{ bgcolor: "#f9f9f9", pb: 10 }}>
@@ -138,6 +155,7 @@ const CampaignVolunteerDetail: React.FC = () => {
         />
       </Card>
 
+      {/* ---------- nội dung + sidebar ---------- */}
       <Box
         sx={{
           maxWidth: 1200,
@@ -149,6 +167,7 @@ const CampaignVolunteerDetail: React.FC = () => {
           gap: 4,
         }}
       >
+        {/* ----- nội dung bên trái ----- */}
         <Box flex={1}>
           <Typography variant="h4" fontWeight={700} gutterBottom>
             {name}
@@ -173,6 +192,7 @@ const CampaignVolunteerDetail: React.FC = () => {
           )}
         </Box>
 
+        {/* ----- sidebar bên phải ----- */}
         <Box
           sx={{
             flexShrink: 0,
@@ -193,16 +213,19 @@ const CampaignVolunteerDetail: React.FC = () => {
               </Box>
             </Stack>
 
-            <Button
-              disabled={joinDisabled}
-              onClick={handleJoin}
-              fullWidth
-              variant="contained"
-              color="success"
-              sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
-            >
-              {joinLoading ? "Đang gửi..." : joinLabel}
-            </Button>
+            {/* Ẩn nút nếu đã approved */}
+            {myVolunteer?.status !== "approved" && (
+              <Button
+                disabled={joinDisabled}
+                onClick={handleJoin}
+                fullWidth
+                variant="contained"
+                color="success"
+                sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
+              >
+                {joinLoading ? "Đang gửi..." : joinLabel}
+              </Button>
+            )}
           </Paper>
 
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
@@ -237,6 +260,50 @@ const CampaignVolunteerDetail: React.FC = () => {
         </Box>
       </Box>
 
+      {/* ---------- phases ---------- */}
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, mt: 6 }}>
+        <Typography variant="h5" fontWeight={700} gutterBottom>
+          🧭 Các giai đoạn chiến dịch
+        </Typography>
+
+        {phases.length === 0 ? (
+          <Typography variant="body1" color="text.secondary">
+            Không có thông tin về các giai đoạn chiến dịch.
+          </Typography>
+        ) : (
+          <Stack spacing={3}>
+            {phases.map((phase) => (
+              <Paper
+                key={phase._id}
+                elevation={1}
+                sx={{ p: 3, borderRadius: 2 }}
+              >
+                <Typography variant="h6" fontWeight={600}>
+                  {phase.name}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.5 }}
+                >
+                  🕓 Từ: {dayjs(phase.start).format("DD/MM/YYYY")} đến{" "}
+                  {dayjs(phase.end).format("DD/MM/YYYY")}
+                </Typography>
+                {phase.description && (
+                  <Typography
+                    variant="body1"
+                    sx={{ mt: 1, whiteSpace: "pre-line" }}
+                  >
+                    {phase.description}
+                  </Typography>
+                )}
+              </Paper>
+            ))}
+          </Stack>
+        )}
+      </Box>
+
+      {/* ---------- snackbar ---------- */}
       <Snackbar
         open={!!joinMessage}
         autoHideDuration={4000}

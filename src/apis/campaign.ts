@@ -55,7 +55,15 @@ export interface CampaignVolunteer {
     coordinates: [number, number];
     address?: string;
   };
+  phases?: {
+    _id: string;
+    name: string;
+    start: string;
+    end: string;
+    description?: string;
+  }[];
   status?: "upcoming" | "in-progress" | "completed";
+  
 
   /** 👇 mảng tình nguyện viên */
   volunteers?: VolunteerRecord[];
