@@ -109,7 +109,7 @@ const NotificationBell: React.FC = () => {
         <FaBell 
           className="dropdown-icon" 
           onClick={handleOpen}
-          style={{ cursor: 'pointer', width: '24px', height: '19.2px' }}
+          style={{ cursor: 'pointer', width: '24px',color: 'black', height: '19.2px' }}
         />
         {unreadCount > 0 && (
           <span
