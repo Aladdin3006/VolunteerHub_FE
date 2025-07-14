@@ -1,0 +1,18 @@
+.custom-arrow {
+  font-size: 24px;
+  cursor: pointer;
+  color: #888; /* màu xám nhẹ */
+  user-select: none;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-arrow:hover {
+  color: #555; /* tối hơn một chút khi hover */
+}

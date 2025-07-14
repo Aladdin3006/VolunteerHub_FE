@@ -8,11 +8,14 @@ import {
   User,
   Save,
   Edit2,
-  Building2,
 } from "lucide-react";
+import Slider from "react-slick";
 import "./Profile.css";
 import Header from "../../components/Header/Header";
 import { updateUserAvatar } from "../../apis/profile";
+import ImageGallery from "../../components/image/ImageGallery";
+import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js"
+import CheckinFaceModal from "../../components/image/uploadFaceRecognize/CheckinFace.js";
 
 interface UserProfile {
   id: string;
@@ -23,83 +26,20 @@ interface UserProfile {
   address: string;
   bio: string;
   avatar: string;
-  department: string;
   skills: string[];
+  certificates: string[];
 }
 
 interface ProfileProps {
   loginData?: any; // Accept login data as prop
 }
 
-// Department skills mapping
-type Department =
-  | ""
-  | "Planning & Coordination"
-  | "Logistics"
-  | "Communications"
-  | "Human Resources (Volunteers)"
-  | "Security & Health"
-  | "Technical (Sound, lighting)";
-
-type DepartmentSkillsMap = {
-  [key in Department]: string[];
-};
-
-const DEPARTMENT_SKILLS: DepartmentSkillsMap = {
-  "": [], // Default empty department
-  "Planning & Coordination": [
-    "Team leadership/management skills",
-    "Planning and organization skills",
-    "Problem solving ability",
-    "Logical thinking and quick decision making",
-    "Interdepartmental communication and coordination",
-    "Skills in using Google Sheets, Trello, Notion, etc."
-  ],
-  "Logistics": [
-    "Thinking about arrangement and organization",
-    "Ability to work with hands, withstand pressure",
-    "Know how to use/check items (speakers, wires, banners...)",
-    "Meticulous, careful",
-    "Negotiation and purchasing skills (priority)"
-  ],
-  "Communications": [
-    "Write communication content (content)",
-    "Basic design (Canva, Photoshop)",
-    "Take photos, shoot videos",
-    "Edit videos, edit photos (Premiere, CapCut, Lightroom...)",
-    "Manage social networks (Facebook, Instagram, TikTok, etc.)",
-    "External communication, reply inbox/email"
-  ],
-  "Human Resources (Volunteers)": [
-    "Good communication, friendly",
-    "Ability to present and guide groups",
-    "Teamwork, motivation",
-    "Personnel management and monitoring",
-    "Know how to use forms (Google Form, Excel)"
-  ],
-  "Security & Health": [
-    "Basic first aid skills",
-    "Know how to monitor the health of participants",
-    "Skills to handle emergency situations",
-    "Can control and coordinate crowds",
-    "Know how to stay calm, good observation"
-  ],
-  "Technical (Sound, lighting)": [
-    "Know how to use speakers, microphones, mixers, wires,...",
-    "Install / check technical equipment",
-    "Basic knowledge of electricity and sound",
-    "Work in a pressured environment (setup, technical problems)",
-    "Be careful, know how to check and maintain equipment"
-  ]
-};
-
-const DEPARTMENTS = Object.keys(DEPARTMENT_SKILLS).filter(dept => dept !== "");
-
 const Profile: React.FC<ProfileProps> = ({ loginData }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const sliderRef = useRef<Slider>(null);
 
   const createProfileFromLoginData = (apiData: any): UserProfile => {
     const formatDate = (dateString: string) => {
@@ -107,9 +47,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       const date = new Date(dateString);
       return date.toISOString().split("T")[0];
     };
-
-    const department = (apiData.department || "") as Department;
-    const skills = apiData.skills || DEPARTMENT_SKILLS[department] || [];
 
     return {
       id: apiData.id || "",
@@ -121,8 +58,11 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       bio:
         apiData.bio || "Tình nguyện viên chăm chỉ vì một thế giới tốt đẹp hơn.",
       avatar: apiData.avatar || "user-default.png",
-      department: department,
-      skills: skills,
+      skills: apiData.skills || [],
+      certificates: [
+        "https://marketplace.canva.com/EAFy42rCTA0/1/0/1600w/canva-blue-minimalist-certificate-of-achievement-_asVJz8YgJE.jpg",
+        "https://img.freepik.com/free-vector/gradient-elegant-certificate-template_23-2148973721.jpg?w=740",
+      ],
     };
   };
 
@@ -136,8 +76,8 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     address: "",
     bio: "",
     avatar: "user-default.png",
-    department: "",
     skills: [],
+    certificates: [],
   });
 
   const [tempData, setTempData] = useState<UserProfile>(profileData);
@@ -160,19 +100,13 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
           const userData = createProfileFromLoginData(parsedUser);
           setProfileData(userData);
           setTempData(userData);
+          setToken(parsedUser.token || null);
         } catch (error) {
           console.error("Error parsing stored user data:", error);
         }
       }
     }
   }, [loginData]);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
 
   const handleAvatarChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -250,8 +184,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }
     } catch (error) {
       alert(
-        `Avatar upload failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Avatar upload failed: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
 
@@ -271,53 +204,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     setTempData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleDepartmentChange = (department: string) => {
-    setTempData((prev) => ({ 
-      ...prev, 
-      department: department,
-      skills: [] // Clear skills when department changes
-    }));
-  };
-
-  const addSkillFromDropdown = (skill: string) => {
-    if (skill && !tempData.skills.includes(skill)) {
-      setTempData((prev) => ({
-        ...prev,
-        skills: [...prev.skills, skill],
-      }));
-    }
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      // Prepare data for API update - convert back to API format
-      const updateData = {
-        fullName: tempData.fullName,
-        email: tempData.email,
-        phone: tempData.phone,
-        date_of_birth: tempData.dateOfBirth,
-        address: tempData.address,
-        bio: tempData.bio,
-        avatar: tempData.avatar,
-        department: tempData.department,
-        skills: tempData.skills,
-      };
-
-      setProfileData(tempData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error("Error updating profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setTempData(profileData);
-    setIsEditing(false);
-  };
-
   const addSkill = () => {
     if (newSkill.trim() && !tempData.skills.includes(newSkill.trim())) {
       setTempData((prev) => ({
@@ -333,6 +219,47 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       ...prev,
       skills: prev.skills.filter((skill) => skill !== skillToRemove),
     }));
+  };
+
+  const goToPrev = () => {
+    if (sliderRef.current) {
+      sliderRef.current.slickPrev();
+    }
+  };
+
+  const goToNext = () => {
+    if (sliderRef.current) {
+      sliderRef.current.slickNext();
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      // Prepare data for API update - convert back to API format
+      const updateData = {
+        fullName: tempData.fullName,
+        email: tempData.email,
+        phone: tempData.phone,
+        date_of_birth: tempData.dateOfBirth,
+        address: tempData.address,
+        bio: tempData.bio,
+        avatar: tempData.avatar,
+        skills: tempData.skills,
+      };
+
+      setProfileData(tempData);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setTempData(profileData);
+    setIsEditing(false);
   };
 
   const currentData = isEditing ? tempData : profileData;
@@ -364,6 +291,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                     )}
                   </button>
                 )}
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -372,16 +300,12 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                   className="file-input"
                 />
               </div>
+
               <div className="profile-details">
                 <h1 className="profile-name">{currentData.fullName}</h1>
                 <p className="profile-bio">
                   {currentData.bio || "Welcome to your profile!"}
                 </p>
-                {currentData.department && (
-                  <p className="profile-department">
-                    Department: {currentData.department}
-                  </p>
-                )}
               </div>
               <div className="profile-actions">
                 {!isEditing ? (
@@ -416,7 +340,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
             </div>
           </div>
         </div>
-
+                <RegisterFaceModal />       
+                <p>testcheckin: </p>
+                <CheckinFaceModal/>
         <div className="profile-content">
           {/* Personal Information */}
           <div className="main-content">
@@ -501,8 +427,8 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                       <span>
                         {currentData.dateOfBirth
                           ? new Date(
-                              currentData.dateOfBirth
-                            ).toLocaleDateString()
+                            currentData.dateOfBirth
+                          ).toLocaleDateString()
                           : "Not provided"}
                       </span>
                     </div>
@@ -528,30 +454,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                     </div>
                   )}
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Department</label>
-                  {isEditing ? (
-                    <select
-                      value={currentData.department}
-                      onChange={(e) => handleDepartmentChange(e.target.value)}
-                      className="form-input"
-                      disabled={loading}
-                    >
-                      <option value="">Select Department</option>
-                      {DEPARTMENTS.map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="form-display">
-                      <Building2 size={16} className="form-icon" />
-                      <span>{currentData.department || "Not assigned"}</span>
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="form-group full-width">
@@ -573,109 +475,68 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
               </div>
             </div>
           </div>
-
-            {/* Department and Skills */}
-            <div className="sidebar">
-            {/* Department */}
-            <div className="card">
-              <h3 className="card-subtitle">Department Investor</h3>
-              <div className="tags-container">
-              {currentData.department ? (
-                <span className="tag tag-department">
-                {currentData.department}
-                {isEditing && (
-                  <button
-                  onClick={() => handleDepartmentChange("")}
-                  className="tag-remove"
-                  disabled={loading}
-                  >
-                  ×
-                  </button>
-                )}
-                </span>
+          <div className="card card-certificates">
+            <h2 className="card-title">Certificates</h2>
+            <div className="certificates-container">
+              {currentData.certificates.length > 0 ? (
+                <ImageGallery
+                  images={currentData.certificates}
+                // onImageClick={(img) => window.open(img, "_blank")}
+                />
               ) : (
-                <span className="tag tag-placeholder">
-                Choice your department investor by editing profile.
-                </span>
-              )}
-              </div>
-              {isEditing && (
-              <div className="add-tag-container">
-                <select
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) {
-                  handleDepartmentChange(e.target.value);
-                  }
-                }}
-                className="add-tag-input"
-                disabled={loading}
-                >
-                <option value="">Select Department</option>
-                {DEPARTMENTS.map((dept) => (
-                  <option key={dept} value={dept}>
-                  {dept}
-                  </option>
-                ))}
-                </select>
-              </div>
+                <p className="no-certificates">No certificates available</p>
               )}
             </div>
-
-            {/* Skills - Dynamic based on department */}
-            <div className="card">
+          </div>
+          {/* Skills and Volunteer Stats */}
+          <div className="card-half-row reduced-spacing">
+            {/* Skills Card */}
+            <div className="card card-half">
               <h3 className="card-subtitle">Skills</h3>
               <div className="tags-container">
-              {currentData.skills.length > 0 ? (
-                currentData.skills.map((skill, index) => (
-                <span key={index} className="tag tag-skills">
-                  {skill}
-                  {isEditing && (
-                  <button
-                    onClick={() => removeSkill(skill)}
-                    className="tag-remove"
-                    disabled={loading}
-                  >
-                    ×
-                  </button>
-                  )}
-                </span>
-                ))
-              ) : (
-                isEditing && (
-                <p className="skills-note">
-                  <small>Please select department first to add skills.</small>
-                </p>
-                )
-              )}
-              {isEditing && currentData.department && (
-                <div className="add-tag-container">
-                <select
-                  value=""
-                  onChange={(e) => {
-                  if (e.target.value) {
-                    addSkillFromDropdown(e.target.value);
-                  }
-                  }}
-                  className="add-tag-input"
-                  disabled={loading}
-                >
-                  <option value="">Add Skill</option>
-                  {(DEPARTMENT_SKILLS[currentData.department as Department] || [])
-                  .filter((skill: string) => !currentData.skills.includes(skill))
-                  .map((skill: string) => (
-                    <option key={skill} value={skill}>
-                    {skill}
-                    </option>
-                  ))}
-                </select>
-                </div>
-              )}
+                {currentData.skills.length > 0 ? (
+                  currentData.skills.map((skill, index) => (
+                    <span key={index} className="tag tag-skills">
+                      {skill}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeSkill(skill)}
+                          className="tag-remove"
+                          disabled={loading}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  ))
+                ) : (
+                  <p className="skills-note">
+                    <small>No skills added yet.</small>
+                  </p>
+                )}
+                {isEditing && (
+                  <div className="add-tag-container">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      placeholder="Add new skill"
+                      className="add-tag-input"
+                      disabled={loading}
+                    />
+                    <button
+                      onClick={addSkill}
+                      className="add-tag-btn"
+                      disabled={loading}
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Volunteer Stats - Hardcoded as requested */}
-            <div className="card">
+            <div className="card card-half">
               <h3 className="card-subtitle">Volunteer Stats</h3>
               <div className="stats-container">
                 <div className="stat-item">
