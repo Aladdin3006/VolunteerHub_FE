@@ -1,26 +1,11 @@
-import { Alert, Box, Snackbar, Stack } from "@mui/material";
-import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { CampaignForm } from "../../components/campaign/CampaignForm";
+import { Alert, Box, Button, Snackbar, Stack } from "@mui/material";
+import { useRef, useState } from "react";
+import { INewCampaignDialogRef, NewCampaignDialog } from "./NewCampaignDialog";
 
 export default function NewCampaignPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
 
-  const navigate = useNavigate();
-  const handleSubmitNewCampaign = async (data: ICampaignDataUpload) => {
-    try {
-      const res = await CAMPAIGN_API.createCampaign(data);
-      if (typeof res === "object" && (res as any).error != null) {
-        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      } else {
-        navigate("/staff/dashboard");
-      }
-    } catch (error) {
-      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      console.log(error);
-    }
-  };
+  const newCampaignDialogRef = useRef<INewCampaignDialogRef | null>(null);
 
   return (
     <Box className="page-wrapper" sx={{ position: "relative", pt: "80px" }}>
@@ -30,9 +15,17 @@ export default function NewCampaignPage() {
           gap={3}
           sx={{
             width: ["100%", "550px"],
+            ml: 40,
           }}
         >
-          <CampaignForm onSubmitForm={handleSubmitNewCampaign} type="create" />
+          <Button
+            onClick={() => {
+              newCampaignDialogRef.current?.open();
+            }}
+          >
+            Click to open new campaign dialog
+          </Button>
+          <NewCampaignDialog ref={newCampaignDialogRef} />
         </Stack>
       </Stack>
 

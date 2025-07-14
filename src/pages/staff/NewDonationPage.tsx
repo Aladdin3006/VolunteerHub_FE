@@ -1,27 +1,10 @@
-import { Alert, Box, Snackbar, Stack } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { DonationForm } from "../../components/donation/DonationForm";
-import { DONATION_API, IDonationDataUpload } from "../../apis/donation";
-import { useState } from "react";
+import { Alert, Box, Button, Snackbar, Stack } from "@mui/material";
+import { useRef, useState } from "react";
+import { INewDonationDialogRef, NewDonationDialog } from "./NewDonationDialog";
 
 export default function NewDonationPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-
-  const navigate = useNavigate();
-
-  const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
-    try {
-      const res = await DONATION_API.createDonation(data);
-      if (typeof res === "object" && (res as any).error != null) {
-        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      } else {
-        navigate("/staff/dashboard");
-      }
-    } catch (error) {
-      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      console.log(error);
-    }
-  };
+  const newDonationDialogRef = useRef<INewDonationDialogRef | null>(null);
 
   return (
     <Box className="page-wrapper" sx={{ position: "relative", pt: "80px" }}>
@@ -33,7 +16,14 @@ export default function NewDonationPage() {
             width: ["100%", "550px"],
           }}
         >
-          <DonationForm onSubmitForm={handleSubmitNewDonation} type="create" />
+          <Button
+            onClick={() => {
+              newDonationDialogRef.current?.open();
+            }}
+          >
+            Click to open new donation dialog
+          </Button>
+          <NewDonationDialog ref={newDonationDialogRef} />
         </Stack>
       </Stack>
 

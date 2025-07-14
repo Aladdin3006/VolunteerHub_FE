@@ -254,12 +254,17 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         backgroundColor: "white",
       }}
     >
-      <Typography variant="h4" align="center" gutterBottom sx={{ mb: 5 }}>
-        Chiến dịch tình nguyện
-      </Typography>
-
-      <form onSubmit={formik.handleSubmit}>
-        <Stack spacing={2}>
+      <form onSubmit={formik.handleSubmit} className="form">
+        <Typography
+          variant="h4"
+          align="center"
+          gutterBottom
+          sx={{ mb: 5 }}
+          className="form-title"
+        >
+          Chiến dịch tình nguyện
+        </Typography>
+        <Stack spacing={2} className="form-body">
           <TextField
             label="Tên chiến dịch"
             name="name"
@@ -517,31 +522,32 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               </Button>
             </Box>
           )}
-
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            disabled={!formik.isValid || formik.isSubmitting}
-            startIcon={<VolunteerActivism />}
-            sx={{
-              backgroundColor: "#43a047",
-              color: "#fff",
-              fontWeight: 600,
-              borderRadius: "999px",
-              textTransform: "none",
-              fontSize: "1rem",
-              py: 1.2,
-              boxShadow: 3,
-              "&:hover": {
-                backgroundColor: "#388e3c",
-                boxShadow: 4,
-              },
-            }}
-          >
-            {type === "create" ? "Tạo chiến dịch" : "Cập nhật chiến dịch"}
-          </Button>
         </Stack>
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={!formik.isValid || formik.isSubmitting}
+          startIcon={<VolunteerActivism />}
+          sx={{
+            backgroundColor: "#43a047",
+            color: "#fff",
+            fontWeight: 600,
+            borderRadius: "999px",
+            textTransform: "none",
+            fontSize: "1rem",
+            py: 1.2,
+            boxShadow: 3,
+            "&:hover": {
+              backgroundColor: "#388e3c",
+              boxShadow: 4,
+            },
+            mt: 5,
+          }}
+          className="form-submit-btn"
+        >
+          {type === "create" ? "Tạo chiến dịch" : "Cập nhật chiến dịch"}
+        </Button>
       </form>
       <ImageViewerDialog ref={imageViewerDialogRef} />
       <UpdatePhasesDialog
