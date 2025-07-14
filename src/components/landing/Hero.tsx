@@ -1,23 +1,73 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect } from 'react';
+import styled, { keyframes } from 'styled-components';
 import { Box, Typography, Container } from "@mui/material";
+import TypingEffect from './TypingWord';
+
+const words = [
+    "thiện nguyện ❤️",
+    "ấm áp 🔥",
+    "tử tế 🌱",
+    "đồng cảm 🫂",
+    "yêu thương 💖",
+    "nhân ái ☀️"
+];
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200%;
+  }
+  100% {
+    background-position: 200%;
+  }
+`;
+
+const HighlightText = styled.span`
+  display: inline-block;
+  background: linear-gradient(120deg, #42a5f5, #7e57c2, #ec407a, #42a5f5);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ${shimmer} 12s ease-in-out infinite;
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const HeroSection: React.FC = () => {
+    const [currentWordIndex, setCurrentWordIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentWordIndex((prevIndex) => (prevIndex + 1) % words.length);
+        }, 2500);
+
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <Box
             sx={{
                 position: "relative",
-                height: { xs: "70vh", md: "85vh" },
+                height: "100vh",
                 width: "100%",
                 overflow: "hidden",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#fff",
-                backgroundColor: "#000", // fallback nếu ảnh lỗi
+                backgroundColor: "#000",
             }}
         >
-            {/* Background blur image */}
             <Box
                 component="img"
                 src="/image/ImageLanding/heroSection.jpg"
@@ -34,7 +84,6 @@ const HeroSection: React.FC = () => {
                 }}
             />
 
-            {/* Overlay content */}
             <Container
                 sx={{
                     position: "relative",
@@ -52,21 +101,10 @@ const HeroSection: React.FC = () => {
                     }}
                 >
                     Chào mừng đến với{" "}
-                    <Box component="span" color="primary.main">
-                        VolunteerHub Hà Tĩnh
-                    </Box>
+                    <HighlightText>VolunteerHub Hà Tĩnh</HighlightText>
                 </Typography>
 
-                <Typography
-                    variant="h6"
-                    sx={{
-                        mb: 4,
-                        fontSize: { xs: "1rem", md: "1.25rem" },
-                        opacity: 0.9,
-                    }}
-                >
-                    Nơi kết nối những trái tim thiện nguyện ❤️
-                </Typography>
+                <TypingEffect />
 
                 <StyledWrapper>
                     <div className="button">
@@ -84,6 +122,11 @@ const HeroSection: React.FC = () => {
         </Box>
     );
 };
+
+const AnimatedWord = styled.span`
+  display: inline-block;
+  animation: ${fadeIn} 0.6s ease-in-out;
+`;
 
 const StyledWrapper = styled.div`
   .button {
