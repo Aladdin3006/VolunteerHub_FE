@@ -1,66 +1,111 @@
+// Footer.tsx
 import React from "react";
-import "./footer.css";
+import { Box, Typography, IconButton, Stack, Link as MuiLink } from "@mui/material";
+import { FaFacebookF, FaInstagram, FaTwitter, FaHeart } from "react-icons/fa";
+import { keyframes } from "@emotion/react";
+
+const glow = keyframes`
+  0% { text-shadow: 0 0 5px #1976d2, 0 0 10px #1976d2; }
+  50% { text-shadow: 0 0 20px #1976d2, 0 0 30px #1976d2; }
+  100% { text-shadow: 0 0 5px #1976d2, 0 0 10px #1976d2; }
+`;
 
 const Footer: React.FC = () => {
   return (
-    <footer className="footer">
-      <div className="footer__container">
-        {/* Logo & Newsletter */}
-        <div className="footer__section newsletter-section">
-          <div className="footer__logo">
-            <img src="/logo.png" alt="Logo" className="logo-image" />
-            <span>VolunteerHub Hà Tĩnh</span>
-          </div>
-          <div className="footer__newsletter">
-            <form className="footer__form">
-              <input
-                type="email"
-                placeholder="Nhập email của bạn"
-                className="footer__input"
-              />
-              <button type="submit" className="footer__button">
-                Đăng ký
-              </button>
-            </form>
-          </div>
-        </div>
+    <Box
+      component="footer"
+      sx={{
+        bgcolor: "#0f172a",
+        color: "#fff",
+        mt: 8,
+        py: 6,
+        px: 4,
+        textAlign: "center",
+        borderTop: "4px solid #1976d2",
+        position: "relative",
+      }}
+    >
+      <Box display="flex" justifyContent="center" alignItems="center" gap={1} mb={2}>
+        <img src="/logo-remove-bg.png" alt="Logo" style={{ height: 40 }} />
+        <Typography
+          variant="h5"
+          fontWeight="bold"
+          sx={{
+            animation: `${glow} 3s ease-in-out infinite`,
+          }}
+        >
+          VolunteerHub Hà Tĩnh
+        </Typography>
+      </Box>
 
-        <div className="footer__section">
-          <h3 className="footer__heading">Tham gia cùng của chúng tôi</h3>
-          <p className="footer__subtext">
-            Nền tảng gây quỹ cộng đồng trực tuyến tiện lợi, tin cậy và minh
-            bạch.
-          </p>
-        </div>
+      <Typography variant="body1" sx={{ mb: 2 }}>
+        Kết nối – Hành động – Lan toả yêu thương 💙
+      </Typography>
 
-        {/* Help Section */}
-        <div className="footer__section">
-          <h3 className="footer__heading">Chúng tôi luôn sẵn sàng hỗ trợ!</h3>
-          <ul className="footer__list">
-            {["Hỗ trợ", "Truy cập", "Liên hệ", "Tình trạng hệ thống"].map(
-              (item) => (
-                <li key={item} className="footer__list-item">
-                  <a href="#">{item}</a>
-                </li>
-              )
-            )}
-          </ul>
-        </div>
-      </div>
+      <Stack direction="row" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
+        <IconButton
+          component="a"
+          href="https://facebook.com"
+          target="_blank"
+          sx={{ color: "#fff", transition: "0.3s", "&:hover": { color: "#1976d2" } }}
+        >
+          <FaFacebookF />
+        </IconButton>
+        <IconButton
+          component="a"
+          href="https://instagram.com"
+          target="_blank"
+          sx={{ color: "#fff", transition: "0.3s", "&:hover": { color: "#E1306C" } }}
+        >
+          <FaInstagram />
+        </IconButton>
+        <IconButton
+          component="a"
+          href="https://twitter.com"
+          target="_blank"
+          sx={{ color: "#fff", transition: "0.3s", "&:hover": { color: "#1DA1F2" } }}
+        >
+          <FaTwitter />
+        </IconButton>
+      </Stack>
 
-      <div className="footer__bottom">
-        <div className="footer__legal">
-          <span className="footer__copyright">
-            © 2025 VolunteerHub Hà Tĩnh.
-          </span>
-          <div className="footer__links">
-            <a href="#">Chính sách bảo mật</a>
-            <a href="#">Điều khoản dịch vụ</a>
-            <a href="#">Cài đặt cookie</a>
-          </div>
-        </div>
-      </div>
-    </footer>
+      <Typography variant="body2" color="gray">
+        © {new Date().getFullYear()} Được làm bằng <FaHeart color="red" style={{ verticalAlign: "middle" }} /> bởi trường đại học FPT.
+      </Typography>
+
+      <Stack
+        direction="row"
+        justifyContent="center"
+        spacing={3}
+        mt={2}
+        sx={{ flexWrap: "wrap" }}
+      >
+        {[
+          { label: "Trang chủ", href: "/" },
+          { label: "Chiến dịch", href: "/campaigns" },
+          { label: "Về chúng tôi", href: "/about-us" },
+          { label: "Cộng đồng", href: "/news" },
+          { label: "Liên hệ", href: "/contact" },
+        ].map((link) => (
+          <MuiLink
+            key={link.href}
+            href={link.href}
+            underline="none"
+            color="inherit"
+            sx={{
+              fontSize: 14,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                color: "#1976d2",
+                textDecoration: "underline",
+              },
+            }}
+          >
+            {link.label}
+          </MuiLink>
+        ))}
+      </Stack>
+    </Box>
   );
 };
 
