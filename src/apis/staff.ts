@@ -15,6 +15,7 @@ export interface Campaign {
   startDate: Date;
   endDate: Date;
   gallery: string[];
+  image: string;
   categories: Category[];
   status: "upcoming" | "in-progress" | "completed";
   acceptStatus: "pending" | "approved" | "rejected";
@@ -42,12 +43,6 @@ export interface PhaseDay {
   };
   status: "upcoming" | "in-progress" | "completed";
   tasks: Task[];
-}
-
-export interface Task {
-  _id: string;
-  name: string;
-  description: string;
 }
 
 export interface CreatePhasePayload {
@@ -116,6 +111,27 @@ const getAuthHeaders = () => {
   };
 };
 
+export interface Task {
+  _id: string;
+  title: string;
+  description: string;
+  status: {
+    status:
+      | "not-started"
+      | "in_progress"
+      | "submitted"
+      | "approved"
+      | "rejected";
+    submittedAt?: Date;
+    feedback?: string;
+    evaluation?: "excellent" | "good" | "average" | "poor";
+  };
+  assignedUsers: string[];
+  phaseDayId: string;
+  campaignId: string;
+  updatedAt: Date;
+}
+
 export const getStaffCampaigns = async (): Promise<Campaign[]> => {
   try {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -150,10 +166,39 @@ export const getPhasesByCampaignId = async (
   campaignId: string
 ): Promise<Phase[]> => {
   try {
+    // Validate campaignId format
+    if (!campaignId || !campaignId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid campaign ID format: ${campaignId}`);
+    }
+
+    console.log("API: Fetching phases for campaign:", campaignId);
+
     const response = await axios.get(`${API_BASE}/phase/${campaignId}/phases`, {
       headers: getAuthHeaders(),
     });
-    return response.data.data || [];
+
+    console.log("API: Phases response:", response.data);
+
+    // Handle both response.data and response.data.data cases
+    const phasesData = response.data.data || response.data || [];
+
+    return phasesData.map((phase: any) => ({
+      _id: phase._id,
+      campaignId: phase.campaignId,
+      name: phase.name,
+      description: phase.description || "",
+      startDate: new Date(phase.startDate),
+      endDate: new Date(phase.endDate),
+      status: phase.status || "upcoming",
+      phaseDays: (phase.phaseDays || []).map((day: any) => ({
+        _id: day._id,
+        phaseId: day.phaseId || phase._id,
+        date: new Date(day.date),
+        checkinLocation: day.checkinLocation,
+        status: day.status || "upcoming",
+        tasks: day.tasks || [],
+      })),
+    }));
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Error fetching phases:", error.response?.data);
@@ -206,28 +251,37 @@ export const createPhase = async (
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Error creating phase:", error.response?.data);
-      
+
       // Log detailed error information
       if (error.response) {
-        console.error("Response data:", JSON.stringify(error.response.data, null, 2));
+        console.error(
+          "Response data:",
+          JSON.stringify(error.response.data, null, 2)
+        );
         console.error("Response status:", error.response.status);
         console.error("Response headers:", error.response.headers);
-        
+
         // Log specific error details if available
         if (error.response.data?.errors) {
-          console.error("Validation errors:", JSON.stringify(error.response.data.errors, null, 2));
+          console.error(
+            "Validation errors:",
+            JSON.stringify(error.response.data.errors, null, 2)
+          );
           error.response.data.errors.forEach((err: any, index: number) => {
             console.error(`Error ${index + 1}:`, JSON.stringify(err, null, 2));
           });
         }
       }
-      
+
       // Create a more specific error message
       let errorMessage = "Failed to create phase";
-      if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+      if (
+        error.response?.data?.errors &&
+        error.response.data.errors.length > 0
+      ) {
         // Extract the first error message
         const firstError = error.response.data.errors[0];
-        if (typeof firstError === 'string') {
+        if (typeof firstError === "string") {
           errorMessage = firstError;
         } else if (firstError.message) {
           errorMessage = firstError.message;
@@ -239,7 +293,7 @@ export const createPhase = async (
       } else if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
-      
+
       throw new Error(errorMessage);
     } else {
       console.error("Error creating phase:", error);
@@ -296,16 +350,26 @@ export const createPhaseDay = async (
   payload: CreatePhaseDayPayload
 ): Promise<PhaseDay> => {
   try {
+    // Validate phaseId format
+    if (!phaseId || !phaseId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid phase ID format: ${phaseId}`);
+    }
+
     // Ensure date is properly formatted
     const formattedPayload = {
-      ...payload,
       date: new Date(payload.date).toISOString(),
+      checkinLocation: {
+        type: "Point" as const,
+        coordinates: payload.checkinLocation.coordinates,
+        address: payload.checkinLocation.address,
+      },
     };
 
     console.log(
       "API: Creating phase day with formatted payload:",
       formattedPayload
     );
+    console.log("API: Phase ID:", phaseId);
 
     const response = await axios.post(
       `${API_BASE}/phase/${phaseId}/days`,
@@ -314,14 +378,41 @@ export const createPhaseDay = async (
         headers: getAuthHeaders(),
       }
     );
-    return response.data.data;
+
+    console.log("API: Phase day creation response:", response.data);
+
+    // Handle both response.data and response.data.data cases
+    const responseData = response.data.data || response.data;
+
+    return {
+      _id: responseData._id || responseData.id,
+      phaseId: responseData.phaseId || phaseId,
+      date: new Date(responseData.date),
+      checkinLocation: responseData.checkinLocation,
+      status: responseData.status || "upcoming",
+      tasks: responseData.tasks || [],
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Error creating phase day:", error.response?.data);
       console.error("Error status:", error.response?.status);
-      throw new Error(
-        error.response?.data?.message || "Failed to create phase day"
-      );
+      console.error("Error config:", error.config);
+
+      let errorMessage = "Failed to create phase day";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (
+        error.response?.data?.errors &&
+        error.response.data.errors.length > 0
+      ) {
+        errorMessage =
+          error.response.data.errors[0].message ||
+          error.response.data.errors[0];
+      }
+
+      throw new Error(errorMessage);
     } else {
       console.error("Error creating phase day:", error);
       throw new Error("Failed to create phase day");
@@ -361,53 +452,8 @@ export const deletePhaseDay = async (phaseDayId: string): Promise<void> => {
       headers: getAuthHeaders(),
     });
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error("Error deleting phase day:", error.response?.data);
-      throw new Error(
-        error.response?.data?.message || "Failed to delete phase day"
-      );
-    } else {
-      console.error("Error deleting phase day:", error);
-      throw new Error("Failed to delete phase day");
-    }
-  }
-};
-
-export const createTask = async (
-  phaseDayId: string,
-  payload: CreateTaskPayload
-): Promise<Task> => {
-  try {
-    const response = await axios.post(
-      `${API_BASE}/phase/${phaseDayId}/tasks`,
-      payload,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-    return response.data.data;
-  } catch (error) {
-    console.error("Error creating task:", error);
-    throw new Error("Failed to create task");
-  }
-};
-
-export const updateTask = async (
-  taskId: string,
-  payload: Partial<Task>
-): Promise<Task> => {
-  try {
-    const response = await axios.patch(
-      `${API_BASE}/phase/tasks/${taskId}`,
-      payload,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-    return response.data.data;
-  } catch (error) {
-    console.error("Error updating task:", error);
-    throw new Error("Failed to update task");
+    console.error("Error deleting phase day:", error);
+    throw new Error("Failed to delete phase day");
   }
 };
 
@@ -422,12 +468,17 @@ export const deleteTask = async (taskId: string): Promise<void> => {
   }
 };
 
-export const getDepartmentsByCampaignId = async (campaignId: string): Promise<Department[]> => {
+export const getDepartmentsByCampaignId = async (
+  campaignId: string
+): Promise<Department[]> => {
   try {
-    const response = await axios.get(`${API_BASE}/campaigns/${campaignId}/departments`, {
-      headers: getAuthHeaders(),
-    });
-    
+    const response = await axios.get(
+      `${API_BASE}/campaigns/${campaignId}/departments`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
     return response.data.map((dept: any) => ({
       ...dept,
       _id: dept._id, // Map 'id' to '_id'
@@ -453,7 +504,7 @@ export const createDepartment = async (
   try {
     // Extract campaignId and create a clean body without it
     const { campaignId, ...body } = payload;
-    
+
     const response = await axios.post(
       `${API_BASE}/campaigns/${campaignId}/departments`,
       body, // Send only the department data without campaignId
@@ -482,7 +533,7 @@ export const updateDepartment = async (
   try {
     // Remove campaignId from payload if it exists
     const { campaignId, ...updateData } = payload;
-    
+
     const response = await axios.put(
       `${API_BASE}/campaigns/departments/${departmentId}`,
       updateData, // Send only the update data
@@ -534,12 +585,17 @@ export const acceptVolunteer = async (
 };
 
 // Update getCampaignVolunteers to include user ID
-export const getCampaignVolunteers = async (campaignId: string): Promise<Volunteer[]> => {
+export const getCampaignVolunteers = async (
+  campaignId: string
+): Promise<Volunteer[]> => {
   try {
-    const response = await axios.get(`${API_BASE}/campaigns/${campaignId}/volunteers`, {
-      headers: getAuthHeaders(),
-    });
-    
+    const response = await axios.get(
+      `${API_BASE}/campaigns/${campaignId}/volunteers`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
     return response.data.volunteers.map((vol: any) => ({
       userId: vol.user._id, // User ID
       user: {
@@ -611,5 +667,131 @@ export const registerVolunteer = async (
   } catch (error) {
     console.error("Error registering volunteer:", error);
     throw new Error("Failed to register volunteer");
+  }
+};
+
+export const getTasksByPhaseDayId = async (
+  phaseDayId: string
+): Promise<Task[]> => {
+  try {
+    const response = await axios.get(`${API_BASE}/phase/${phaseDayId}/tasks`, {
+      headers: getAuthHeaders(),
+    });
+
+    // Log the raw response for debugging
+    console.log("Raw tasks response:", response.data);
+
+    // Handle both response.data and response.data.data cases
+    const responseData = response.data.data || response.data;
+
+    // Transform the backend response to match our frontend Task interface
+    return responseData.map((task: any) => ({
+      _id: task._id || task.id, // Use either _id or id from backend
+      phaseDayId: task.phaseDayId,
+      title: task.title || task.name, // Use either title or name from backend
+      description: task.description,
+      status: task.status || { status: "not-started" }, // Default status if missing
+      assignedUsers:
+        task.assignedUsers?.map((u: any) => u.userId || u._id) || [],
+      campaignId: task.campaignId,
+      updatedAt: task.updatedAt ? new Date(task.updatedAt) : new Date(),
+    }));
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    throw new Error("Failed to fetch tasks");
+  }
+};
+
+export const createTask = async (
+  phaseDayId: string,
+  payload: {
+    title: string;
+    description: string;
+    status?: Task["status"];
+    assignedUsers?: string[];
+  }
+): Promise<Task> => {
+  try {
+    // Transform to backend format
+    const backendPayload = {
+      ...payload,
+      assignedUsers: (payload.assignedUsers || []).map((userId) => ({
+        userId,
+        checkinTime: null,
+        checkoutTime: null,
+      })),
+    };
+
+    const response = await axios.post(
+      `${API_BASE}/phase/${phaseDayId}/tasks`,
+      backendPayload,
+      { headers: getAuthHeaders() }
+    );
+
+    // Fixed: Use response.data.data instead of response.data
+    const taskData = response.data.data;
+    return {
+      ...taskData,
+      assignedUsers: taskData.assignedUsers?.map((u: any) => u.userId) || [],
+    };
+  } catch (error) {
+    console.error("Error creating task:", error);
+    throw new Error("Failed to create task");
+  }
+};
+
+export const updateTask = async (
+  taskId: string,
+  payload: {
+    title?: string;
+    description?: string;
+    status?: Partial<Task["status"]>;
+    assignedUsers?: string[];
+    evaluation?: "excellent" | "good" | "average" | "poor";
+    feedback?: string;
+  }
+): Promise<Task> => {
+  try {
+    // Validate task ID
+    if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid task ID: ${taskId}`);
+    }
+
+    // Transform to backend format
+    const backendPayload = {
+      ...payload,
+      ...(payload.assignedUsers && {
+        assignedUsers: payload.assignedUsers.map((userId) => ({
+          userId,
+          checkinTime: null,
+          checkoutTime: null,
+        })),
+      }),
+    };
+
+    const response = await axios.patch(
+      `${API_BASE}/phase/tasks/${taskId}`,
+      backendPayload,
+      { headers: getAuthHeaders() }
+    );
+
+    // Handle both response.data and response.data.data cases
+    const taskData = response.data.data || response.data;
+
+    // Transform response to frontend format
+    return {
+      _id: taskData._id || taskData.id,
+      phaseDayId: taskData.phaseDayId,
+      title: taskData.title || taskData.name,
+      description: taskData.description,
+      status: taskData.status || { status: "not-started" },
+      assignedUsers:
+        taskData.assignedUsers?.map((u: any) => u.userId || u._id) || [],
+      campaignId: taskData.campaignId,
+      updatedAt: taskData.updatedAt ? new Date(taskData.updatedAt) : new Date(),
+    };
+  } catch (error) {
+    console.error("Error updating task:", error);
+    throw new Error("Failed to update task");
   }
 };

@@ -15,23 +15,19 @@ import LayoutWrapper from "../layouts/LayoutWrapper";
 import Unauthorized from "../components/common/Unauthorized";
 import authService from "../services/Authentication.service";
 import ManagerUser from "../pages/admin/ManagerUser";
-import UserLayout from "../layouts/UserLayout";
 import ManagerNews from "../pages/admin/ManagerNews";
 import CreateNews from "../pages/admin/CreateNews";
 import EditNews from "../pages/admin/EditNews";
 import DetailNews from "../pages/news/DetailNews";
-import StaffLayout from "../layouts/StaffLayout";
-import StaffDashboard from "../pages/staff/StaffDashboard";
 import ThankYou from "../pages/campaignVolunteer/Thanhyou";
 
 import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetail";
 
 import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
-import CreatePhaseCampaign from "../pages/staff/CreatePhaseCampaign";
-import DepartmentManager from "../pages/staff/DepartmentManager";
 import NewCampaignPage from "../pages/staff/NewCampaignPage";
 import NewDonationPage from "../pages/staff/NewDonationPage";
+import ManagerCampaignStaff from "@/pages/staff/ManagerCampaignStaff";
 
 const AppRoutes = () => (
   <Routes>
@@ -47,7 +43,7 @@ const AppRoutes = () => (
           if (user?.role === "admin")
             return <Navigate to="/admin/dashboard" replace />;
           if (user?.role === "organization")
-            return <Navigate to="/organization/dashboard" replace />;
+            return <Navigate to="/staff" replace />;
           if (user?.role === "manager")
             return <Navigate to="/manager/dashboard" replace />;
         }
@@ -226,14 +222,14 @@ const AppRoutes = () => (
         <ProtectedRoute requiredRole="organization">
           <Routes>
             <Route
-              path="dashboard"
+              path=""
               element={
-                <StaffLayout>
-                  <StaffDashboard />
-                </StaffLayout>
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <ManagerCampaignStaff />
+                </LayoutWrapper>
               }
             />
-            <Route
+            {/* <Route
               path="phase-campaigns"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
@@ -241,7 +237,7 @@ const AppRoutes = () => (
                 </LayoutWrapper>
               }
             />
-             <Route
+            <Route
               path="departments"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
@@ -249,6 +245,14 @@ const AppRoutes = () => (
                 </LayoutWrapper>
               }
             />
+            <Route
+              path="tasks"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <ManageTask />
+                </LayoutWrapper>
+              }
+            /> */}
             <Route
               path="campaigns/new"
               element={

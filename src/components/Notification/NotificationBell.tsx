@@ -22,7 +22,11 @@ dayjs.extend(relativeTime);
 const API_URL = "http://localhost:4000";
 const SOCKET_URL = "http://localhost:4000";
 
-const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  color?: string;
+}
+
+const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -109,7 +113,7 @@ const NotificationBell: React.FC = () => {
         <FaBell 
           className="dropdown-icon" 
           onClick={handleOpen}
-          style={{ cursor: 'pointer', width: '24px',color: 'black', height: '19.2px' }}
+          style={{ cursor: 'pointer', width: '24px', height: '19.2px', color }}
         />
         {unreadCount > 0 && (
           <span

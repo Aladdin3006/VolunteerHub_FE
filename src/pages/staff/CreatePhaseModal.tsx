@@ -39,6 +39,7 @@ import {
   createPhase,
   createPhaseDay,
   getPhasesByCampaignId,
+  deletePhaseDay as deletePhaseDayApi, // Import the API function
 } from "../../apis/staff";
 
 // Fix for default markers
@@ -63,6 +64,7 @@ interface PhaseDayData {
 
 interface PhaseData {
   _id: string;
+  campaignId: string;
   name: string;
   description: string;
   startDate: Date;
@@ -85,9 +87,7 @@ const MapClickHandler: React.FC<{
       phaseId,
       dayId,
       [e.latlng.lat, e.latlng.lng],
-      `Location selected at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(
-        4
-      )}`
+      `Location selected at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`
     );
   });
 
@@ -109,9 +109,11 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletedPhaseDays, setDeletedPhaseDays] = useState<string[]>([]);
 
   useEffect(() => {
     if (!/^[0-9a-fA-F]{24}$/.test(campaignId)) {
+      setError("Invalid campaign ID");
       setLoading(false);
       return;
     }
@@ -120,11 +122,13 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       try {
         setLoading(true);
         const data = await getPhasesByCampaignId(campaignId);
+        console.log("Fetched phases:", data);
         setPhases(
           data.map((phase) => ({
             _id: phase._id,
+            campaignId: phase.campaignId,
             name: phase.name,
-            description: phase.description,
+            description: phase.description || "",
             startDate: phase.startDate ? new Date(phase.startDate) : new Date(),
             endDate: phase.endDate ? new Date(phase.endDate) : new Date(),
             phaseDays: phase.phaseDays.map((day) => ({
@@ -153,6 +157,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       ...phases,
       {
         _id: `new-phase-${Date.now()}`,
+        campaignId,
         name: "",
         description: "",
         startDate: new Date(),
@@ -180,6 +185,43 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           : phase
       )
     );
+  };
+
+  // Updated deletePhaseDay function to include API call
+  const deletePhaseDay = async (phaseId: string, dayId: string) => {
+    // Delete locally first
+    setPhases(
+      phases.map((phase) =>
+        phase._id === phaseId
+          ? {
+              ...phase,
+              phaseDays: phase.phaseDays.filter((day) => day.id !== dayId),
+            }
+          : phase
+      )
+    );
+
+    // Track deleted days that exist on server and call API
+    if (!dayId.startsWith("new-day-")) {
+      try {
+        await deletePhaseDayApi(dayId); // Call the API with the dayId
+        setDeletedPhaseDays([...deletedPhaseDays, dayId]);
+      } catch (error) {
+        console.error("Error deleting phase day:", error);
+        setError("Failed to delete phase day. Please try again.");
+        // Optionally revert the local state change on error
+        setPhases(
+          phases.map((phase) =>
+            phase._id === phaseId
+              ? {
+                  ...phase,
+                  phaseDays: [...phase.phaseDays, { id: dayId, date: new Date(), location: { coordinates: null, address: "" } }],
+                }
+              : phase
+          )
+        );
+      }
+    }
   };
 
   const updatePhase = (
@@ -253,6 +295,8 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       return "Valid phase day date is required";
     if (!day.location.coordinates || day.location.coordinates.length !== 2)
       return "Check-in location is required";
+    if (!day.location.address || day.location.address.trim() === "")
+      return "Location address is required";
     return null;
   };
 
@@ -261,46 +305,33 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
     setIsSubmitting(true);
     setError(null);
 
-    try {
-      // Validate all phases first
-      for (const phase of phases) {
-        if (phase._id.startsWith("new-phase-")) {
-          const validationError = validatePhase(phase);
-          if (validationError) {
-            throw new Error(validationError);
-          }
+    const createUTCDate = (date: Date) => {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        throw new Error(`Invalid date: ${date}`);
+      }
+      return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    };
 
-          // Validate phase days
-          for (const day of phase.phaseDays) {
-            if (day.id.startsWith("new-day-")) {
-              const dayValidationError = validatePhaseDay(day);
-              if (dayValidationError) {
-                throw new Error(dayValidationError);
-              }
-            }
+    try {
+      for (const phase of phases) {
+        const validationError = validatePhase(phase);
+        if (validationError) {
+          throw new Error(validationError);
+        }
+
+        for (const day of phase.phaseDays) {
+          const dayValidationError = validatePhaseDay(day);
+          if (dayValidationError) {
+            throw new Error(dayValidationError);
           }
         }
       }
 
-      // Create phases
       for (const phase of phases) {
+        let phaseId = phase._id;
+
         if (phase._id.startsWith("new-phase-")) {
-          // Create UTC dates at midnight - ensure we're working with valid Date objects
-          const createUTCDate = (date: Date) => {
-            // Handle both Date objects and date strings
-            const d = date instanceof Date ? date : new Date(date);
-
-            // Validate the date
-            if (isNaN(d.getTime())) {
-              throw new Error(`Invalid date: ${date}`);
-            }
-
-            // Create UTC date at midnight
-            return new Date(
-              Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
-            );
-          };
-
           const phasePayload = {
             campaignId,
             name: phase.name.trim(),
@@ -309,45 +340,79 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             endDate: createUTCDate(phase.endDate),
           };
 
+          console.log("Creating phase with payload:", phasePayload);
           const createdPhase = await createPhase(phasePayload);
+          console.log("Created phase:", createdPhase);
+          phaseId = createdPhase._id;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
 
-          // Update local state with created phase ID
-          setPhases((prevPhases) =>
-            prevPhases.map((p) =>
-              p._id === phase._id ? { ...p, _id: createdPhase._id } : p
-            )
-          );
+        for (const day of phase.phaseDays) {
+          if (day.id.startsWith("new-day-")) {
+            const dayPayload = {
+              date: createUTCDate(day.date),
+              checkinLocation: {
+                coordinates: day.location.coordinates as [number, number],
+                address: day.location.address || "No address provided",
+              },
+            };
 
-          // Create phase days for this phase
-          for (const day of phase.phaseDays) {
-            if (day.id.startsWith("new-day-")) {
-              const dayPayload = {
-                date: createUTCDate(day.date),
-                checkinLocation: {
-                  coordinates: day.location.coordinates as [number, number],
-                  address: day.location.address || "No address provided",
-                },
-              };
-              await createPhaseDay(createdPhase._id, dayPayload);
+            console.log(
+              `Creating phase day for phase ${phaseId} with payload:`,
+              dayPayload
+            );
+
+            try {
+              const createdDay = await createPhaseDay(phaseId, dayPayload);
+              console.log("Created phase day:", createdDay);
+            } catch (dayError: any) {
+              console.error(
+                `Failed to create phase day for phase ${phaseId}:`,
+                dayError
+              );
+              throw new Error(
+                `Failed to create phase day: ${dayError.message}`
+              );
             }
           }
         }
       }
 
-      onClose();
-      alert("Phases and phase days created successfully!");
-    } catch (error: any) {
-      console.error("Error creating phases:", error);
+      setDeletedPhaseDays([]);
 
-      // Show more specific error message
-      let errorMessage = "Unknown error";
+      const refreshedPhases = await getPhasesByCampaignId(campaignId);
+      console.log("Refreshed phases:", refreshedPhases);
+
+      setPhases(
+        refreshedPhases.map((phase) => ({
+          _id: phase._id,
+          campaignId: phase.campaignId,
+          name: phase.name,
+          description: phase.description || "",
+          startDate: phase.startDate ? new Date(phase.startDate) : new Date(),
+          endDate: phase.endDate ? new Date(phase.endDate) : new Date(),
+          phaseDays: phase.phaseDays.map((day) => ({
+            id: day._id,
+            date: day.date ? new Date(day.date) : new Date(),
+            location: {
+              coordinates: day.checkinLocation?.coordinates || null,
+              address: day.checkinLocation?.address || "",
+            },
+          })),
+        }))
+      );
+
+      onClose();
+      alert("Phases and phase days updated successfully!");
+    } catch (error: any) {
+      console.error("Error in handleSubmit:", error);
+      let errorMessage = "Unknown error occurred";
       if (error.message) {
         errorMessage = error.message;
       } else if (typeof error === "string") {
         errorMessage = error;
       }
-
-      setError(`Failed to create phases: ${errorMessage}`);
+      setError(`Failed to update phases: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -355,6 +420,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
 
   const formatDateForInput = (date: Date) => {
     const d = new Date(date);
+    if (isNaN(d.getTime())) {
+      return "";
+    }
     return `${d.getFullYear()}-${(d.getMonth() + 1)
       .toString()
       .padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
@@ -482,9 +550,23 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                           </Typography>
                           {phase.phaseDays.map((day) => (
                             <Paper key={day.id} sx={{ p: 2, mb: 2 }}>
-                              <Typography variant="subtitle2" gutterBottom>
-                                Phase Day
-                              </Typography>
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="center"
+                              >
+                                <Typography variant="subtitle2" gutterBottom>
+                                  Phase Day
+                                </Typography>
+                                <IconButton
+                                  onClick={() =>
+                                    deletePhaseDay(phase._id, day.id)
+                                  }
+                                  color="error"
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Box>
                               <Grid container spacing={2}>
                                 <Grid>
                                   <TextField
@@ -556,6 +638,11 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                   {!day.location.coordinates && (
                                     <Typography variant="body2" color="error">
                                       Location is required
+                                    </Typography>
+                                  )}
+                                  {!day.location.address && (
+                                    <Typography variant="body2" color="error">
+                                      Location address is required
                                     </Typography>
                                   )}
                                 </Grid>
