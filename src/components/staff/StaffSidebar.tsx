@@ -130,7 +130,7 @@ const StaffSidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="staff-sidebar" style={{display: "none"}}>
+    <aside className="staff-sidebar">
       <div className="sidebar-header">
         <img src="/logo.png" alt="Logo" className="logo-image" />
         <h2 className="sidebar-title">Staff</h2>

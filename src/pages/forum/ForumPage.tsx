@@ -98,15 +98,7 @@ export default function ForumPage() {
     <Box className="page-wrapper" sx={{ position: "relative" }}>
       <Header />
       <Stack direction={"row"} gap={0.5} pt={2} justifyContent={"center"}>
-        <Box sx={{ flex: 1, display: ["none", "none", "block"] }}>
-          <ForumLeftSide
-            shortcuts={shortcuts}
-            onOpenShortcut={(post) => {
-              forumPostDialogRef.current &&
-                forumPostDialogRef.current.open(post._id);
-            }}
-          />
-        </Box>
+        <Box sx={{ flex: 1, display: ["none", "none", "block"] }}></Box>
         <Stack
           direction={"column"}
           gap={3}
@@ -167,7 +159,22 @@ export default function ForumPage() {
             onRetry={() => fetch(ref, posts.length, 50)}
           />
         )}
-        <Box sx={{ flex: 1, display: ["none", "none", "none", "block"] }}></Box>
+        <Stack
+          direction={"column"}
+          sx={{
+            flex: 1,
+            display: ["none", "none", "none", "block"],
+            justifyItems: "end",
+          }}
+        >
+          <ForumLeftSide
+            shortcuts={shortcuts}
+            onOpenShortcut={(post) => {
+              forumPostDialogRef.current &&
+                forumPostDialogRef.current.open(post._id);
+            }}
+          />
+        </Stack>
         <Tooltip title="Tạo bài viết" placement="left" arrow>
           <SpeedDial
             ariaLabel="Add action"
