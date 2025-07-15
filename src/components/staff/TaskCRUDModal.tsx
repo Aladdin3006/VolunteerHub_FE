@@ -9,13 +9,19 @@ import {
   Box,
   Typography,
   Chip,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Checkbox,
+  FormControl,
+  InputLabel,
   Select,
   MenuItem,
-  InputLabel,
-  FormControl,
-  FormHelperText,
 } from "@mui/material";
-import { Task, Volunteer } from "../../apis/staff";
+import { Task, Volunteer, Department, getDepartmentsByVolunteerId } from "../../apis/staff";
 
 interface TaskCRUDModalProps {
   open: boolean;
@@ -28,6 +34,7 @@ interface TaskCRUDModalProps {
     feedback?: string;
   }) => void;
   volunteers: Volunteer[];
+  departments?: Record<string, Department[]>; // Optional departments prop
   task?: Task | null;
   isReviewMode?: boolean;
 }
@@ -37,20 +44,15 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
   onClose,
   onSubmit,
   volunteers,
+  departments = {}, // Default to empty object if not provided
   task,
   isReviewMode = false,
 }) => {
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
-  const [assignedUsers, setAssignedUsers] = useState<string[]>(
-    task?.assignedUsers || []
-  );
-  const [evaluation, setEvaluation] = useState<string>(
-    task?.status?.evaluation || ""
-  );
-  const [feedback, setFeedback] = useState<string>(
-    task?.status?.feedback || ""
-  );
+  const [assignedUsers, setAssignedUsers] = useState<string[]>(task?.assignedUsers || []);
+  const [evaluation, setEvaluation] = useState<string>(task?.status?.evaluation || "");
+  const [feedback, setFeedback] = useState<string>(task?.status?.feedback || "");
 
   useEffect(() => {
     if (task) {
@@ -82,17 +84,10 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
     });
   };
 
-  const getDepartmentName = (userId: string) => {
-    const volunteer = volunteers.find((v) => v.user?._id === userId);
-    if (!volunteer) return "No department assigned";
-    return volunteer.departmentId
-      ? `Department: ${volunteer.departmentId}`
-      : "No department assigned";
-  };
-
-  const getVolunteerName = (userId: string) => {
-    const volunteer = volunteers.find((v) => v.user?._id === userId);
-    return volunteer?.user?.fullName || "Unknown Volunteer";
+  const handleToggleVolunteer = (userId: string) => {
+    setAssignedUsers((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
   };
 
   return (
@@ -126,36 +121,37 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
             <Typography variant="subtitle1" sx={{ mt: 2 }}>
               Assign Volunteers
             </Typography>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Select Volunteers</InputLabel>
-              <Select
-                multiple
-                value={assignedUsers}
-                onChange={(e) => setAssignedUsers(e.target.value as string[])}
-                renderValue={(selected) => (
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                    {selected.map((userId) => (
-                      <Chip
-                        key={userId}
-                        label={getVolunteerName(userId)}
-                      />
-                    ))}
-                  </Box>
-                )}
-              >
-                {volunteers
-                  .filter((v) => v.status === "approved")
-                  .map((volunteer) => (
-                    <MenuItem
-                      key={volunteer.user?._id || volunteer.id}
-                      value={volunteer.user?._id || volunteer.id}
-                    >
-                      {getVolunteerName(volunteer.user?._id || volunteer.id)} -{" "}
-                      {getDepartmentName(volunteer.user?._id || volunteer.id)}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
+            <TableContainer sx={{ mt: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Department</TableCell>
+                    <TableCell>Select</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {volunteers
+                    .filter((v) => v.status === "approved")
+                    .map((volunteer) => {
+                      const deptList = departments[volunteer.user._id] || [];
+                      const deptNames = deptList.map((dept) => dept.name).join(", ") || "N/A";
+                      return (
+                        <TableRow key={volunteer.user._id}>
+                          <TableCell>{volunteer.user.fullName}</TableCell>
+                          <TableCell>{deptNames}</TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={assignedUsers.includes(volunteer.user._id)}
+                              onChange={() => handleToggleVolunteer(volunteer.user._id)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
         )}
 
@@ -168,7 +164,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
               {task.assignedUsers?.map((userId) => (
                 <Chip
                   key={userId}
-                  label={getVolunteerName(userId)}
+                  label={volunteers.find((v) => v.user._id === userId)?.user.fullName || "Unknown Volunteer"}
                 />
               ))}
             </Box>

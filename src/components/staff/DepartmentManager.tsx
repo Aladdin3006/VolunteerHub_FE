@@ -30,7 +30,6 @@ import {
   removeMemberFromDepartment,
 } from "../../apis/staff";
 import DepartmentCRUDModal from "./DepartmentCRUDModal";
-import VolunteerRequestsModal from "./VolunteerRequestsModal";
 
 interface DepartmentManagerProps {
   campaignId: string;
@@ -42,7 +41,7 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
   const [loading, setLoading] = useState(true);
   const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
-  const [volunteerRequestsOpen, setVolunteerRequestsOpen] = useState(false);
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,13 +142,6 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
         <Typography variant="h6">Department Management</Typography>
         <Box>
           <Button
-            variant="outlined"
-            sx={{ mr: 2 }}
-            onClick={() => setVolunteerRequestsOpen(true)}
-          >
-            Volunteer Requests
-          </Button>
-          <Button
             variant="contained"
             startIcon={<BusinessIcon />}
             onClick={() => openDepartmentDialog()}
@@ -198,14 +190,6 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
         volunteers={volunteers}
         onAddMember={handleVolunteerAccept}
         onRemoveMember={handleVolunteerRemove}
-      />
-      <VolunteerRequestsModal
-        open={volunteerRequestsOpen}
-        onClose={() => setVolunteerRequestsOpen(false)}
-        volunteers={volunteers}
-        onAcceptVolunteer={async (userId) => {
-          // Placeholder for volunteer approval logic
-        }}
       />
     </Box>
   );

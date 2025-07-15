@@ -15,12 +15,14 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Chip,
 } from "@mui/material";
 import {
   Department,
   CreateDepartmentPayload,
   Volunteer,
 } from "../../apis/staff";
+import { getSkillsVolunteer } from "../../apis/profile";
 
 interface DepartmentCRUDModalProps {
   open: boolean;
@@ -54,6 +56,9 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
 
   // Add local state to track department members
   const [localMembers, setLocalMembers] = React.useState<string[]>([]);
+  const [volunteerSkills, setVolunteerSkills] = React.useState<
+    Record<string, string[]>
+  >({});
 
   // Initialize local members from editingDepartment
   React.useEffect(() => {
@@ -64,7 +69,7 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
         description: editingDepartment.description || "",
         maxMembers: editingDepartment.maxMembers || 10,
       });
-      
+
       // Initialize local members state
       setLocalMembers([...editingDepartment.memberIds]);
     } else {
@@ -77,6 +82,35 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
       setLocalMembers([]);
     }
   }, [editingDepartment, open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const fetchSkills = async () => {
+      const skillsMap: Record<string, string[]> = {};
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      for (const volunteer of volunteers) {
+        try {
+          const response = await getSkillsVolunteer(
+            volunteer.user._id,
+            user.token
+          );
+          skillsMap[volunteer.user._id] = response.data || [];
+        } catch (error) {
+          console.error(
+            `Error fetching skills for volunteer ${volunteer.user._id}:`,
+            error
+          );
+          skillsMap[volunteer.user._id] = [];
+        }
+      }
+
+      setVolunteerSkills(skillsMap);
+    };
+
+    fetchSkills();
+  }, [open, volunteers]);
 
   const approvedVolunteers = volunteers.filter((v) => v.status === "approved");
 
@@ -106,8 +140,8 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
   // Enhanced add member handler
   const handleAddMember = (departmentId: string, userId: string) => {
     // Update local state immediately
-    setLocalMembers(prev => [...prev, userId]);
-    
+    setLocalMembers((prev) => [...prev, userId]);
+
     // Call parent handler
     onAddMember(departmentId, userId);
   };
@@ -115,8 +149,8 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
   // Enhanced remove member handler
   const handleRemoveMember = (departmentId: string, userId: string) => {
     // Update local state immediately
-    setLocalMembers(prev => prev.filter(id => id !== userId));
-    
+    setLocalMembers((prev) => prev.filter((id) => id !== userId));
+
     // Call parent handler
     onRemoveMember(departmentId, userId);
   };
@@ -181,15 +215,30 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
                 <TableHead>
                   <TableRow>
                     <TableCell>Name</TableCell>
+                     <TableCell>Skills</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {approvedVolunteers.map((volunteer) => {
                     const isMember = localMembers.includes(volunteer.user._id);
+                     const skills = volunteerSkills[volunteer.user._id] || [];
                     return (
                       <TableRow key={volunteer.user._id}>
                         <TableCell>{volunteer.user.fullName}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {skills.length > 0 ? (
+                              skills.map((skill, index) => (
+                                <Chip key={index} label={skill} size="small" />
+                              ))
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">
+                                No skills listed
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
                         <TableCell align="right">
                           {isMember ? (
                             <Button
@@ -214,7 +263,9 @@ const DepartmentCRUDModal: React.FC<DepartmentCRUDModalProps> = ({
                                   volunteer.user._id
                                 )
                               }
-                              disabled={localMembers.length >= formData.maxMembers}
+                              disabled={
+                                localMembers.length >= formData.maxMembers
+                              }
                             >
                               Add to Dept
                             </Button>

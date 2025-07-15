@@ -89,18 +89,11 @@ export interface Volunteer {
     fullName: string;
     email: string;
     phone: string;
+    skills?: string[];
   };
   status: "pending" | "approved" | "rejected";
   departmentId?: string;
   registeredAt: Date;
-}
-
-export interface VolunteerRegistration {
-  id: string;
-  status: string;
-  user: string; // user ID
-  department: string; // department ID
-  campaign: string; // campaign ID
 }
 
 const getAuthHeaders = () => {
@@ -468,6 +461,70 @@ export const deleteTask = async (taskId: string): Promise<void> => {
   }
 };
 
+// volunteer
+export const acceptVolunteer = async (
+  campaignId: string,
+  userId: string
+): Promise<void> => {
+  try {
+    await axios.post(
+      `${API_BASE}/campaigns/${campaignId}/accept/${userId}`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+  } catch (error) {
+    console.error("Error accepting volunteer:", error);
+    throw new Error("Failed to accept volunteer");
+  }
+};
+
+export const rejectVolunteer = async (
+  campaignId: string,
+  userId: string
+): Promise<void> => {
+  try {
+    await axios.post(
+      `${API_BASE}/campaigns/${campaignId}/reject/${userId}`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+  } catch (error) {
+    console.error("Error rejecting volunteer:", error);
+    throw new Error("Failed to reject volunteer");
+  }
+};
+
+// Update getCampaignVolunteers to include user ID
+export const getCampaignVolunteers = async (
+  campaignId: string
+): Promise<Volunteer[]> => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/campaigns/${campaignId}/volunteers`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
+    return response.data.volunteers.map((vol: any) => ({
+      userId: vol._id, // User ID
+      user: {
+        _id: vol.user._id, // User ID
+        fullName: vol.user.fullName,
+        email: vol.user.email,
+        phone: vol.user.phone,
+      },
+      status: vol.status,
+      departmentId: vol.departmentId,
+      registeredAt: new Date(vol.registeredAt),
+    }));
+  } catch (error) {
+    console.error("Error fetching volunteers:", error);
+    throw new Error("Failed to fetch volunteers");
+  }
+};
+
+//Department 
 export const getDepartmentsByCampaignId = async (
   campaignId: string
 ): Promise<Department[]> => {
@@ -494,6 +551,48 @@ export const getDepartmentsByCampaignId = async (
     } else {
       console.error("Error fetching departments:", error);
       throw new Error("Failed to fetch departments");
+    }
+  }
+};
+
+export const getDepartmentsByVolunteerId = async (
+  volunteerId: string
+): Promise<Department[]> => {
+  try {
+    // Validate volunteerId format
+    if (!volunteerId || !volunteerId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid volunteer ID format: ${volunteerId}`);
+    }
+
+    const response = await axios.get(
+      `${API_BASE}/campaigns/departments/volunteer/${volunteerId}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
+    // Handle both response.data and response.data.data cases
+    const departmentsData = response.data.data || response.data || [];
+
+    return departmentsData.map((dept: any) => ({
+      _id: dept._id,
+      campaignId: dept.campaignId,
+      name: dept.name,
+      description: dept.description || "",
+      maxMembers: dept.maxMembers || 0,
+      memberIds: dept.memberIds || [],
+      createdAt: dept.createdAt ? new Date(dept.createdAt) : new Date(),
+      updatedAt: dept.updatedAt ? new Date(dept.updatedAt) : new Date(),
+    }));
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("Error fetching departments by volunteer:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch departments by volunteer"
+      );
+    } else {
+      console.error("Error fetching departments by volunteer:", error);
+      throw new Error("Failed to fetch departments by volunteer");
     }
   }
 };
@@ -566,54 +665,6 @@ export const deleteDepartment = async (departmentId: string): Promise<void> => {
   }
 };
 
-// volunteer
-// Add this function to staff.ts
-export const acceptVolunteer = async (
-  campaignId: string,
-  userId: string
-): Promise<void> => {
-  try {
-    await axios.post(
-      `${API_BASE}/campaigns/${campaignId}/accept/${userId}`,
-      {},
-      { headers: getAuthHeaders() }
-    );
-  } catch (error) {
-    console.error("Error accepting volunteer:", error);
-    throw new Error("Failed to accept volunteer");
-  }
-};
-
-// Update getCampaignVolunteers to include user ID
-export const getCampaignVolunteers = async (
-  campaignId: string
-): Promise<Volunteer[]> => {
-  try {
-    const response = await axios.get(
-      `${API_BASE}/campaigns/${campaignId}/volunteers`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-
-    return response.data.volunteers.map((vol: any) => ({
-      userId: vol.user._id, // User ID
-      user: {
-        _id: vol.user._id, // User ID
-        fullName: vol.user.fullName,
-        email: vol.user.email,
-        phone: vol.user.phone,
-      },
-      status: vol.status,
-      departmentId: vol.departmentId,
-      registeredAt: new Date(vol.registeredAt),
-    }));
-  } catch (error) {
-    console.error("Error fetching volunteers:", error);
-    throw new Error("Failed to fetch volunteers");
-  }
-};
-
 export const addMemberToDepartment = async (
   departmentId: string,
   userId: string // Change to user ID
@@ -651,24 +702,7 @@ export const removeMemberFromDepartment = async (
   }
 };
 
-export const registerVolunteer = async (
-  campaignId: string,
-  departmentId: string
-): Promise<Campaign> => {
-  try {
-    const response = await axios.post(
-      `${API_BASE}/campaigns/${campaignId}/register`,
-      { departmentId },
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-    return response.data.data;
-  } catch (error) {
-    console.error("Error registering volunteer:", error);
-    throw new Error("Failed to register volunteer");
-  }
-};
+//Task
 
 export const getTasksByPhaseDayId = async (
   phaseDayId: string
@@ -692,7 +726,7 @@ export const getTasksByPhaseDayId = async (
       description: task.description,
       status: task.status || { status: "not-started" }, // Default status if missing
       assignedUsers:
-        task.assignedUsers?.map((u: any) => u.userId || u._id) || [],
+        task.assignedUsers?.map((u: any) => u.userId._id || u._id) || [],
       campaignId: task.campaignId,
       updatedAt: task.updatedAt ? new Date(task.updatedAt) : new Date(),
     }));
@@ -709,16 +743,26 @@ export const createTask = async (
     description: string;
     status?: Task["status"];
     assignedUsers?: string[];
+    phaseDayDate?: Date; // Use the passed date
   }
 ): Promise<Task> => {
   try {
-    // Transform to backend format
+    // Use the provided phaseDayDate or default to current date if not provided
+    const phaseDayDate = payload.phaseDayDate ? new Date(payload.phaseDayDate) : new Date();
+
+    // Set checkinTime to 7 AM and checkoutTime to 8 PM of the phaseDay date
+    const checkinTime = new Date(phaseDayDate);
+    checkinTime.setHours(7, 0, 0, 0); // 7:00 AM
+    const checkoutTime = new Date(phaseDayDate);
+    checkoutTime.setHours(20, 0, 0, 0); // 8:00 PM
+
+    // Transform to backend format with calculated times
     const backendPayload = {
       ...payload,
       assignedUsers: (payload.assignedUsers || []).map((userId) => ({
         userId,
-        checkinTime: null,
-        checkoutTime: null,
+        checkinTime: checkinTime.toISOString(),
+        checkoutTime: checkoutTime.toISOString(),
       })),
     };
 
@@ -728,7 +772,6 @@ export const createTask = async (
       { headers: getAuthHeaders() }
     );
 
-    // Fixed: Use response.data.data instead of response.data
     const taskData = response.data.data;
     return {
       ...taskData,
@@ -749,6 +792,7 @@ export const updateTask = async (
     assignedUsers?: string[];
     evaluation?: "excellent" | "good" | "average" | "poor";
     feedback?: string;
+    phaseDayDate?: Date; // Use the passed date
   }
 ): Promise<Task> => {
   try {
@@ -757,14 +801,23 @@ export const updateTask = async (
       throw new Error(`Invalid task ID: ${taskId}`);
     }
 
-    // Transform to backend format
+    // Use the provided phaseDayDate or default to current date if not provided
+    const phaseDayDate = payload.phaseDayDate ? new Date(payload.phaseDayDate) : new Date();
+
+    // Set checkinTime to 7 AM and checkoutTime to 8 PM of the phaseDay date
+    const checkinTime = new Date(phaseDayDate);
+    checkinTime.setHours(7, 0, 0, 0); // 7:00 AM
+    const checkoutTime = new Date(phaseDayDate);
+    checkoutTime.setHours(20, 0, 0, 0); // 8:00 PM
+
+    // Transform to backend format with calculated times
     const backendPayload = {
       ...payload,
       ...(payload.assignedUsers && {
         assignedUsers: payload.assignedUsers.map((userId) => ({
           userId,
-          checkinTime: null,
-          checkoutTime: null,
+          checkinTime: checkinTime.toISOString(),
+          checkoutTime: checkoutTime.toISOString(),
         })),
       }),
     };
@@ -775,20 +828,17 @@ export const updateTask = async (
       { headers: getAuthHeaders() }
     );
 
-    // Handle both response.data and response.data.data cases
-    const taskData = response.data.data || response.data;
-
-    // Transform response to frontend format
+    const updatedTaskData = response.data.data || response.data;
     return {
-      _id: taskData._id || taskData.id,
-      phaseDayId: taskData.phaseDayId,
-      title: taskData.title || taskData.name,
-      description: taskData.description,
-      status: taskData.status || { status: "not-started" },
+      _id: updatedTaskData._id || updatedTaskData.id,
+      phaseDayId: updatedTaskData.phaseDayId,
+      title: updatedTaskData.title || updatedTaskData.name,
+      description: updatedTaskData.description,
+      status: updatedTaskData.status || { status: "not-started" },
       assignedUsers:
-        taskData.assignedUsers?.map((u: any) => u.userId || u._id) || [],
-      campaignId: taskData.campaignId,
-      updatedAt: taskData.updatedAt ? new Date(taskData.updatedAt) : new Date(),
+        updatedTaskData.assignedUsers?.map((u: any) => u.userId || u._id) || [],
+      campaignId: updatedTaskData.campaignId,
+      updatedAt: updatedTaskData.updatedAt ? new Date(updatedTaskData.updatedAt) : new Date(),
     };
   } catch (error) {
     console.error("Error updating task:", error);

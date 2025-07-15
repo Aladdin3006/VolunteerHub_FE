@@ -16,7 +16,7 @@ import {
   Button,
 } from "@mui/material";
 import { Campaign, getStaffCampaigns } from "../../apis/staff";
-import CreatePhaseModal from "./CreatePhaseModal";
+import CreatePhaseModal from "../../components/staff/CreatePhaseModal";
 import ManageTask from "../../components/staff/ManageTask";
 import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
@@ -68,15 +68,12 @@ const ManagerCampaignStaff: React.FC = () => {
       }
     };
     fetchCampaigns();
-
-    console.log("Selected campaign:", selectedCampaign);
   }, []);
 
   const handleOpenModal = (campaign: Campaign, tabIndex: number = 0) => {
     setSelectedCampaign(campaign);
     setModalOpen(true);
-    setActiveTab(tabIndex); // Set the active tab based on parameter
-    console.log("Selected campaign when opening modal:", campaign);
+    setActiveTab(tabIndex);
   };
 
   const handleOpenOverviewModal = (campaign: Campaign) => {
@@ -204,6 +201,7 @@ const ManagerCampaignStaff: React.FC = () => {
                 campaignId={selectedCampaign._id}
                 open={activeTab === 0}
                 onClose={handleCloseModal}
+                selectedCampaign={selectedCampaign}
               />
             </TabPanel>
             <TabPanel value={activeTab} index={1}>
@@ -215,11 +213,9 @@ const ManagerCampaignStaff: React.FC = () => {
             <TabPanel value={activeTab} index={3}>
               <VolunteerRequestsModal
                 open={true}
-                onClose={() => {}}
-                volunteers={[]}
-                onAcceptVolunteer={async (userId) => {
-                  // This will be handled in DepartmentManager or ManageTask
-                }}
+                onClose={handleCloseModal}
+                campaignId={selectedCampaign._id}
+                selectedCampaign={{ name: selectedCampaign.name }}
               />
             </TabPanel>
           </DialogContent>

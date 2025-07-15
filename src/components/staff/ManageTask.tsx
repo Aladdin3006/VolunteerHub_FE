@@ -22,6 +22,12 @@ import {
   AccordionSummary,
   AccordionDetails,
   Stack,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -41,6 +47,8 @@ import {
   Phase,
   getPhasesByCampaignId,
   PhaseDay,
+  Department,
+  getDepartmentsByVolunteerId,
 } from "../../apis/staff";
 import TaskCRUDModal from "./TaskCRUDModal";
 
@@ -54,9 +62,14 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const [phases, setPhases] = useState<Phase[]>([]);
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [phaseDays, setPhaseDays] = useState<PhaseDay[]>([]);
-  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(null);
+  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
+    null
+  );
   const [tasks, setTasks] = useState<Task[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [departments, setDepartments] = useState<Record<string, Department[]>>(
+    {}
+  ); // Store departments by volunteerId
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -64,7 +77,9 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
+    "success"
+  );
 
   useEffect(() => {
     const fetchPhases = async () => {
@@ -87,6 +102,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       setSelectedPhaseDay(null);
     }
   }, [selectedPhase]);
+  console.log("selectedPhaseDay", selectedPhaseDay);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,6 +115,18 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           ]);
           setTasks(tasksData);
           setVolunteers(volunteersData);
+
+          // Fetch departments for each volunteer
+          const departmentsMap: Record<string, Department[]> = {};
+          await Promise.all(
+            volunteersData.map(async (volunteer) => {
+              const deptData = await getDepartmentsByVolunteerId(
+                volunteer.user._id
+              );
+              departmentsMap[volunteer.user._id] = deptData;
+            })
+          );
+          setDepartments(departmentsMap);
         } catch (error) {
           console.error("Error fetching data:", error);
         } finally {
@@ -126,9 +154,16 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         title: taskData.title,
         description: taskData.description,
         assignedUsers: taskData.assignedUsers || [],
-        status: { status: taskData.assignedUsers.length > 0 ? "in_progress" : "not-started" },
+        status: {
+          status:
+            taskData.assignedUsers.length > 0 ? "in_progress" : "not-started",
+        },
+        phaseDayDate: selectedPhaseDay.date, // Pass the phaseDay date
       });
-      setTasks((prevTasks) => [newTask, ...Array.isArray(prevTasks) ? prevTasks : []]);
+      setTasks((prevTasks) => [
+        newTask,
+        ...(Array.isArray(prevTasks) ? prevTasks : []),
+      ]);
       setTaskModalOpen(false);
       setSnackbarMessage("Task created successfully!");
       setSnackbarSeverity("success");
@@ -153,8 +188,11 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       const updatedTask = await updateTask(taskId, {
         assignedUsers: assignedUsers || [],
         status: { status: "in_progress" },
+        phaseDayDate: selectedPhaseDay?.date, // Pass the phaseDay date
       });
-      setTasks((prevTasks) => prevTasks.map((t) => (t._id === taskId ? updatedTask : t)));
+      setTasks((prevTasks) =>
+        prevTasks.map((t) => (t._id === taskId ? updatedTask : t))
+      );
       setSnackbarMessage("Volunteers assigned successfully!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
@@ -166,10 +204,19 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   };
 
-  const handleReviewTask = async (taskId: string, evaluation: TaskEvaluation, feedback: string) => {
+  const handleReviewTask = async (
+    taskId: string,
+    evaluation: TaskEvaluation,
+    feedback: string
+  ) => {
     try {
       const updatedTask = await updateTask(taskId, {
-        status: { status: "approved", evaluation, feedback, submittedAt: new Date() },
+        status: {
+          status: "approved",
+          evaluation,
+          feedback,
+          submittedAt: new Date(),
+        },
       });
       setTasks(tasks.map((t) => (t._id === taskId ? updatedTask : t)));
       setReviewModalOpen(false);
@@ -193,9 +240,12 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     setSelectedPhaseDay(null);
   };
 
-  const notStartedTasks = tasks?.filter((t) => t?.status?.status === "not-started") || [];
-  const inProgressTasks = tasks?.filter((t) => t?.status?.status === "in_progress") || [];
-  const submittedTasks = tasks?.filter((t) => t?.status?.status === "submitted") || [];
+  const notStartedTasks =
+    tasks?.filter((t) => t?.status?.status === "not-started") || [];
+  const inProgressTasks =
+    tasks?.filter((t) => t?.status?.status === "in_progress") || [];
+  const submittedTasks =
+    tasks?.filter((t) => t?.status?.status === "submitted") || [];
 
   if (!selectedPhase) {
     return (
@@ -211,7 +261,9 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
               {phases.map((phase) => (
                 <ListItem key={phase._id} divider>
                   <ListItemText
-                    primary={<Typography fontWeight="bold">{phase.name}</Typography>}
+                    primary={
+                      <Typography fontWeight="bold">{phase.name}</Typography>
+                    }
                     secondary={phase.description}
                   />
                   <ListItemSecondaryAction>
@@ -256,7 +308,11 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
             {phaseDays.map((day) => (
               <ListItem key={day._id} divider>
                 <ListItemText
-                  primary={<Typography fontWeight="bold">{new Date(day.date).toLocaleDateString()}</Typography>}
+                  primary={
+                    <Typography fontWeight="bold">
+                      {new Date(day.date).toLocaleDateString()}
+                    </Typography>
+                  }
                   secondary={day.checkinLocation?.address}
                 />
                 <ListItemSecondaryAction>
@@ -289,14 +345,17 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         <Link component="button" onClick={goBackToPhaseDays}>
           {selectedPhase.name}
         </Link>
-        <Typography>{new Date(selectedPhaseDay.date).toLocaleDateString()}</Typography>
+        <Typography>
+          {new Date(selectedPhaseDay.date).toLocaleDateString()}
+        </Typography>
       </Breadcrumbs>
       <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
         <IconButton onClick={goBackToPhaseDays} sx={{ mr: 1 }}>
           <ArrowBack />
         </IconButton>
         <Typography variant="h6">
-          Task Management: {new Date(selectedPhaseDay.date).toLocaleDateString()}
+          Task Management:{" "}
+          {new Date(selectedPhaseDay.date).toLocaleDateString()}
         </Typography>
       </Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
@@ -327,12 +386,15 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
             <TaskList
               tasks={notStartedTasks}
               volunteers={volunteers}
+              departments={departments}
               onAssign={(task) => {
                 setSelectedTask(task);
                 setTaskModalOpen(true);
               }}
               onUnassign={(task, userId) => {
-                const updatedUsers = task.assignedUsers.filter((id) => id !== userId);
+                const updatedUsers = task.assignedUsers.filter(
+                  (id) => id !== userId
+                );
                 handleAssignTask(task._id, updatedUsers);
               }}
             />
@@ -341,10 +403,15 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
             <TaskList
               tasks={inProgressTasks}
               volunteers={volunteers}
+              departments={departments}
               onAction={(task) => {
-                updateTask(task._id, { status: { status: "submitted" } }).then((updatedTask) => {
-                  setTasks(tasks.map((t) => (t._id === task._id ? updatedTask : t)));
-                });
+                updateTask(task._id, { status: { status: "submitted" } }).then(
+                  (updatedTask) => {
+                    setTasks(
+                      tasks.map((t) => (t._id === task._id ? updatedTask : t))
+                    );
+                  }
+                );
               }}
               actionLabel="Mark as Submitted"
               actionIcon={<Assignment />}
@@ -354,6 +421,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
             <TaskList
               tasks={submittedTasks}
               volunteers={volunteers}
+              departments={departments}
               onAction={(task) => {
                 setSelectedTask(task);
                 setReviewModalOpen(true);
@@ -380,6 +448,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           }
         }}
         volunteers={volunteers}
+        departments={departments}
         task={selectedTask}
       />
       <TaskCRUDModal
@@ -387,10 +456,15 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         onClose={() => setReviewModalOpen(false)}
         onSubmit={(taskData) => {
           if (selectedTask && taskData.evaluation && taskData.feedback) {
-            handleReviewTask(selectedTask._id, taskData.evaluation as TaskEvaluation, taskData.feedback);
+            handleReviewTask(
+              selectedTask._id,
+              taskData.evaluation as TaskEvaluation,
+              taskData.feedback
+            );
           }
         }}
         volunteers={volunteers}
+        departments={departments}
         task={selectedTask}
         isReviewMode={true}
       />
@@ -414,6 +488,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
 interface TaskListProps {
   tasks: Task[];
   volunteers: Volunteer[];
+  departments: Record<string, Department[]>;
   onAssign?: (task: Task) => void;
   onUnassign?: (task: Task, userId: string) => void;
   onAction?: (task: Task) => void;
@@ -424,6 +499,7 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
   volunteers,
+  departments,
   onAssign,
   onUnassign,
   onAction,
@@ -431,7 +507,11 @@ const TaskList: React.FC<TaskListProps> = ({
   actionIcon,
 }) => {
   if (!tasks || tasks.length === 0) {
-    return <Typography variant="body1" sx={{ p: 2, textAlign: "center" }}>No tasks found in this category</Typography>;
+    return (
+      <Typography variant="body1" sx={{ p: 2, textAlign: "center" }}>
+        No tasks found in this category
+      </Typography>
+    );
   }
 
   return (
@@ -440,20 +520,40 @@ const TaskList: React.FC<TaskListProps> = ({
         <ListItem
           key={task?._id || `task-${index}`}
           divider
-          sx={{ "&:hover": { backgroundColor: "action.hover" }, display: "flex", alignItems: "flex-start", minHeight: "56px" }}
+          sx={{
+            "&:hover": { backgroundColor: "action.hover" },
+            display: "flex",
+            alignItems: "flex-start",
+            minHeight: "56px",
+          }}
         >
           <ListItemText
             primary={<Typography fontWeight="bold">{task.title}</Typography>}
             secondary={task.description}
-            sx={{ flex: 2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", mr: 1 }}
+            sx={{
+              flex: 2,
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              mr: 1,
+            }}
           />
-          <Stack direction="row" spacing={1} sx={{ flex: 0, alignItems: "center", height: "56px" }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ flex: 0, alignItems: "center", height: "56px" }}
+          >
             {onAssign && (
               <Button
                 variant="outlined"
                 startIcon={<Assignment />}
                 onClick={() => onAssign(task)}
-                sx={{ mr: 1, height: "100%", minHeight: "56px", padding: "6px 16px" }}
+                sx={{
+                  mr: 1,
+                  height: "100%",
+                  minHeight: "56px",
+                  padding: "6px 16px",
+                }}
               >
                 Assign Volunteers
               </Button>
@@ -469,34 +569,49 @@ const TaskList: React.FC<TaskListProps> = ({
               </Button>
             )}
           </Stack>
-          <Stack direction="row" spacing={1} sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}
+          >
             {task.assignedUsers && task.assignedUsers.length > 0 ? (
-              <Accordion sx={{ width: "100%", boxShadow: "none", "&:before": { display: "none" } }}>
+              <Accordion
+                sx={{
+                  width: "100%",
+                  boxShadow: "none",
+                  "&:before": { display: "none" },
+                }}
+              >
                 <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography variant="subtitle2">Volunteers ({task.assignedUsers.length})</Typography>
+                  <Typography variant="subtitle2">
+                    Volunteers ({task.assignedUsers.length})
+                  </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <List>
-                    {task.assignedUsers.map((userId) => {
-                      const volunteer = volunteers.find((v) => v.user._id === userId);
-                      return (
-                        <ListItem key={userId} disableGutters>
-                          <ListItemText primary={volunteer?.user.fullName || "Unknown"} />
-                          {onUnassign && (
-                            <ListItemSecondaryAction>
-                              <IconButton edge="end" onClick={() => onUnassign(task, userId)}>
-                                <Close />
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          )}
-                        </ListItem>
-                      );
-                    })}
-                  </List>
+                  <TableContainer>
+                    <Table>
+                      <TableBody>
+                        {task.assignedUsers.map((userId) => {
+                          const volunteer = volunteers.find(
+                            (v) => v.user._id === userId
+                          );
+                          return (
+                            <TableRow key={userId}>
+                              <TableCell>
+                                {volunteer?.user.fullName || "Unknown"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </AccordionDetails>
               </Accordion>
             ) : (
-              <Typography variant="caption" color="textSecondary">No volunteers assigned</Typography>
+              <Typography variant="caption" color="textSecondary">
+                No volunteers assigned
+              </Typography>
             )}
           </Stack>
         </ListItem>

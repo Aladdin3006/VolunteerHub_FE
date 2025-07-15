@@ -1,5 +1,37 @@
 const API_BASE = "http://localhost:4000";
 
+export const getUserProfile = async (userId: string, token: string) => {
+  try {
+    const response = await fetch(`${API_BASE}/users/${userId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      user: result.user || result,
+      message: result.message,
+    };
+  } catch (error) {
+    console.error("Fetch user profile error:", error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error("Network error: Unable to connect to server");
+    } else if (error instanceof Error) {
+      throw new Error(`Fetch user profile failed: ${error.message}`);
+    } else {
+      throw new Error("Unknown error during user profile fetch");
+    }
+  }
+};
+
 export const updateUserAvatar = async (
   userId: string,
   avatarFile: File,
@@ -17,7 +49,6 @@ export const updateUserAvatar = async (
       body: formData,
     });
 
-    // Check if response is ok
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
@@ -25,7 +56,7 @@ export const updateUserAvatar = async (
 
     const result = await response.json();
     return {
-      user: result.user || result,  // Handle different response structures
+      user: result.user || result,
       id: result.id,
       message: result.message,
     };
@@ -37,6 +68,114 @@ export const updateUserAvatar = async (
       throw new Error(`Avatar upload failed: ${error.message}`);
     } else {
       throw new Error("Unknown error during avatar upload");
+    }
+  }
+};
+
+export const getSkillsVolunteer = async (
+  userId: string,
+  token: string
+) => {
+  try {
+    const response = await fetch(`${API_BASE}/users/${userId}/skills`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      message: result.message,
+      data: result.data, // assuming this contains the skills array
+    };
+  } catch (error) {
+    console.error("Get skills error:", error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error("Network error: Unable to connect to server");
+    } else if (error instanceof Error) {
+      throw new Error(`Get skills failed: ${error.message}`);
+    } else {
+      throw new Error("Unknown error during skills retrieval");
+    }
+  }
+};
+
+export const addSkillsToUser = async (
+  userId: string,
+  skills: string[],
+  token: string
+) => {
+  try {
+    const response = await fetch(`${API_BASE}/users/${userId}/skills`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ skills }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  } catch (error) {
+    console.error("Add skills error:", error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error("Network error: Unable to connect to server");
+    } else if (error instanceof Error) {
+      throw new Error(`Add skills failed: ${error.message}`);
+    } else {
+      throw new Error("Unknown error during skills addition");
+    }
+  }
+};
+
+export const updateSkillsOfUser = async (
+  userId: string,
+  skills: string[],
+  token: string
+) => {
+  try {
+    const response = await fetch(`${API_BASE}/users/${userId}/skills`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ skills }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      message: result.message,
+      data: result.data,
+    };
+  } catch (error) {
+    console.error("Update skills error:", error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error("Network error: Unable to connect to server");
+    } else if (error instanceof Error) {
+      throw new Error(`Update skills failed: ${error.message}`);
+    } else {
+      throw new Error("Unknown error during skills update");
     }
   }
 };
