@@ -12,8 +12,8 @@ interface IProps {
   onChange: (value: ICategory | null) => void;
   value?: ICategory | null;
   slotProps?: {
-    autocomplete: AutocompleteProps<any, any, any, any>;
-    textfield: TextFieldProps;
+    autocomplete?: AutocompleteProps<any, any, any, any>;
+    textfield?: TextFieldProps;
   };
   suggestText?: string;
 }
@@ -44,7 +44,7 @@ const CategorySearchInput: React.FC<IProps> = ({
     try {
       setLoading(true);
       const res = await CAMPAIGN_API.searchCategories(query);
-      setOptions(res.data); // Make sure res.data is an array of Category
+      setOptions(res.data || []); // Make sure res.data is an array of Category
     } catch (err) {
       console.error("Failed to fetch categories:", err);
       setOptions([]);

@@ -1,12 +1,23 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
-import { Dialog, DialogContent, IconButton, DialogProps } from "@mui/material";
+import {
+  Dialog,
+  DialogContent,
+  IconButton,
+  DialogProps,
+  Alert,
+  Snackbar,
+} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { ForumPostNew, IForumPostNewRef } from "./ForumPostNew";
+import {
+  ForumPostNew,
+  IFormPostFormData,
+  IForumPostNewRef,
+} from "../../components/forum/ForumPostNew";
+import { FORUM_API, IUserShort } from "../../apis/forum";
+import { getLocalUser, toBase64 } from "../../apis/utils";
 
 type IProps = Omit<DialogProps, "open"> & {
-  avatarUrl: string;
-  userName: string;
-  onSubmit?: (data: { text: string; images: File[]; tags: string[] }) => void;
+  afterSubmit?: (data: IFormPostFormData) => void;
 };
 
 export interface IForumPostNewDialogRef {
@@ -15,9 +26,19 @@ export interface IForumPostNewDialogRef {
 
 export const ForumPostNewDialog = forwardRef<IForumPostNewDialogRef, IProps>(
   (props, ref) => {
-    const { avatarUrl, userName, onSubmit, ...rest } = props;
+    const { afterSubmit, ...rest } = props;
     const [open, setOpen] = useState<boolean>(false);
+    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
     const forumPostNewRef = useRef<IForumPostNewRef | null>(null);
+    const [user, _setUser] = useState<IUserShort>(() => {
+      return (
+        getLocalUser() || {
+          _id: "0",
+          fullName: "Unknown",
+          avatar: "",
+        }
+      );
+    });
 
     const close = () => {
       setOpen(false);
@@ -29,6 +50,28 @@ export const ForumPostNewDialog = forwardRef<IForumPostNewDialogRef, IProps>(
         setOpen(true);
       },
     }));
+
+    const handleSubmitData = async (data: IFormPostFormData) => {
+      try {
+        const images = await Promise.all(
+          data.images.map((file) => toBase64(file))
+        );
+        const res = await FORUM_API.createNewPost({
+          title: data.title,
+          content: data.content,
+          images: images,
+          tags: data.tags.map((tag) => tag._id),
+        });
+        if (res.error == null) {
+          afterSubmit && afterSubmit(data);
+          close();
+        } else {
+          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+        }
+      } catch (error) {
+        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+      }
+    };
 
     return (
       <Dialog
@@ -84,15 +127,30 @@ export const ForumPostNewDialog = forwardRef<IForumPostNewDialogRef, IProps>(
         >
           <ForumPostNew
             ref={forumPostNewRef}
-            avatarUrl={avatarUrl}
-            userName={userName}
-            onSubmit={onSubmit}
+            avatarUrl={user.avatar}
+            userName={user.fullName}
+            onSubmit={handleSubmitData}
             sx={{
               border: "none",
               flex: 1,
             }}
           />
         </DialogContent>
+        {/* Error message */}
+        <Snackbar
+          open={Boolean(snackbarMessage)}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarMessage(null)}
+        >
+          <Alert
+            onClose={() => setSnackbarMessage(null)}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
       </Dialog>
     );
   }

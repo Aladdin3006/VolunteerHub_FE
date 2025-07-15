@@ -1,24 +1,27 @@
 import React from "react";
-import { Stack, Typography, Button } from "@mui/material";
+import { Stack, Typography, Button, StackProps } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
-interface ErrorMessageProps {
+interface ErrorMessageProps extends StackProps {
   message?: string;
   buttonText?: string;
   onRetry?: () => void;
 }
 
-const ErrorMessage: React.FC<ErrorMessageProps> = ({
-  message = "Đã xảy ra lỗi. Vui lòng thử lại.",
-  buttonText = "Thử lại",
-  onRetry,
-}) => {
+const ErrorMessage: React.FC<ErrorMessageProps> = (props) => {
+  const {
+    message = "Đã xảy ra lỗi. Vui lòng thử lại.",
+    buttonText = "Thử lại",
+    onRetry,
+    ...rest
+  } = props;
   return (
     <Stack
       alignItems="center"
       justifyContent="center"
       spacing={2}
-      sx={{ height: "100%", textAlign: "center" }}
+      {...rest}
+      sx={{ height: "100%", textAlign: "center", ...rest.sx }}
     >
       <ErrorOutlineIcon color="error" sx={{ fontSize: 48 }} />
 

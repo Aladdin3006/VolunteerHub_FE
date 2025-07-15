@@ -34,6 +34,7 @@ import NewCampaignPage from "../pages/staff/NewCampaignPage";
 import NewDonationPage from "../pages/staff/NewDonationPage";
 import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
 import UpdateCampaignPage from "../pages/staff/UpdateCampaignPage";
+import ForumPage from "../pages/forum/ForumPage";
 
 const AppRoutes = () => (
   <Routes>
@@ -172,6 +173,15 @@ const AppRoutes = () => (
       }
     />
 
+    <Route
+      path="/forum"
+      element={
+        <LayoutWrapper>
+          <ForumPage />
+        </LayoutWrapper>
+      }
+    />
+
     {/* User Dashboard Routes */}
     <Route
       path="/user/*"
@@ -243,7 +253,7 @@ const AppRoutes = () => (
                 </LayoutWrapper>
               }
             />
-             <Route
+            <Route
               path="departments"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">

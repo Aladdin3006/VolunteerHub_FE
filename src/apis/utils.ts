@@ -1,9 +1,27 @@
+import { IUserShort } from "./forum";
+
 export const getAccessToken = (): string | null => {
   const userVal = localStorage.getItem("user");
   if (userVal) {
     try {
       const user: any = JSON.parse(userVal);
       return user.token;
+    } catch (error) {
+      return null;
+    }
+  }
+  return null;
+};
+
+export const getLocalUser = (): IUserShort | null => {
+  const userVal = localStorage.getItem("user");
+  if (userVal) {
+    try {
+      const user: any = JSON.parse(userVal);
+      return {
+        ...user,
+        _id: (user as any).id ?? user._id,
+      };
     } catch (error) {
       return null;
     }

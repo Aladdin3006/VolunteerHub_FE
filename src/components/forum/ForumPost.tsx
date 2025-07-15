@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { IComment, IForumPost } from "../../apis/forum";
+import { ICommentListItem, IForumPostListItem } from "../../apis/forum";
 import { Divider, Stack, StackProps } from "@mui/material";
 import { ForumPostHeader } from "./ForumPostHeader";
 import { ForumPostFooter } from "./ForumPostFooter";
@@ -11,7 +11,8 @@ interface IProps extends StackProps {
   /**
    * Post data
    */
-  post: IForumPost;
+  post: IForumPostListItem;
+
   onHideClick?: () => void;
   onLikeClick?: () => void;
   onUnLikeClick?: () => void;
@@ -20,8 +21,15 @@ interface IProps extends StackProps {
   onReportClick?: () => void;
   onImageClick?: (images: string[], idx: number) => void;
   hideComment?: boolean;
-  onReply?: (comment: IComment | null, text: string) => void;
+  onReply?: (
+    comment: ICommentListItem | null,
+    text: string
+  ) => Promise<boolean>;
+  onShowReplies?: (comment: ICommentListItem) => Promise<boolean>;
   maxComments?: number;
+
+  onLikeCommentClick?: (comment: ICommentListItem) => void;
+  onUnLikeCommentClick?: (comment: ICommentListItem) => void;
 }
 
 export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
@@ -33,10 +41,13 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     onCommentClick,
     onImageClick,
     onReply,
+    onShowReplies,
     onSaveClick,
     onReportClick,
     hideComment,
     maxComments,
+    onLikeCommentClick,
+    onUnLikeCommentClick,
     ...rest
   } = props;
 
@@ -77,10 +88,12 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       />
       {!hideComment && (
         <ForumPostComments
-          comments={post.comments}
-          currentUserId={"0"}
+          comments={post.comments ?? []}
           maxComments={maxComments ?? 1}
           onReply={onReply}
+          onShowReplies={onShowReplies}
+          onLike={onLikeCommentClick}
+          onUnLike={onUnLikeCommentClick}
         />
       )}
       {onReply && <CommentInput onSend={(text) => onReply(null, text)} />}
