@@ -9,7 +9,8 @@ import {
   Stack,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { CampaignVolunteer } from "../../apis/campaign";   // ✅ import type
+import { CampaignVolunteer } from "../../apis/campaign";
+// import { useAuth } from "../../contexts/AuthContext"; // 👈 hoặc hook bạn đang dùng để lấy currentUserId
 
 interface Props {
   campaign: CampaignVolunteer;
@@ -17,6 +18,18 @@ interface Props {
 
 const VolunteerCard: React.FC<Props> = ({ campaign }) => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUserId = user._id || user.id;
+
+
+  // Tìm volunteer hiện tại của user trong danh sách campaign.volunteers
+  const myVolunteer = campaign.volunteers?.find(
+    (v) => v.user?._id === currentUserId
+  );
+
+  const isVolunteerApproved = myVolunteer?.status === "approved";
+  const isCampaignRunning = campaign.status === "in-progress";
+  const showTaskUI = isVolunteerApproved && isCampaignRunning;
 
   return (
     <Card
@@ -24,14 +37,14 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
       sx={{
         borderRadius: 3,
         transition: "transform .2s, box-shadow .2s",
-        width: 450, // Thay đổi chiều rộng tại đây
-        height: 400, // Thay đổi chiều cao tại đây
+        width: 450,
+        height: 400,
         "&:hover": { transform: "translateY(-4px)", boxShadow: 20 },
       }}
     >
       <CardActionArea
-        component="div" // ✅ thêm dòng này để tránh HTML lỗi
-        onClick={() => navigate(`/volunteer/${campaign._id}`)} // nhớ thêm ID nếu cần
+        component="div"
+        onClick={() => navigate(`/volunteer/${campaign._id}`)}
       >
         <CardMedia
           component="img"
@@ -58,13 +71,33 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
             )}
           </Stack>
 
-          <Button
-            variant="contained"
-            size="small"
-            sx={{ borderRadius: 2, textTransform: "none" }}
-          >
-            Tham gia ngay
-          </Button>
+          <Stack direction="row" spacing={1}>
+            {showTaskUI && (
+              <Button
+                variant="outlined"
+                size="small"
+                sx={{ borderRadius: 2, textTransform: "none" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/campaign/${campaign._id}/tasks`);
+                }}
+              >
+                Task
+              </Button>
+            )}
+
+            <Button
+              variant="contained"
+              size="small"
+              sx={{ borderRadius: 2, textTransform: "none" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/volunteer/${campaign._id}`);
+              }}
+            >
+              Tham gia ngay
+            </Button>
+          </Stack>
         </CardContent>
       </CardActionArea>
     </Card>

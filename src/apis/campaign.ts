@@ -58,16 +58,35 @@ export interface CampaignVolunteer {
   phases?: {
     _id: string;
     name: string;
-    start: string;
-    end: string;
+    startDate: string;
+    endDate: string;
     description?: string;
+    phaseDays?: {
+      _id: string;
+      date: string;
+      name?: string;
+      description?: string;
+      tasks?: {
+        _id: string;
+        phaseDayId: string;
+        title: string;
+        description?: string;
+        status: {
+          status: string;
+        };
+        assignedUsers: {
+          _id: string;
+          userId: string;
+          checkinTime: string | null;
+          checkoutTime: string | null;
+        }[];
+      }[];
+    }[];
   }[];
   status?: "upcoming" | "in-progress" | "completed";
-  
-
-  /** 👇 mảng tình nguyện viên */
   volunteers?: VolunteerRecord[];
 }
+
 
 export interface Category {
   _id: string;

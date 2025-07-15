@@ -32,6 +32,7 @@ import CreatePhaseCampaign from "../pages/staff/CreatePhaseCampaign";
 import DepartmentManager from "../pages/staff/DepartmentManager";
 import NewCampaignPage from "../pages/staff/NewCampaignPage";
 import NewDonationPage from "../pages/staff/NewDonationPage";
+import VolunteerTaskList from "../pages/campaignVolunteer/VolunteerTaskList";
 
 const AppRoutes = () => (
   <Routes>
@@ -122,6 +123,14 @@ const AppRoutes = () => (
       element={
         <LayoutWrapper>
           <CampaignVolunteer />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/campaign/:campaignId/tasks"
+      element={
+        <LayoutWrapper>
+          <VolunteerTaskList  />
         </LayoutWrapper>
       }
     />
