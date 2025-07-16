@@ -21,7 +21,7 @@ import {
   Delete,
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
-import { ILocation, IPhaseData, IPhaseDayData } from "../../apis/campaign-new";
+import { ILocation, IPhaseData, IPhaseDayData } from "../../apis/campaign";
 import * as yup from "yup";
 import { useFormik } from "formik";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";

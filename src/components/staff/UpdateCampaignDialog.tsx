@@ -11,7 +11,7 @@ import {
   Typography,
   Skeleton,
 } from "@mui/material";
-import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
+import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
 import {
   CampaignForm,
   ICampaignFormData,

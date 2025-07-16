@@ -1,4 +1,4 @@
-import { ICategory } from "./campaign-new";
+import { ICategory } from "./campaign";
 import {
   getAccessToken,
   handleResponse,

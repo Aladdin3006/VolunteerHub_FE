@@ -15,7 +15,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import CategorySearchInput from "../utils/CategorySearchInput";
 import CategoryTag from "../utils/CategoryTag";
-import { ICampaignDataUpload, IPhaseData } from "../../apis/campaign-new";
+import { ICampaignDataUpload, IPhaseData } from "../../apis/campaign";
 import * as Yup from "yup";
 import { useFormik } from "formik";
 import ImageUploadPlaceholder from "../utils/ImageUploadPlacehoder";

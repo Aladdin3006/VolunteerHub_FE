@@ -6,7 +6,7 @@ import {
   AutocompleteProps,
   TextFieldProps,
 } from "@mui/material";
-import { CAMPAIGN_API, ICategory } from "../../apis/campaign-new";
+import { CAMPAIGN_API, ICategory } from "../../apis/campaign";
 
 interface IProps {
   onChange: (value: ICategory | null) => void;
