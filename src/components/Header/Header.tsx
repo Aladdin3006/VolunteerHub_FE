@@ -125,9 +125,9 @@ const Header: React.FC = () => {
                       <span>Trợ giúp & hỗ trợ</span>
                     </div>
 
-                    <div className="dropdown-item" onClick={() => navigate("/accessibility")}>
+                    <div className="dropdown-item" onClick={() => navigate("/myCampaign")}>
                       <FaDesktop className="dropdown-icon" />
-                      <span>Hiển thị & trợ năng</span>
+                      <span>Chiến Dịch của tôi</span>
                     </div>
 
                     <div className="dropdown-item" onClick={handleLogout}>

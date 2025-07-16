@@ -19,17 +19,8 @@ interface Props {
 const VolunteerCard: React.FC<Props> = ({ campaign }) => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const currentUserId = user._id || user.id;
-
-
+ 
   // Tìm volunteer hiện tại của user trong danh sách campaign.volunteers
-  const myVolunteer = campaign.volunteers?.find(
-    (v) => v.user?._id === currentUserId
-  );
-
-  const isVolunteerApproved = myVolunteer?.status === "approved";
-  const isCampaignRunning = campaign.status === "in-progress";
-  const showTaskUI = isVolunteerApproved && isCampaignRunning;
 
   return (
     <Card
@@ -72,20 +63,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
           </Stack>
 
           <Stack direction="row" spacing={1}>
-            {showTaskUI && (
-              <Button
-                variant="outlined"
-                size="small"
-                sx={{ borderRadius: 2, textTransform: "none" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/campaign/${campaign._id}/tasks`);
-                }}
-              >
-                Task
-              </Button>
-            )}
-
+          
             <Button
               variant="contained"
               size="small"
