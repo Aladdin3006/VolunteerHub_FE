@@ -25,11 +25,9 @@ import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetai
 
 import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
-import NewCampaignPage from "../pages/staff/NewCampaignPage";
 import NewDonationPage from "../pages/staff/NewDonationPage";
 import ManagerCampaignStaff from "@/pages/staff/ManagerCampaignStaff";
 import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
-import UpdateCampaignPage from "../pages/staff/UpdateCampaignPage";
 import ForumPage from "../pages/forum/ForumPage";
 
 const AppRoutes = () => (
@@ -238,46 +236,6 @@ const AppRoutes = () => (
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
                   <ManagerCampaignStaff />
-                </LayoutWrapper>
-              }
-            />
-            {/* <Route
-              path="phase-campaigns"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <CreatePhaseCampaign />
-                </LayoutWrapper>
-              }
-            />
-            <Route
-              path="departments"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <DepartmentManager />
-                </LayoutWrapper>
-              }
-            />
-            <Route
-              path="tasks"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <ManageTask />
-                </LayoutWrapper>
-              }
-            /> */}
-            <Route
-              path="campaigns/new"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <NewCampaignPage />
-                </LayoutWrapper>
-              }
-            />
-            <Route
-              path="campaigns/:id/edit"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <UpdateCampaignPage />
                 </LayoutWrapper>
               }
             />

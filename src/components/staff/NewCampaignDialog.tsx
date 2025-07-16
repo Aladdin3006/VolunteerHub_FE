@@ -10,19 +10,19 @@ import {
   IconButton,
   Typography,
 } from "@mui/material";
+import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
+import { CampaignForm } from "../campaign/CampaignForm";
 import { Close } from "@mui/icons-material";
-import { DONATION_API, IDonationDataUpload } from "../../apis/donation";
-import { DonationForm } from "../../components/donation/DonationForm";
 
 interface IProps extends Omit<DialogProps, "open"> {
-  afterSubmit?: (data: IDonationDataUpload) => void;
+  afterSubmit?: (data: ICampaignDataUpload) => void;
   closeAfterSubmit?: boolean;
 }
-export interface INewDonationDialogRef {
+export interface INewCampaignDialogRef {
   open: () => void;
 }
 
-export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
+export const NewCampaignDialog = forwardRef<INewCampaignDialogRef, IProps>(
   (props, ref) => {
     const { afterSubmit, closeAfterSubmit, ...rest } = props;
     const [open, setOpen] = useState<boolean>(false);
@@ -38,9 +38,9 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
       },
     }));
 
-    const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
+    const handleSubmitNewCampaign = async (data: ICampaignDataUpload) => {
       try {
-        const res = await DONATION_API.createDonation(data);
+        const res = await CAMPAIGN_API.createCampaign(data);
         if (typeof res === "object" && (res as any).error != null) {
           setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
         } else {
@@ -71,7 +71,7 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
             alignItems="center"
             justifyContent="center"
           >
-            <Typography variant="h6">Tạo chiến dịch quyên góp</Typography>
+            <Typography variant="h6">Tạo chiến dịch tình nguyện</Typography>
 
             <IconButton
               onClick={close}
@@ -112,8 +112,8 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
             },
           }}
         >
-          <DonationForm
-            onSubmitForm={handleSubmitNewDonation}
+          <CampaignForm
+            onSubmitForm={handleSubmitNewCampaign}
             type="create"
             sx={{
               height: "100%",

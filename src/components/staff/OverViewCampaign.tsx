@@ -53,6 +53,7 @@ interface OverViewCampaignProps {
   open: boolean;
   onClose: () => void;
   onOpenManagement: (tabIndex?: number) => void;
+  onOpenUpdateCampaign: (campaignId: string) => void; // New prop for opening update dialog
 }
 
 const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
@@ -60,6 +61,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
   open,
   onClose,
   onOpenManagement,
+  onOpenUpdateCampaign, // Destructure new prop
 }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -490,9 +492,8 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
             </Box>
           </div>
 
-          {/* Column 3: Actions and Phases */}
+          {/* Column 3: Actions */}
           <div className="campaign-column right-column">
-            {/* Actions */}
             <Box className="campaign-card">
               <Typography
                 variant="h6"
@@ -507,7 +508,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(0)} // Pass tab index for Tasks
+                  onClick={() => onOpenManagement(0)}
                   className="action-button"
                 >
                   Quản lý Phase
@@ -515,7 +516,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(1)} // Pass tab index for Tasks
+                  onClick={() => onOpenManagement(1)}
                   className="action-button"
                 >
                   Quản lý Tasks
@@ -523,7 +524,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(2)} // Pass tab index for Departments
+                  onClick={() => onOpenManagement(2)}
                   className="action-button"
                 >
                   Quản lý Departments
@@ -531,10 +532,18 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(3)} // Pass tab index for Volunteers
+                  onClick={() => onOpenManagement(3)}
                   className="action-button"
                 >
                   Quản lý Volunteers
+                </Button>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => onOpenUpdateCampaign(campaign._id)}
+                  className="action-button"
+                >
+                  Cập nhật chiến dịch
                 </Button>
               </Box>
             </Box>

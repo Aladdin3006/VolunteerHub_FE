@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -15,6 +15,11 @@ import {
   DialogActions,
   Button,
 } from "@mui/material";
+import {
+  INewCampaignDialogRef,
+  NewCampaignDialog,
+} from "../../components/staff/NewCampaignDialog";
+import { IUpdateCampaignDialogRef, UpdateCampaignDialog } from "../../components/staff/UpdateCampaignDialog";
 import { Campaign, getStaffCampaigns } from "../../apis/staff";
 import CreatePhaseModal from "../../components/staff/CreatePhaseModal";
 import ManageTask from "../../components/staff/ManageTask";
@@ -54,6 +59,8 @@ const ManagerCampaignStaff: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [overviewModalOpen, setOverviewModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const newCampaignDialogRef = useRef<INewCampaignDialogRef | null>(null);
+  const updateCampaignDialogRef = useRef<IUpdateCampaignDialogRef | null>(null);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -95,6 +102,20 @@ const ManagerCampaignStaff: React.FC = () => {
     setActiveTab(newValue);
   };
 
+  const handleAfterSubmit = async () => {
+    try {
+      const data = await getStaffCampaigns();
+      setCampaigns(data);
+    } catch (error) {
+      console.error("Error refreshing campaigns:", error);
+    }
+  };
+
+  const handleOpenUpdateCampaign = (campaignId: string) => {
+    updateCampaignDialogRef.current?.open(campaignId);
+    setOverviewModalOpen(false); // Close overview modal when opening update dialog
+  };
+
   return (
     <Box
       sx={{
@@ -108,12 +129,28 @@ const ManagerCampaignStaff: React.FC = () => {
         top: 0,
       }}
     >
-      <Box sx={{ mb: 4, marginTop: { xs: 2, sm: 4 } }}>
+      <Box
+        sx={{
+          mb: 4,
+          marginTop: { xs: 2, sm: 4 },
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
           Campaign Management
         </Typography>
+        <Button
+          variant="contained"
+          onClick={() => {
+            newCampaignDialogRef.current?.open();
+          }}
+          sx={{ mr: 4 }}
+        >
+          Create New Campaign
+        </Button>
       </Box>
-
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
@@ -232,14 +269,27 @@ const ManagerCampaignStaff: React.FC = () => {
           open={overviewModalOpen}
           onClose={() => {
             handleCloseOverviewModal();
-            setModalOpen(false); // Ensure management modal is also closed
+            setModalOpen(false);
           }}
           onOpenManagement={(tabIndex) => {
             handleCloseOverviewModal();
             handleOpenModal(selectedCampaign, tabIndex);
           }}
+          onOpenUpdateCampaign={handleOpenUpdateCampaign}
         />
       )}
+
+      {/* New Campaign Dialog */}
+      <NewCampaignDialog
+        ref={newCampaignDialogRef}
+        afterSubmit={handleAfterSubmit}
+      />
+
+      {/* Update Campaign Dialog */}
+      <UpdateCampaignDialog
+        ref={updateCampaignDialogRef}
+        afterSubmit={handleAfterSubmit}
+      />
     </Box>
   );
 };

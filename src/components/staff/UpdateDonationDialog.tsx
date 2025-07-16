@@ -12,13 +12,13 @@ import {
   Skeleton,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
-import useLoaderState from "../forum/useLoaderState";
-import ErrorMessage from "../../components/utils/ErrorMessage";
+import useLoaderState from "../../pages/forum/useLoaderState";
+import ErrorMessage from "../utils/ErrorMessage";
 import { DONATION_API, IDonationDataUpload } from "../../apis/donation";
 import {
   DonationForm,
   IDonationFormData,
-} from "../../components/donation/DonationForm";
+} from "../donation/DonationForm";
 
 interface IProps extends Omit<DialogProps, "open"> {
   afterSubmit?: (data: IDonationDataUpload) => void;

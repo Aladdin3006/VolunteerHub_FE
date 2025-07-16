@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Snackbar, Stack } from "@mui/material";
 import { useRef, useState } from "react";
-import { INewDonationDialogRef, NewDonationDialog } from "./NewDonationDialog";
+import { INewDonationDialogRef, NewDonationDialog } from "../../components/staff/NewDonationDialog";
 
 export default function NewDonationPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);

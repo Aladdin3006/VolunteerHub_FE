@@ -15,10 +15,10 @@ import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign-new";
 import {
   CampaignForm,
   ICampaignFormData,
-} from "../../components/campaign/CampaignForm";
+} from "../campaign/CampaignForm";
 import { Close } from "@mui/icons-material";
-import useLoaderState from "../forum/useLoaderState";
-import ErrorMessage from "../../components/utils/ErrorMessage";
+import useLoaderState from "../../pages/forum/useLoaderState";
+import ErrorMessage from "../utils/ErrorMessage";
 
 interface IProps extends Omit<DialogProps, "open"> {
   afterSubmit?: (data: ICampaignDataUpload) => void;

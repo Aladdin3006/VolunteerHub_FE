@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import {
   IUpdateDonationDialogRef,
   UpdateDonationDialog,
-} from "./UpdateDonationDialog";
+} from "../../components/staff/UpdateDonationDialog";
 
 export default function UpdateDonationPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
