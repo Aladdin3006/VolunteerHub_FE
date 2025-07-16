@@ -1,4 +1,9 @@
-import { getAccessToken, handleResponse, IDataResponse, toBase64 } from "./utils";
+import {
+  getAccessToken,
+  handleResponse,
+  IDataResponse,
+  toBase64,
+} from "./utils";
 
 export interface ILocation {
   /**
@@ -21,17 +26,25 @@ export interface ICategory {
   icon?: string;
 }
 
-export const fakeCategories: ICategory[] = [
-  {
-    _id: "0",
-    name: "cate1",
-  },
-];
+export interface IPhaseDayData {
+  _id: string;
+  date: Date;
+  location: ILocation;
+}
+
+export interface IPhaseData {
+  _id: string;
+  name: string;
+  description: string;
+  startDate: Date;
+  endDate: Date;
+  phaseDays: IPhaseDayData[];
+}
 
 /**
  * Campaign data
  */
-export interface ICampaignData {
+export interface ICampaignDataItem {
   name: string;
   description: string;
   location: ILocation;
@@ -40,7 +53,7 @@ export interface ICampaignData {
   /**
    * Image (one)
    */
-  campaignImg: string[];
+  campaignImg: string;
   /**
    * Images (up to 10)
    */
@@ -48,7 +61,9 @@ export interface ICampaignData {
   /**
    * categories ids
    */
-  categories: string[];
+  categories: ICategory[];
+
+  phases: IPhaseData[];
 }
 
 /**
@@ -72,6 +87,7 @@ export interface ICampaignDataUpload {
    * categories ids
    */
   categories: string[];
+  phases: IPhaseData[];
 }
 
 const API_BASE = "http://localhost:4000";
@@ -116,5 +132,46 @@ export const CAMPAIGN_API = {
       body: JSON.stringify(submitData),
     });
     return handleResponse<unknown, unknown>(response);
+  },
+
+  async updateCampaign(id: string, data: ICampaignDataUpload) {
+    const campaignImg =
+      typeof data.campaignImg === "string"
+        ? data.campaignImg
+        : await toBase64(data.campaignImg);
+    const gallery = await Promise.all(
+      data.gallery.map(async (img) => {
+        return typeof img === "string" ? img : await toBase64(img);
+      })
+    );
+    const submitData: ICampaignDataUpload = {
+      ...data,
+      campaignImg: campaignImg,
+      gallery: gallery,
+    };
+    const response = await fetch(`${API_BASE}/campaigns/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${getAccessToken() || ""}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(submitData),
+    });
+    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
+      response
+    );
+  },
+
+  async getById(id: string) {
+    const response = await fetch(`${API_BASE}/campaigns/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${getAccessToken() || ""}`,
+      },
+    });
+    return handleResponse<
+      IDataResponse<ICampaignDataItem>,
+      IDataResponse<ICampaignDataItem>
+    >(response);
   },
 } as const;

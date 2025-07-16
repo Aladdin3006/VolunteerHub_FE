@@ -1,18 +1,30 @@
 import { Box, Divider, List, Typography } from "@mui/material";
-import {
-  Bookmark,
-  History,
-  GradeOutlined,
-  ImportContactsOutlined,
-} from "@mui/icons-material";
+import { History, GradeOutlined } from "@mui/icons-material";
 import { SidebarItem } from "../../components/forum/SideBarItem";
-import { IForumPost } from "../../apis/forum";
+import { IForumPostListItem } from "../../apis/forum";
+import { useSearchParams } from "react-router-dom";
 
 interface IProps {
-  saveds: IForumPost[];
-  onOpenShortcut?: (post: IForumPost) => void;
+  shortcuts: IForumPostListItem[];
+  onOpenShortcut?: (post: IForumPostListItem) => void;
 }
-const ForumLeftSide = ({ saveds, onOpenShortcut }: IProps) => {
+const ForumLeftSide = ({ shortcuts, onOpenShortcut }: IProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const openMyForumPosts = () => {
+    setSearchParams({
+      ref: "my",
+    });
+  };
+
+  const openNewForumPosts = () => {
+    setSearchParams({
+      ref: "news",
+    });
+  };
+
+  const ref = searchParams.get("ref");
+
   return (
     <Box
       sx={{
@@ -24,17 +36,27 @@ const ForumLeftSide = ({ saveds, onOpenShortcut }: IProps) => {
       }}
     >
       <List disablePadding>
-        <SidebarItem
+        {/* <SidebarItem
           label="User"
           avatarSrc="https://example.com/avatar.jpg"
-        />
-        <SidebarItem icon={<GradeOutlined color="primary" />} label="News" />
+        /> */}
         <SidebarItem
+          icon={<GradeOutlined color="primary" />}
+          label="Mới nhất"
+          onClick={openNewForumPosts}
+          selected={!ref || ref === "news"}
+        />
+        {/* <SidebarItem
           icon={<ImportContactsOutlined color="primary" />}
           label="Relatives"
+        /> */}
+        <SidebarItem
+          icon={<History color="secondary" />}
+          label="Của bạn"
+          onClick={openMyForumPosts}
+          selected={ref === "my"}
         />
-        <SidebarItem icon={<History color="secondary" />} label="Yours" />
-        <SidebarItem icon={<Bookmark color="secondary" />} label="Saved" />
+        {/* <SidebarItem icon={<Bookmark color="secondary" />} label="Saved" /> */}
       </List>
 
       <Divider sx={{ my: 2 }} />
@@ -46,15 +68,15 @@ const ForumLeftSide = ({ saveds, onOpenShortcut }: IProps) => {
         pb={1}
         color="text.secondary"
       >
-        Your shortcuts
+        Lối tắt
       </Typography>
 
       <List disablePadding>
-        {saveds.map((save) => {
+        {shortcuts.map((save) => {
           return (
             <SidebarItem
               key={save._id}
-              avatarSrc="https://example.com/group-logo.jpg"
+              avatarSrc={save.createdBy.avatar}
               label={save.content.slice(0, 15)}
               onClick={() => {
                 onOpenShortcut && onOpenShortcut(save);

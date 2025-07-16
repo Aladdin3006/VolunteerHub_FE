@@ -65,7 +65,7 @@ export const ForumPostComposer = forwardRef<HTMLDivElement, IProps>(
                 },
               }}
             >
-              What's on your mind, {userName}?
+              Hãy đăng một bài viết, {userName}
             </Box>
           </Box>
           <Divider sx={{ my: 1 }} />

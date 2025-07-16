@@ -5,37 +5,46 @@ import {
   Button,
   Card,
   CardProps,
-  Chip,
   Divider,
-  InputAdornment,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { PhotoCamera, Tag } from "@mui/icons-material";
+import { PhotoCamera } from "@mui/icons-material";
 import { ForumPostImages } from "./ForumPostIImages";
+import CategoryTag from "../utils/CategoryTag";
+import { ICategory } from "../campaign/CampaignForm";
+import CategorySearchInput from "../utils/CategorySearchInput";
 
 export interface IForumPostNewRef {
   clear: () => void;
 }
 
+export interface IFormPostFormData {
+  title: string;
+  content: string;
+  images: File[];
+  tags: ICategory[];
+}
+
 interface IProps extends CardProps<any> {
   avatarUrl: string;
   userName: string;
-  onSubmit?: (data: { text: string; images: File[]; tags: string[] }) => void;
+  onSubmit?: (data: IFormPostFormData) => void;
 }
 
-const MAX_TEXT_LENGTH = 500;
+const MAX_CONTENT_LENGTH = 500;
+const MAX_TITLE_LENGTH = 100;
 
 export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
   (props, ref) => {
     const { avatarUrl, userName, onSubmit, ...rest } = props;
 
-    const [text, setText] = useState("");
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
     const [images, setImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [tags, setTags] = useState<string[]>([]);
-    const [tagInput, setTagInput] = useState("");
+    const [tags, setTags] = useState<ICategory[]>([]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files) return;
@@ -58,15 +67,17 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
     };
 
     const clear = () => {
-      setText("");
+      setTitle("");
+      setContent("");
       setImages([]);
       setImagePreviews([]);
       setTags([]);
     };
 
     const handlePost = () => {
-      if (onSubmit) onSubmit({ text, images, tags });
-      clear();
+      if (onSubmit) {
+        onSubmit({ title, content, images, tags });
+      }
     };
 
     const handleRemoveImage = (index: number) => {
@@ -118,18 +129,53 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
           }}
           direction={"column"}
           flex={1}
+          pr={1}
         >
           <TextField
-            placeholder={`What's on your mind, ${userName}?`}
+            placeholder={`Tiêu đề bài viết`}
+            fullWidth
+            variant="standard"
+            value={title}
+            onChange={(e) => {
+              if (e.target.value.length <= MAX_TITLE_LENGTH) {
+                setTitle(e.target.value);
+              }
+            }}
+            InputProps={{
+              disableUnderline: true,
+              sx: {
+                fontSize: 18,
+                backgroundColor: "transparent",
+                p: 0,
+              },
+            }}
+            sx={{
+              mb: 1,
+              ".MuiInputBase-input": {
+                "&::-webkit-scrollbar": {
+                  width: "6px",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  backgroundColor: "#ccc",
+                  borderRadius: "3px",
+                },
+                "&::-webkit-scrollbar-track": {
+                  backgroundColor: "transparent",
+                },
+              },
+            }}
+          />
+          <TextField
+            placeholder={`Nội dung bài viết`}
             multiline
             fullWidth
             minRows={4}
             maxRows={150}
             variant="standard"
-            value={text}
+            value={content}
             onChange={(e) => {
-              if (e.target.value.length <= MAX_TEXT_LENGTH) {
-                setText(e.target.value);
+              if (e.target.value.length <= MAX_CONTENT_LENGTH) {
+                setContent(e.target.value);
               }
             }}
             InputProps={{
@@ -157,16 +203,20 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
             }}
           />
           <Typography align="right" color="text.secondary" fontSize={12}>
-            {text.length}/{MAX_TEXT_LENGTH}
+            {content.length}/{MAX_CONTENT_LENGTH}
           </Typography>
 
           {tags.length > 0 && (
             <Stack direction="row" spacing={1} flexWrap="wrap" mb={2}>
               {tags.map((tag, i) => (
-                <Chip
-                  key={i}
-                  label={tag}
-                  onDelete={() => setTags(tags.filter((_, j) => j !== i))}
+                <CategoryTag
+                  key={tag._id}
+                  name={tag.name}
+                  icon={tag.icon}
+                  tagColor={tag.color}
+                  onDelete={() => {
+                    setTags(tags.filter((_, j) => j !== i));
+                  }}
                 />
               ))}
             </Stack>
@@ -206,7 +256,7 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
             variant="outlined"
             sx={{ borderRadius: 8, width: { xs: "100%", sm: "150px" } }}
           >
-            Photo
+            ẢNH
             <input
               hidden
               accept="image/*"
@@ -216,54 +266,46 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
             />
           </Button>
 
-          <TextField
-            placeholder="Tag"
-            value={tagInput}
-            onChange={(e) => {
-              if (e.target.value.length <= 20) setTagInput(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && tagInput.trim()) {
-                e.preventDefault();
-                const newTag = tagInput.trim();
-                if (!tags.includes(newTag)) {
-                  setTags((prev) => [...prev, newTag]);
+          <CategorySearchInput
+            onChange={(value) => {
+              if (value != null) {
+                if (tags.find((tag) => tag._id === value._id) == null) {
+                  setTags((prev) => {
+                    return [...prev, value];
+                  });
                 }
-                setTagInput("");
               }
             }}
-            size="small"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Tag fontSize="small" color="action" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              width: { xs: "100%", sm: "150px" },
-              backgroundColor: "#f0f2f5",
-              borderRadius: 8,
-              "& .MuiOutlinedInput-root": {
-                px: 1,
-              },
-              "& fieldset": {
-                border: "none",
+            slotProps={{
+              textfield: {
+                fullWidth: false,
+                sx: {
+                  width: { xs: "100%", sm: "250px" },
+                  backgroundColor: "#f0f2f5",
+                  borderRadius: 8,
+                  "& .MuiOutlinedInput-root": {
+                    px: 1,
+                  },
+                  "& fieldset": {
+                    border: "none",
+                  },
+                },
               },
             }}
+            suggestText="Tìm kiếm chủ đề"
           />
 
           <Box flexGrow={1} />
 
           <Button
             variant="contained"
-            disabled={!text.trim()}
+            disabled={!content.trim()}
             onClick={handlePost}
             sx={{
               width: { xs: "100%", sm: "150px" },
             }}
           >
-            Post
+            Đăng bài
           </Button>
         </Stack>
       </Card>

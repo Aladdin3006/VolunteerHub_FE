@@ -28,6 +28,9 @@ import ManagerCampaign from "../pages/manager/ManagerCampaign";
 import NewCampaignPage from "../pages/staff/NewCampaignPage";
 import NewDonationPage from "../pages/staff/NewDonationPage";
 import ManagerCampaignStaff from "@/pages/staff/ManagerCampaignStaff";
+import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
+import UpdateCampaignPage from "../pages/staff/UpdateCampaignPage";
+import ForumPage from "../pages/forum/ForumPage";
 
 const AppRoutes = () => (
   <Routes>
@@ -166,6 +169,15 @@ const AppRoutes = () => (
       }
     />
 
+    <Route
+      path="/forum"
+      element={
+        <LayoutWrapper>
+          <ForumPage />
+        </LayoutWrapper>
+      }
+    />
+
     {/* User Dashboard Routes */}
     <Route
       path="/user/*"
@@ -262,10 +274,26 @@ const AppRoutes = () => (
               }
             />
             <Route
+              path="campaigns/:id/edit"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <UpdateCampaignPage />
+                </LayoutWrapper>
+              }
+            />
+            <Route
               path="donations/new"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
                   <NewDonationPage />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="donations/:id/edit"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <UpdateDonationPage />
                 </LayoutWrapper>
               }
             />

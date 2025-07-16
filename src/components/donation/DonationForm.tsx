@@ -29,7 +29,7 @@ export interface IDonationFormData {
   goalAmount: number;
   thumbnail: IMediaFile;
   images: IMediaFile[];
-  categories: ICategory[];
+  tags: ICategory[];
 }
 
 interface IProps extends StackProps {
@@ -49,7 +49,7 @@ const initialValue: IDonationFormData = {
   goalAmount: MIN_AMOUNT,
   thumbnail: { url: "", type: "image" },
   images: [],
-  categories: [],
+  tags: [],
 };
 
 const validationSchema = Yup.object({
@@ -61,7 +61,7 @@ const validationSchema = Yup.object({
   thumbnail: Yup.object({
     url: Yup.string().required("Ảnh là bắt buộc"),
   }),
-  categories: Yup.array().min(1, "Vui lòng chọn ít nhất 1 danh mục"),
+  tags: Yup.array().min(1, "Vui lòng chọn ít nhất 1 danh mục"),
   images: Yup.array().min(1, "Vui lòng chọn ít nhất 1 ảnh"),
 });
 
@@ -77,7 +77,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         description: values.description,
         title: values.title,
         goalAmount: values.goalAmount,
-        categories: values.categories.map((cate) => cate._id),
+        tags: values.tags.map((cate) => cate._id),
       });
     }
   };
@@ -164,18 +164,15 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   };
 
   const handleChangeCategory = (value: ICategory | null) => {
-    if (
-      value &&
-      !formik.values.categories.find((cate) => cate._id === value._id)
-    ) {
-      formik.setFieldValue("categories", [...formik.values.categories, value]);
+    if (value && !formik.values.tags.find((cate) => cate._id === value._id)) {
+      formik.setFieldValue("tags", [...formik.values.tags, value]);
     }
   };
 
   const handleDeleteCategory = (value: ICategory) => {
     formik.setFieldValue(
-      "categories",
-      formik.values.categories.filter((cate) => cate._id !== value._id)
+      "tags",
+      formik.values.tags.filter((cate) => cate._id !== value._id)
     );
   };
 
@@ -195,12 +192,17 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         backgroundColor: "white",
       }}
     >
-      <Typography variant="h4" align="center" gutterBottom sx={{ mb: 5 }}>
-        Chiến dịch quyên góp
-      </Typography>
-
-      <form onSubmit={formik.handleSubmit}>
-        <Stack spacing={2}>
+      <form onSubmit={formik.handleSubmit} className="form">
+        <Typography
+          variant="h4"
+          align="center"
+          gutterBottom
+          sx={{ mb: 5 }}
+          className="form-title"
+        >
+          Chiến dịch quyên góp
+        </Typography>
+        <Stack spacing={2} className="form-body">
           <TextField
             label="Tên chiến dịch"
             name="title"
@@ -275,7 +277,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               justifyContent={"left"}
             >
               {/* Tag list */}
-              {values.categories.map((cate) => {
+              {values.tags.map((cate) => {
                 return (
                   <CategoryTag
                     key={cate._id}
@@ -289,8 +291,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             </Stack>
 
             <Typography color="error" fontSize="0.8rem">
-              {(formik.errors.categories && String(formik.errors.categories)) ||
-                " "}
+              {(formik.errors.tags && String(formik.errors.tags)) || " "}
             </Typography>
           </Box>
 
@@ -362,31 +363,32 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               {(formik.errors.images && String(formik.errors.images)) || " "}
             </Typography>
           </Box>
-
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            disabled={!formik.isValid || formik.isSubmitting}
-            startIcon={<VolunteerActivism />}
-            sx={{
-              backgroundColor: "#43a047",
-              color: "#fff",
-              fontWeight: 600,
-              borderRadius: "999px",
-              textTransform: "none",
-              fontSize: "1rem",
-              py: 1.2,
-              boxShadow: 3,
-              "&:hover": {
-                backgroundColor: "#388e3c",
-                boxShadow: 4,
-              },
-            }}
-          >
-            Tạo chiến dịch
-          </Button>
         </Stack>
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={!formik.isValid || formik.isSubmitting}
+          startIcon={<VolunteerActivism />}
+          sx={{
+            backgroundColor: "#43a047",
+            color: "#fff",
+            fontWeight: 600,
+            borderRadius: "999px",
+            textTransform: "none",
+            fontSize: "1rem",
+            py: 1.2,
+            boxShadow: 3,
+            "&:hover": {
+              backgroundColor: "#388e3c",
+              boxShadow: 4,
+            },
+            mt: 5,
+          }}
+          className="form-submit-btn"
+        >
+          {type === "create" ? "Tạo chiến dịch" : "Cập nhật chiến dịch"}
+        </Button>
       </form>
       <ImageViewerDialog ref={imageViewerDialogRef} />
     </Stack>

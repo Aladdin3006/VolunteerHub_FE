@@ -9,38 +9,55 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { IComment } from "../../apis/forum";
+import { ICommentListItem } from "../../apis/forum";
 import { getRelativeTime } from "./utils";
 import {
   ThumbUpAltOutlined,
   ThumbDownAltOutlined,
   ReplyOutlined,
+  ThumbDownAlt,
+  ThumbUpAlt,
 } from "@mui/icons-material";
 import { CommentInput } from "./CommentInput";
 
 interface IProps extends BoxProps {
-  comment: IComment;
-  currentUserId?: string;
-  onLike?: (comment: IComment) => void;
-  onUnLike?: (comment: IComment) => void;
-  onReply?: (comment: IComment, text: string) => void;
+  comment: ICommentListItem;
+  onLike?: (comment: ICommentListItem) => void;
+  onUnLike?: (comment: ICommentListItem) => void;
+  onReply?: (comment: ICommentListItem, text: string) => Promise<boolean>;
+  onShowReplies?: (comment: ICommentListItem) => Promise<boolean>;
+  level: number;
+  maxLevel: number;
 }
 
 export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
   (props, ref) => {
-    const { comment, currentUserId, onLike, onUnLike, onReply, ...rest } =
-      props;
+    const {
+      comment,
+      onLike,
+      onUnLike,
+      onReply,
+      onShowReplies,
+      level,
+      maxLevel,
+      ...rest
+    } = props;
 
-    const [showReplies, setShowReplies] = useState(false);
+    const [showReplies, setShowReplies] = useState(
+      Boolean(comment.isLoadedAllComments)
+    );
     const [showCommentInput, setShowCommentInput] = useState(false);
 
-    const handleToggleReplies = () => {
-      setShowReplies((prev) => !prev);
+    const handleToggleReplies = async () => {
+      if (onShowReplies && !showReplies) {
+        const rs = await onShowReplies(comment);
+        if (rs) {
+          setShowReplies(true);
+        }
+      } else {
+        setShowReplies((prev) => !prev);
+      }
     };
-
-    const isUpvoted = currentUserId && comment.upvotes.includes(currentUserId);
-    const isDownvoted =
-      currentUserId && comment.downvotes.includes(currentUserId);
 
     return (
       <Box
@@ -48,7 +65,9 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
         {...rest}
         sx={{ display: "flex", gap: 2, my: 1, ...rest.sx }}
       >
-        <Avatar src={comment.createdBy.avatar} />
+        <Avatar src={comment.createdBy.avatar}>
+          {comment.createdBy.fullName.slice(0, 2)}
+        </Avatar>
         <Box sx={{ flexGrow: 1 }}>
           <Box
             sx={{
@@ -74,41 +93,59 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
             </Typography>
             <IconButton
               size="small"
-              color={isUpvoted ? "primary" : "default"}
+              color={comment.isUpvoted ? "primary" : "default"}
               onClick={() => onLike && onLike(comment)}
             >
-              <ThumbUpAltOutlined fontSize="small" />
+              {comment.isUpvoted ? (
+                <ThumbUpAlt fontSize="small" />
+              ) : (
+                <ThumbUpAltOutlined fontSize="small" />
+              )}
             </IconButton>
             <IconButton
               size="small"
-              color={isDownvoted ? "error" : "default"}
+              color={comment.isDownvoted ? "error" : "default"}
               onClick={() => onUnLike && onUnLike(comment)}
             >
-              <ThumbDownAltOutlined fontSize="small" />
+              {comment.isDownvoted ? (
+                <ThumbDownAlt fontSize="small" />
+              ) : (
+                <ThumbDownAltOutlined fontSize="small" />
+              )}
             </IconButton>
-            <IconButton
-              size="small"
-              color={isDownvoted ? "error" : "default"}
-              onClick={() => setShowCommentInput(!showCommentInput)}
-            >
-              <ReplyOutlined fontSize="small" />
-            </IconButton>
+            {level < maxLevel && (
+              <IconButton
+                size="small"
+                color={"default"}
+                onClick={() => setShowCommentInput(!showCommentInput)}
+              >
+                <ReplyOutlined fontSize="small" />
+              </IconButton>
+            )}
+            {showReplies && (
+              <Button
+                onClick={handleToggleReplies}
+                size="small"
+                sx={{ textTransform: "none", pl: 0 }}
+              >
+                Ẩn {comment.commentsCount} bình luận
+              </Button>
+            )}
+            {level < maxLevel && comment.commentsCount > 0 && !showReplies && (
+              <Button
+                onClick={handleToggleReplies}
+                size="small"
+                sx={{ textTransform: "none", pl: 0 }}
+              >
+                Hiển thị {comment.commentsCount} bình luận
+              </Button>
+            )}
           </Stack>
-
-          {comment.comments?.length > 0 && !showReplies && (
-            <Button
-              onClick={handleToggleReplies}
-              size="small"
-              sx={{ textTransform: "none", pl: 0 }}
-            >
-              Show {comment.comments.length} comments
-            </Button>
-          )}
 
           <Collapse in={showReplies} timeout="auto" unmountOnExit>
             <Box position="relative" ml={0} mt={1}>
               <Box pl={0}>
-                {comment.comments.map((reply) => (
+                {(comment.comments ?? []).map((reply) => (
                   <Box key={reply._id}>
                     {/* <Box
                     key={reply._id}
@@ -124,12 +161,13 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
                     }}
                   /> */}
                     <ForumPostComment
-                      key={reply._id}
+                      key={reply._id + reply._id}
                       comment={reply}
-                      currentUserId={currentUserId}
                       onLike={onLike}
                       onUnLike={onUnLike}
                       onReply={onReply}
+                      level={level + 1}
+                      maxLevel={maxLevel}
                     />
                   </Box>
                 ))}

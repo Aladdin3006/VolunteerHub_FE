@@ -1,26 +1,30 @@
 import { Box, BoxProps } from "@mui/material";
-import { IComment } from "../../apis/forum";
+import { ICommentListItem } from "../../apis/forum";
 import { ForumPostComment } from "./ForumPostComment";
 import { forwardRef, useMemo } from "react";
 
 interface IProps extends BoxProps {
-  comments: IComment[];
-  currentUserId?: string;
+  comments: ICommentListItem[];
   maxComments?: number;
-  onLike?: (comment: IComment) => void;
-  onUnLike?: (comment: IComment) => void;
-  onReply?: (comment: IComment, text: string) => void;
+  onLike?: (comment: ICommentListItem) => void;
+  onUnLike?: (comment: ICommentListItem) => void;
+  onReply?: (comment: ICommentListItem, text: string) => Promise<boolean>;
+  onShowReplies?: (comment: ICommentListItem) => Promise<boolean>;
+  maxLevel?: number;
 }
+
+const DEFAULT_MAX_LEVEL = 2;
 
 export const ForumPostComments = forwardRef<HTMLDivElement, IProps>(
   (props, ref) => {
     const {
       comments,
-      currentUserId,
       maxComments,
       onLike,
       onUnLike,
       onReply,
+      onShowReplies,
+      maxLevel,
       ...rest
     } = props;
 
@@ -31,14 +35,12 @@ export const ForumPostComments = forwardRef<HTMLDivElement, IProps>(
       return comments.slice(0, maxComments);
     }, [comments, maxComments]);
 
-    console.log("comments", comments);
-
     return (
       <Box
         ref={ref}
         {...rest}
         sx={{
-          height: "200px",
+          height: "280px",
           overflowY: "auto",
           "&::-webkit-scrollbar": {
             width: "6px",
@@ -67,12 +69,14 @@ export const ForumPostComments = forwardRef<HTMLDivElement, IProps>(
       >
         {renderComments.map((comment) => (
           <ForumPostComment
-            key={comment._id}
+            key={comment._id + comment.updateCount}
             comment={comment}
-            currentUserId={currentUserId}
             onLike={onLike}
             onUnLike={onUnLike}
             onReply={onReply}
+            onShowReplies={onShowReplies}
+            level={1}
+            maxLevel={maxLevel ?? DEFAULT_MAX_LEVEL}
           />
         ))}
       </Box>

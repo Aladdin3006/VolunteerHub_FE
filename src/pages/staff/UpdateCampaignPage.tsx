@@ -1,10 +1,15 @@
 import { Alert, Box, Button, Snackbar, Stack } from "@mui/material";
+import { useParams } from "react-router-dom";
 import { useRef, useState } from "react";
-import { INewDonationDialogRef, NewDonationDialog } from "./NewDonationDialog";
+import {
+  IUpdateCampaignDialogRef,
+  UpdateCampaignDialog,
+} from "./UpdateCampaignDialog";
 
-export default function NewDonationPage() {
+export default function UpdateCampaignPage() {
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-  const newDonationDialogRef = useRef<INewDonationDialogRef | null>(null);
+  const { id } = useParams();
+  const updateCampaignDialogRef = useRef<IUpdateCampaignDialogRef | null>(null);
 
   return (
     <Box className="page-wrapper" sx={{ position: "relative", pt: "80px" }}>
@@ -18,12 +23,12 @@ export default function NewDonationPage() {
         >
           <Button
             onClick={() => {
-              newDonationDialogRef.current?.open();
+              updateCampaignDialogRef.current?.open(id!);
             }}
           >
-            Click to open new donation dialog
+            Click to open update campaign dialog
           </Button>
-          <NewDonationDialog ref={newDonationDialogRef} />
+          <UpdateCampaignDialog ref={updateCampaignDialogRef} />
         </Stack>
       </Stack>
 
