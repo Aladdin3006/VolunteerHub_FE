@@ -378,6 +378,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                   target.src =
                     "https://via.placeholder.com/600x400?text=No+Image";
                 }}
+                sx={{ mb: 10 }}
               />
             </Box>
 
@@ -527,12 +528,20 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                   onClick={() => onOpenManagement(2)}
                   className="action-button"
                 >
-                  Quản lý Departments
+                  Quản lý điểm danh
                 </Button>
                 <Button
                   variant="contained"
                   fullWidth
                   onClick={() => onOpenManagement(3)}
+                  className="action-button"
+                >
+                  Quản lý Departments
+                </Button>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => onOpenManagement(4)}
                   className="action-button"
                 >
                   Quản lý Volunteers

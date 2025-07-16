@@ -21,16 +21,18 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
-import { Volunteer, getCampaignVolunteers, acceptVolunteer, rejectVolunteer } from "../../apis/staff";
-import CreatePhaseModal from "../../components/staff/CreatePhaseModal";
-import ManageTask from "../../components/staff/ManageTask";
-import DepartmentManager from "../../components/staff/DepartmentManager";
+import { Volunteer, getCampaignVolunteers, acceptVolunteer, rejectVolunteer, Phase, PhaseDay } from "../../apis/staff";
+import CreatePhaseModal from "./CreatePhaseModal";
+import ManageTask from "./ManageTask";
+import CheckInDialog from "./CheckInDialog";
+import DepartmentManager from "./DepartmentManager";
 
 interface VolunteerRequestsModalProps {
   open: boolean;
   onClose: () => void;
   campaignId: string;
   selectedCampaign: { name: string };
+  onTabChange?: (tabIndex: number) => void;
 }
 
 interface TabPanelProps {
@@ -56,13 +58,16 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
   onClose,
   campaignId,
   selectedCampaign,
+  onTabChange,
 }) => {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acceptingVolunteers, setAcceptingVolunteers] = useState<Set<string>>(new Set());
   const [rejectingVolunteers, setRejectingVolunteers] = useState<Set<string>>(new Set());
-  const [activeTab, setActiveTab] = useState(3); // Default to Volunteers tab
+  const [activeTab, setActiveTab] = useState(4); // Default to Volunteers tab
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(null);
 
   useEffect(() => {
     const fetchVolunteers = async () => {
@@ -158,12 +163,25 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
     }).format(date);
   };
 
+  const handlePhaseSelect = (phase: Phase | null) => {
+    setSelectedPhase(phase);
+    setSelectedPhaseDay(null);
+  };
+
+  const handlePhaseDaySelect = (phaseDay: PhaseDay | null) => {
+    setSelectedPhaseDay(phaseDay);
+  };
+
   const pendingVolunteers = volunteers.filter((v) => v.status === "pending");
   const approvedVolunteers = volunteers.filter((v) => v.status === "approved");
   const rejectedVolunteers = volunteers.filter((v) => v.status === "rejected");
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    if (onTabChange && newValue !== 4) {
+      onTabChange(newValue);
+      onClose();
+    }
   };
 
   return (
@@ -174,8 +192,9 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
           {
             0: "Phases",
             1: "Tasks",
-            2: "Departments",
-            3: "Volunteers",
+            2: "CheckIn",
+            3: "Departments",
+            4: "Volunteers",
           }[activeTab]
         }
         "
@@ -184,19 +203,38 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="management tabs">
           <Tab label="Phases" />
           <Tab label="Tasks" />
+          <Tab label="CheckIn" />
           <Tab label="Departments" />
           <Tab label="Volunteers" />
         </Tabs>
         <TabPanel value={activeTab} index={0}>
-          <CreatePhaseModal campaignId={campaignId} open={activeTab === 0} onClose={onClose} selectedCampaign={selectedCampaign} />
+          <CreatePhaseModal
+            campaignId={campaignId}
+            open={activeTab === 0}
+            onClose={onClose}
+            selectedCampaign={selectedCampaign}
+          />
         </TabPanel>
         <TabPanel value={activeTab} index={1}>
           <ManageTask campaignId={campaignId} />
         </TabPanel>
         <TabPanel value={activeTab} index={2}>
-          <DepartmentManager campaignId={campaignId} />
+          <CheckInDialog
+            campaignId={campaignId}
+            open={activeTab === 2}
+            onClose={onClose}
+            selectedCampaign={selectedCampaign}
+            onTabChange={onTabChange}
+            phase={selectedPhase}
+            phaseDay={selectedPhaseDay}
+            onPhaseSelect={handlePhaseSelect}
+            onPhaseDaySelect={handlePhaseDaySelect}
+          />
         </TabPanel>
         <TabPanel value={activeTab} index={3}>
+          <DepartmentManager campaignId={campaignId} />
+        </TabPanel>
+        <TabPanel value={activeTab} index={4}>
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
             <Typography variant="h6" gutterBottom>Volunteer Requests</Typography>
             {loading ? (

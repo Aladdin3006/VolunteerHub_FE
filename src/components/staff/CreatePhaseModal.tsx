@@ -42,10 +42,13 @@ import {
   createPhaseDay,
   getPhasesByCampaignId,
   deletePhaseDay as deletePhaseDayApi,
+  Phase,
+  PhaseDay,
 } from "../../apis/staff";
 import ManageTask from "../../components/staff/ManageTask";
 import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
+import CheckInDialog from "./CheckInDialog";
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -92,7 +95,9 @@ const MapClickHandler: React.FC<{
       phaseId,
       dayId,
       [e.latlng.lat, e.latlng.lng],
-      `Location selected at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`
+      `Location selected at ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(
+        4
+      )}`
     );
   });
 
@@ -104,14 +109,14 @@ interface CreatePhaseModalProps {
   onClose: () => void;
   campaignId: string;
   selectedCampaign: { name: string };
+  onTabChange?: (tabIndex: number) => void;
 }
 
-const TabPanel: React.FC<{ children?: React.ReactNode; index: number; value: number }> = ({
-  children,
-  value,
-  index,
-  ...other
-}) => (
+const TabPanel: React.FC<{
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}> = ({ children, value, index, ...other }) => (
   <div
     role="tabpanel"
     hidden={value !== index}
@@ -128,6 +133,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
   onClose,
   campaignId,
   selectedCampaign,
+  onTabChange,
 }) => {
   const [phases, setPhases] = useState<PhaseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +141,10 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [deletedPhaseDays, setDeletedPhaseDays] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
+    null
+  );
 
   useEffect(() => {
     if (!/^[0-9a-fA-F]{24}$/.test(campaignId)) {
@@ -235,7 +245,14 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             phase._id === phaseId
               ? {
                   ...phase,
-                  phaseDays: [...phase.phaseDays, { id: dayId, date: new Date(), location: { coordinates: null, address: "" } }],
+                  phaseDays: [
+                    ...phase.phaseDays,
+                    {
+                      id: dayId,
+                      date: new Date(),
+                      location: { coordinates: null, address: "" },
+                    },
+                  ],
                 }
               : phase
           )
@@ -443,6 +460,15 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
     setActiveTab(newValue);
   };
 
+  const handlePhaseSelect = (phase: Phase | null) => {
+    setSelectedPhase(phase);
+    setSelectedPhaseDay(null);
+  };
+
+  const handlePhaseDaySelect = (phaseDay: PhaseDay | null) => {
+    setSelectedPhaseDay(phaseDay);
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg">
       <DialogTitle sx={{ textAlign: "center" }}>
@@ -451,8 +477,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           {
             0: "Phases",
             1: "Tasks",
-            2: "Departments",
-            3: "Volunteers",
+            2: "CheckIn",
+            3: "Departments",
+            4: "Volunteers",
           }[activeTab]
         }
         "
@@ -463,9 +490,14 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             {error}
           </Typography>
         )}
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="management tabs">
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          aria-label="management tabs"
+        >
           <Tab label="Phases" />
           <Tab label="Tasks" />
+          <Tab label="CheckIn" />
           <Tab label="Departments" />
           <Tab label="Volunteers" />
         </Tabs>
@@ -555,7 +587,11 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                               type="date"
                               value={formatDateForInput(phase.endDate)}
                               onChange={(e) =>
-                                updatePhase(phase._id, "endDate", e.target.value)
+                                updatePhase(
+                                  phase._id,
+                                  "endDate",
+                                  e.target.value
+                                )
                               }
                               required
                               InputLabelProps={{ shrink: true }}
@@ -641,7 +677,10 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                       <MapContainer
                                         center={[21.0278, 105.8342]}
                                         zoom={13}
-                                        style={{ height: "100%", width: "100%" }}
+                                        style={{
+                                          height: "100%",
+                                          width: "100%",
+                                        }}
                                       >
                                         <TileLayer
                                           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -651,7 +690,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                           <Marker
                                             position={day.location.coordinates}
                                           >
-                                            <Popup>{day.location.address}</Popup>
+                                            <Popup>
+                                              {day.location.address}
+                                            </Popup>
                                           </Marker>
                                         )}
                                         <MapClickHandler
@@ -712,9 +753,22 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           <ManageTask campaignId={campaignId} />
         </TabPanel>
         <TabPanel value={activeTab} index={2}>
-          <DepartmentManager campaignId={campaignId} />
+          <CheckInDialog
+            campaignId={campaignId}
+            open={activeTab === 2}
+            onClose={onClose}
+            selectedCampaign={selectedCampaign}
+            onTabChange={onTabChange}
+            phase={selectedPhase}
+            phaseDay={selectedPhaseDay}
+            onPhaseSelect={handlePhaseSelect}
+            onPhaseDaySelect={handlePhaseDaySelect}
+          />
         </TabPanel>
         <TabPanel value={activeTab} index={3}>
+          <DepartmentManager campaignId={campaignId} />
+        </TabPanel>
+        <TabPanel value={activeTab} index={4}>
           <VolunteerRequestsModal
             open={true}
             onClose={onClose}

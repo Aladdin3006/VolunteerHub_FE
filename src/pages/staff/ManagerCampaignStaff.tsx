@@ -19,13 +19,17 @@ import {
   INewCampaignDialogRef,
   NewCampaignDialog,
 } from "../../components/staff/NewCampaignDialog";
-import { IUpdateCampaignDialogRef, UpdateCampaignDialog } from "../../components/staff/UpdateCampaignDialog";
-import { Campaign, getStaffCampaigns } from "../../apis/staff";
+import {
+  IUpdateCampaignDialogRef,
+  UpdateCampaignDialog,
+} from "../../components/staff/UpdateCampaignDialog";
+import { Campaign, getStaffCampaigns, Phase, PhaseDay } from "../../apis/staff";
 import CreatePhaseModal from "../../components/staff/CreatePhaseModal";
 import ManageTask from "../../components/staff/ManageTask";
 import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import OverViewCampaign from "../../components/staff/OverViewCampaign";
+import CheckInDialog from "@/components/staff/CheckInDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -61,6 +65,11 @@ const ManagerCampaignStaff: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const newCampaignDialogRef = useRef<INewCampaignDialogRef | null>(null);
   const updateCampaignDialogRef = useRef<IUpdateCampaignDialogRef | null>(null);
+  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -218,6 +227,7 @@ const ManagerCampaignStaff: React.FC = () => {
                 1: "Tasks",
                 2: "Departments",
                 3: "Volunteers",
+                4: "CheckIn",
               }[activeTab]
             }
             "
@@ -230,6 +240,7 @@ const ManagerCampaignStaff: React.FC = () => {
             >
               <Tab label="Phases" />
               <Tab label="Tasks" />
+              <Tab label="CheckIn" />
               <Tab label="Departments" />
               <Tab label="Volunteers" />
             </Tabs>
@@ -245,14 +256,30 @@ const ManagerCampaignStaff: React.FC = () => {
               <ManageTask campaignId={selectedCampaign._id} />
             </TabPanel>
             <TabPanel value={activeTab} index={2}>
-              <DepartmentManager campaignId={selectedCampaign._id} />
+              <CheckInDialog
+                open={activeTab === 2}
+                onClose={handleCloseModal}
+                campaignId={selectedCampaign?._id}
+                phase={selectedPhase}
+                phaseDay={selectedPhaseDay}
+                onPhaseSelect={setSelectedPhase}
+                onPhaseDaySelect={setSelectedPhaseDay}
+              />
             </TabPanel>
             <TabPanel value={activeTab} index={3}>
+              <DepartmentManager campaignId={selectedCampaign._id} />
+            </TabPanel>
+            <TabPanel value={activeTab} index={4}>
               <VolunteerRequestsModal
-                open={true}
+                open={activeTab === 4}
                 onClose={handleCloseModal}
-                campaignId={selectedCampaign._id}
-                selectedCampaign={{ name: selectedCampaign.name }}
+                campaignId={selectedCampaign?._id}
+                selectedCampaign={{
+                  name: selectedCampaign?.name || "Campaign",
+                }}
+                onTabChange={(tabIndex) => {
+                  setActiveTab(tabIndex);
+                }}
               />
             </TabPanel>
           </DialogContent>

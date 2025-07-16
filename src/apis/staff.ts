@@ -96,6 +96,25 @@ export interface Volunteer {
   registeredAt: Date;
 }
 
+export interface Checkin {
+  _id: string;
+  userId: string;
+  campaignId: string;
+  phaseId: string;
+  phasedayId: string;
+  method: "manual" | "qr" | "gps";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateCheckinPayload {
+  userId: string;
+  campaignId: string;
+  phaseId: string;
+  phasedayId: string;
+  method: "manual" | "qr" | "gps";
+}
+
 const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   return {
@@ -843,5 +862,78 @@ export const updateTask = async (
   } catch (error) {
     console.error("Error updating task:", error);
     throw new Error("Failed to update task");
+  }
+};
+
+//check-in manual
+
+export const createManualCheckin = async (
+  payload: Omit<CreateCheckinPayload, "method">
+): Promise<Checkin> => {
+  try {
+    // Add manual method to payload
+    const manualCheckinPayload: CreateCheckinPayload = {
+      ...payload,
+      method: "manual",
+    };
+
+    const response = await axios.post(
+      `${API_BASE}/checkin`,
+      manualCheckinPayload,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
+    return {
+      ...response.data,
+      createdAt: new Date(response.data.createdAt),
+      updatedAt: new Date(response.data.updatedAt),
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("Error creating manual check-in:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to create manual check-in"
+      );
+    } else {
+      console.error("Error creating manual check-in:", error);
+      throw new Error("Failed to create manual check-in");
+    }
+  }
+};
+
+/**
+ * Get check-in list for a specific phase day
+ */
+export const getCheckinListByPhaseDay = async (
+  phasedayId: string
+): Promise<Array<{
+  userId: string;
+  fullName: string;
+  checkin: boolean;
+  method?: string;
+  checkinAt?: Date;
+}>> => {
+  try {
+    const response = await axios.get(`${API_BASE}/checkin/${phasedayId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    // Convert string dates to Date objects
+    return response.data.map((item: any) => ({
+      ...item,
+      checkinAt: item.checkinAt ? new Date(item.checkinAt) : undefined,
+    }));
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("Error fetching check-in list:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to fetch check-in list"
+      );
+    } else {
+      console.error("Error fetching check-in list:", error);
+      throw new Error("Failed to fetch check-in list");
+    }
   }
 };
