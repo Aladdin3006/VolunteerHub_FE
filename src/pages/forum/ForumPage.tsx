@@ -94,6 +94,12 @@ export default function ForumPage() {
     }
   };
 
+  const copyLinkToNew = async (postId: string) => {
+    await navigator.clipboard.writeText(
+      `${window.location.host}/news/${postId}`
+    );
+  };
+
   return (
     <Box className="page-wrapper" sx={{ position: "relative" }}>
       <Header />
@@ -129,6 +135,7 @@ export default function ForumPage() {
               }}
               onLikeClick={() => likePost(post)}
               onUnLikeClick={() => unlikePost(post)}
+              onShareClick={() => copyLinkToNew(post._id)}
               hideComment
             />
           ))}

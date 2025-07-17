@@ -329,6 +329,12 @@ export const ForumPostDialog = forwardRef<IForumPostDialogRef, IProps>(
       }
     };
 
+    const copyLinkToNew = async (postId: string) => {
+      await navigator.clipboard.writeText(
+        `${window.location.host}/news/${postId}`
+      );
+    };
+
     useImperativeHandle(ref, () => ({
       open: (postId: string) => {
         postIdRef.current = postId;
@@ -402,12 +408,11 @@ export const ForumPostDialog = forwardRef<IForumPostDialogRef, IProps>(
               onShowReplies={(comment) =>
                 fetchPostCommentComments(post._id, comment)
               }
-              onReportClick={() => onReportClick && onReportClick(post)}
               onLikeClick={likePost}
               onUnLikeClick={unlikePost}
               onLikeCommentClick={likeComment}
               onUnLikeCommentClick={unlikeComment}
-              onSaveClick={() => onSaveClick && onSaveClick(post)}
+              onShareClick={() => copyLinkToNew(post._id)}
               maxComments={100}
             />
           )}

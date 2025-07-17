@@ -17,6 +17,7 @@ interface IProps extends StackProps {
   onLikeClick?: () => void;
   onUnLikeClick?: () => void;
   onCommentClick?: () => void;
+  onShareClick?: () => void;
   onSaveClick?: () => void;
   onReportClick?: () => void;
   onImageClick?: (images: string[], idx: number) => void;
@@ -48,6 +49,7 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     maxComments,
     onLikeCommentClick,
     onUnLikeCommentClick,
+    onShareClick,
     ...rest
   } = props;
 
@@ -85,6 +87,7 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         onLikeClick={onLikeClick}
         onUnLikeClick={onUnLikeClick}
         onCommentClick={onCommentClick}
+        onShareClick={onShareClick}
       />
       {!hideComment && (
         <ForumPostComments
