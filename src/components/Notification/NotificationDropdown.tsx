@@ -1,13 +1,51 @@
 import React from 'react';
-import { Popover, Box, Typography, Divider, Paper } from '@mui/material';
+import {
+  Popover,
+  Box,
+  Typography,
+  Divider,
+  Paper,
+  List,
+  ListItemButton,
+} from '@mui/material';
+
+interface NotificationItem {
+  _id: string;
+  title: string;
+  content: string;
+  read: boolean;
+}
 
 interface Props {
   open: boolean;
   anchorEl: HTMLElement | null;
   onClose: () => void;
+  notifications: NotificationItem[];
+  onReadNotification?: (id: string) => void;
 }
 
-const NotificationDropdown: React.FC<Props> = ({ open, anchorEl, onClose }) => {
+const NotificationDropdown: React.FC<Props> = ({
+  open,
+  anchorEl,
+  onClose,
+  notifications,
+  onReadNotification,
+}) => {
+  const handleClick = async (id: string) => {
+    try {
+      await fetch(`http://localhost:4000/notification/${id}/read`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('access_token') || ''}`,
+        },
+      });
+      onReadNotification?.(id); // optional callback
+      onClose(); // đóng popover sau khi bấm
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
   return (
     <Popover
       open={open}
@@ -18,19 +56,26 @@ const NotificationDropdown: React.FC<Props> = ({ open, anchorEl, onClose }) => {
       PaperProps={{ sx: { width: 320, p: 1, borderRadius: 2 } }}
     >
       <Paper elevation={0}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            MUI X v8 Released
-          </Typography>
-          <Typography variant="body2">Check out the latest updates.</Typography>
-        </Box>
-        <Divider />
-        <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            v7 Now Stable
-          </Typography>
-          <Typography variant="body2">Major tooling upgrades now live.</Typography>
-        </Box>
+        <List>
+          {notifications.map((item, index) => (
+            <React.Fragment key={item._id}>
+              <ListItemButton onClick={() => handleClick(item._id)}>
+                <Box>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={item.read ? 400 : 600}
+                  >
+                    {item.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.content}
+                  </Typography>
+                </Box>
+              </ListItemButton>
+              {index < notifications.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
+        </List>
       </Paper>
     </Popover>
   );

@@ -50,7 +50,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       setNotifications(data);
       const unread = data.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   useEffect(() => {
@@ -69,13 +69,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       transports: ["websocket"],
     });
 
-    socketInstance.on("connect", () => {});
+    socketInstance.on("connect", () => { });
 
     socketInstance.on("notification", (data) => {
       setNotifications((prev) => [data, ...prev]);
       setUnreadCount((prev) => prev + 1);
       if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => { });
       }
     });
 
@@ -83,6 +83,30 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       socketInstance.disconnect();
     };
   }, []);
+  const handleReadNotification = async (id: string) => {
+    try {
+      await axios.patch(
+        `${API_URL}/notification/${id}/read`,
+        {}, 
+        {
+          headers: {
+            Authorization: `Bearer ${authService.getToken() || ""}`,
+          },
+        }
+      );
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === id ? { ...n, isRead: true } : n
+        )
+      );
+
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
+    } catch (err) {
+      console.error("Đánh dấu đã đọc thất bại", err);
+    }
+  };
+
 
   const handleOpen = (e: React.MouseEvent<SVGElement>) => {
     setAnchorEl(e.currentTarget as unknown as HTMLElement);
@@ -98,7 +122,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
           audioRef.current?.pause();
           audioRef.current!.currentTime = 0;
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   };
 
@@ -110,8 +134,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
     <>
       {/* Use the same structure as other dropdown items */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <FaBell 
-          className="dropdown-icon" 
+        <FaBell
+          className="dropdown-icon"
           onClick={handleOpen}
           style={{ cursor: 'pointer', width: '24px', height: '19.2px', color }}
         />
@@ -163,6 +187,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
               href={noti.link || "#"}
               target="_blank"
               rel="noreferrer"
+              onClick={() => handleReadNotification(noti._id)}
               sx={{
                 display: "block",
                 textDecoration: "none",
@@ -176,6 +201,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
                 },
               }}
             >
+
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Avatar
                   src={noti.image || "/default-avatar.png"}
