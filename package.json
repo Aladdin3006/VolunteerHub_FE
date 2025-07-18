@@ -30,6 +30,8 @@
     "framer-motion": "^12.23.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.513.0",
+    "pubnub": "^7.6.3",
+    "pubnub-react": "^3.0.2",
     "react": "^19.1.0",
     "react-countup": "^6.5.3",
     "react-dom": "^19.1.0",
