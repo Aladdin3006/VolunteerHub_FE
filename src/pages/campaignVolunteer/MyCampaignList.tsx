@@ -1,164 +1,90 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import {
   Box,
+  Tabs,
+  Tab,
   Typography,
-  Button,
+  Grid,
+  Container,
+  Badge,
+  Paper,
   Divider,
-  Card,
-  IconButton,
-  CircularProgress,
 } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import ShareIcon from '@mui/icons-material/Share';
-import axios from 'axios';
-import Header from "../../components/Header/Header";
-import Footer from "../../components/Footer/Footer";
-import { useNavigate } from 'react-router-dom';
-import TaskListModal from './TaskListModal'; // Import component mới
+import {
+  PlayArrow,
+  Schedule,
+  CheckCircle,
+  Campaign as CampaignIcon,
+} from '@mui/icons-material';
+import CampaignCard from './CampaignListCard';
+import Header from '../../components/Header/Header';
+import TaskListModal from './TaskListModal';
 
-// Styled Components
-const StyledCard = styled(Card)(({ theme }) => ({
-  display: 'flex',
-  backgroundColor: '#fff',
-  borderRadius: theme.shape.borderRadius * 2,
-  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-  transition: 'transform 0.2s',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-  },
-  maxWidth: 1050,
-  margin: '0 auto',
-  minHeight: 150,
-  [theme.breakpoints.down('sm')]: {
-    flexDirection: 'column',
-    minHeight: 'auto',
-  },
-}));
 
-const CampaignContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(4),
-  backgroundColor: '#F5F5F5',
-  minHeight: '100vh',
-}));
+// Định nghĩa interface Campaign
+interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: 'ongoing' | 'upcoming' | 'ended';
+  imageUrl?: string;
+  category: string[];
+  registrationDate: Date | null;
+  location: {
+    address: string;
+    coordinates: [number, number];
+  };
+  gallery?: string[];
+}
 
-const CardImage = styled(Box)(({ theme }) => ({
-  width: 235,
-  height: 235,
-  flexShrink: 0,
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  borderRadius: '8px 0 0 8px',
-  [theme.breakpoints.down('sm')]: {
-    width: '100%',
-    height: 150,
-    borderRadius: '8px 8px 0 0',
-  },
-}));
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
 
-const CardContentWrapper = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-  width: 'calc(100% - 100px)',
-  padding: theme.spacing(2),
-  [theme.breakpoints.down('sm')]: {
-    width: '100%',
-  },
-}));
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`campaign-tabpanel-${index}`}
+      aria-labelledby={`campaign-tab-${index}`}
+    >
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    </div>
+  );
+};
 
-const InfoBox = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  marginBottom: theme.spacing(1),
-}));
-
-// Component Campaign
-const Campaign = ({ title, date, time, location, description, status, image, onViewDetail, onOpenTaskList, campaignId }) => (
-  <StyledCard sx={{ mb: 4 }}>
-    {image && <CardImage style={{ backgroundImage: `url(${image})` }} />}
-    <CardContentWrapper>
-      <Box>
-        <Typography variant="h6" fontWeight="bold" sx={{ color: '#333', mb: 1 }}>
-          {title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          {description}
-        </Typography>
-        <Divider sx={{ my: 1 }} />
-        <Box>
-          <InfoBox>
-            <LocationOnIcon sx={{ fontSize: 16, mr: 1, color: '#666' }} />
-            <Typography variant="body2" color="text.secondary">
-              {location}
-            </Typography>
-          </InfoBox>
-          <InfoBox>
-            <AccessTimeIcon sx={{ fontSize: 16, mr: 1, color: '#666' }} />
-            <Typography variant="body2" color="text.secondary">
-              {date} | {time}
-            </Typography>
-          </InfoBox>
-        </Box>
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-        <IconButton aria-label="share" size="small">
-          <ShareIcon />
-        </IconButton>
-        <Box>
-          {status === 'finished' ? (
-            <Button variant="contained" color="warning" size="medium" sx={{ textTransform: 'none' }}>
-              Campaign Finished
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="success"
-              size="medium"
-              sx={{ textTransform: 'none' }}
-              onClick={() => onOpenTaskList(campaignId)}
-            >
-              TaskList
-            </Button>
-          )}
-          <Button
-            variant="text"
-            size="medium"
-            sx={{ ml: 1, color: 'text.secondary', textTransform: 'none' }}
-            onClick={onViewDetail}
-          >
-            View Detail
-          </Button>
-        </Box>
-      </Box>
-    </CardContentWrapper>
-  </StyledCard>
-);
-
-// Main Component
-const CampaignList = () => {
-  const [campaigns, setCampaigns] = useState([]);
+const MyCampaignList: React.FC = () => {
+  const [activeTab, setActiveTab] = useState(0);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [openModal, setOpenModal] = useState(false);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
-  const navigate = useNavigate();
 
+
+  // Fetch campaigns từ API
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const userString = localStorage.getItem("user");
+        setLoading(true);
+        setError(null);
+
+        const userString = localStorage.getItem('user');
         if (!userString) {
-          console.error("Không tìm thấy thông tin người dùng");
-          return;
+          throw new Error('Không tìm thấy thông tin người dùng');
         }
 
         const user = JSON.parse(userString);
         const token = user.token;
 
         if (!token) {
-          console.error("Token không tồn tại trong user");
-          return;
+          throw new Error('Token không tồn tại trong user');
         }
 
         const response = await axios.get('http://localhost:4000/campaigns/me', {
@@ -168,82 +94,215 @@ const CampaignList = () => {
         });
 
         const list = response.data?.result?.listCampaign || [];
-        setCampaigns(list);
-      } catch (error) {
-        console.error('Lỗi khi lấy danh sách chiến dịch:', error);
-      } finally {
+        // Ánh xạ dữ liệu API sang interface Campaign
+        const mappedCampaigns: Campaign[] = list.map((item: any) => {
+          // Kiểm tra và xử lý ngày không hợp lệ
+          const startDate = item.startDate ? new Date(item.startDate) : null;
+          const endDate = item.endDate ? new Date(item.endDate) : null;
+          const registeredAt =
+            item.volunteers?.find((v: any) => v.status === 'approved')?.registeredAt ||
+            item.createdAt;
+          const registrationDate = registeredAt ? new Date(registeredAt) : null;
+
+          return {
+            id: item.campaignId || item._id, // ✅ sửa chỗ này
+            name: item.name || 'Không có tên',
+            description: item.description || 'Không có mô tả',
+            startDate: startDate && !isNaN(startDate.getTime()) ? startDate : null,
+            endDate: endDate && !isNaN(endDate.getTime()) ? endDate : null,
+            status: item.status === 'in-progress' ? 'ongoing' : item.status,
+            imageUrl: item.image || 'https://via.placeholder.com/400x200', // Fallback image
+            category: item.categories || [],
+            registrationDate:
+              registrationDate && !isNaN(registrationDate.getTime()) ? registrationDate : null,
+            location: {
+              address: item.location?.address || 'Không có địa chỉ',
+              coordinates: item.location?.coordinates || [0, 0],
+            },
+            gallery: item.gallery || [],
+          };
+        });
+
+        setCampaigns(mappedCampaigns);
         setLoading(false);
+      } catch (error: any) {
+        setError(error.message || 'Lỗi khi lấy danh sách chiến dịch');
+        setLoading(false);
+        console.error('Lỗi khi lấy danh sách chiến dịch:', error);
       }
     };
 
     fetchCampaigns();
   }, []);
 
-  const handleOpenTaskList = (campaignId: string) => {
-    setSelectedCampaignId(campaignId);
-    setOpenModal(true);
+  const handleCardClick = (campaign: Campaign) => {
+    if (campaign.status === 'ongoing') {
+      setSelectedCampaign(campaign);
+      setOpenModal(true);
+    }
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setSelectedCampaignId(null);
+
+  // Phân loại campaigns theo trạng thái
+  const categorizedCampaigns = useMemo(() => {
+    const ongoing = campaigns.filter((c) => c.status === 'ongoing');
+    const upcoming = campaigns.filter((c) => c.status === 'upcoming');
+    const ended = campaigns.filter((c) => c.status === 'ended');
+    return { ongoing, upcoming, ended };
+  }, [campaigns]);
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
+
+  const tabData = [
+    {
+      label: 'Đang diễn ra',
+      icon: <PlayArrow />,
+      campaigns: categorizedCampaigns.ongoing,
+      color: 'success',
+    },
+    {
+      label: 'Chưa diễn ra',
+      icon: <Schedule />,
+      campaigns: categorizedCampaigns.upcoming,
+      color: 'warning',
+    },
+    {
+      label: 'Đã kết thúc',
+      icon: <CheckCircle />,
+      campaigns: categorizedCampaigns.ended,
+      color: 'error',
+    },
+  ];
+
+  const EmptyState: React.FC<{ message: string }> = ({ message }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 6,
+        textAlign: 'center',
+        backgroundColor: 'grey.50',
+        borderRadius: 2,
+      }}
+    >
+      <CampaignIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+      <Typography variant="h6" color="text.secondary">
+        {message}
+      </Typography>
+    </Paper>
+  );
+
+  if (loading) {
+    return (
+      <Container sx={{ maxWidth: '90vw', mt: '100px', py: 4, textAlign: 'center' }}>
+        <Typography variant="h6">Đang tải dữ liệu...</Typography>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container sx={{ maxWidth: '90vw', mt: '100px', py: 4, textAlign: 'center' }}>
+        <Typography variant="h6" color="error">
+          {error}
+        </Typography>
+      </Container>
+    );
+  }
 
   return (
     <>
       <Header />
-      <CampaignContainer>
-        <Typography
-          variant="h4"
-          align="left"
-          sx={{
-            color: '#4CAF50',
-            mb: 4,
-            fontWeight: 'bold',
-            pl: 52,
-          }}
-        >
-          My Campaign List
-        </Typography>
+      <Container sx={{ maxWidth: '90vw', mt: '100px', py: 4 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 2 }}>
+            Danh sách Campaign đã đăng ký
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Quản lý và theo dõi các campaign bạn đã tham gia
+          </Typography>
+        </Box>
 
-        {loading ? (
-          <Box display="flex" justifyContent="center" mt={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          campaigns.map((campaign) => {
-            const startDate = new Date(campaign.startDate);
-            const endDate = new Date(campaign.endDate);
-
-            return (
-              <Campaign
-                key={campaign._id}
-                title={campaign.name}
-                date={startDate.toLocaleDateString()}
-                time={`${startDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}`}
-                location={campaign.location?.address || 'Unknown location'}
-                description={campaign.description}
-                status={campaign.status === 'completed' ? 'finished' : 'active'}
-                image={campaign.image || campaign.gallery?.[0]}
-                campaignId={campaign._id}
-                onViewDetail={() => navigate(`/volunteer/${campaign._id}`)}
-                onOpenTaskList={handleOpenTaskList}
+        <Paper elevation={1} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              '& .MuiTabs-flexContainer': {
+                justifyContent: 'space-around',
+              },
+            }}
+          >
+            {tabData.map((tab, index) => (
+              <Tab
+                key={index}
+                icon={
+                  <Badge
+                    badgeContent={tab.campaigns.length}
+                    color={tab.color as any}
+                    sx={{ '& .MuiBadge-badge': { right: -3, top: 3 } }}
+                  >
+                    {tab.icon}
+                  </Badge>
+                }
+                label={tab.label}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  minWidth: 120,
+                  '&.Mui-selected': {
+                    fontWeight: 600,
+                  },
+                }}
               />
-            );
-          })
-        )}
-      </CampaignContainer>
+            ))}
+          </Tabs>
 
-      {/* Sử dụng TaskListModal */}
-      <TaskListModal
-        campaignId={selectedCampaignId}
-        open={openModal}
-        onClose={handleCloseModal}
-      />
+          {tabData.map((tab, index) => (
+            <TabPanel key={index} value={activeTab} index={index}>
+              {tab.campaigns.length === 0 ? (
+                <EmptyState
+                  message={`Không có campaign nào ${tab.label.toLowerCase()}`}
+                />
+              ) : (
+                <>
+                  <Box sx={{ mb: 3, px: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                      {tab.label} ({tab.campaigns.length})
+                    </Typography>
+                    <Divider />
+                  </Box>
+                  <Grid container spacing={2} sx={{ px: 1 }}>
+                    {tab.campaigns.map((campaign) => (
+                      <Grid item xs={12} sm={6} md={3} lg={2.4} key={campaign.id}>
+                        <CampaignCard campaign={campaign} onClick={() => handleCardClick(campaign)} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </>
+              )}
+            </TabPanel>
+          ))}
+        </Paper>
+      </Container>
 
-      <Footer />
+      {selectedCampaign && (
+        <>
+        {console.log('Modal mở với campaign:', selectedCampaign)}
+        <TaskListModal
+          open={openModal}
+          onClose={() => setOpenModal(false)}
+          campaign={selectedCampaign}
+        />
+        </>
+      )}
+
     </>
   );
 };
 
-export default CampaignList;
+export default MyCampaignList;

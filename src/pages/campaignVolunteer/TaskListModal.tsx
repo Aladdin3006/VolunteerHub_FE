@@ -1,365 +1,332 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
+  Modal,
+  Backdrop,
+  Fade,
   Box,
   Typography,
-  Stack,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  CircularProgress,
-  TextField,
-  Snackbar,
+  List,
+  ListItem,
+  ListItemText,
+  Button,
+  Collapse,
+  Divider,
+  ListItemSecondaryAction,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import dayjs from 'dayjs';
-import { getCampaignVolunteerDetail, CampaignVolunteer } from '../../apis/campaign';
+import { ExpandMore, ExpandLess } from '@mui/icons-material';
 
-// Định nghĩa kiểu dữ liệu
-export interface Task {
-  _id: string;
-  title: string;
-  description?: string;
-  status: {
-    status: 'todo' | 'doing' | 'done';
-  };
-}
-
-export interface PhaseDay {
+interface PhaseDay {
   _id: string;
   date: string;
-  tasks: Task[];
+  checkinLocation: {
+    address: string;
+  };
+  status: string;
 }
 
-export interface Phase {
+interface Phase {
   _id: string;
   name: string;
-  description?: string;
+  description: string;
   startDate: string;
   endDate: string;
   phaseDays: PhaseDay[];
 }
 
-interface TaskListModalProps {
-  campaignId: string | null;
-  open: boolean;
-  onClose: () => void;
+interface Task {
+  _id: string;
+  phaseDayId: string;
+  title: string;
+  description: string;
+  status: {
+    code: string; // ví dụ: "in_progress", "completed"
+    label: string; // ví dụ: "Đang thực hiện"
+  };
 }
 
-// API giả lập
-const mockCheckInPhaseDay = async (phaseDayId: string): Promise<boolean> => {
-  // Giả lập kiểm tra vị trí (luôn thành công)
-  return true;
-};
+interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: 'ongoing' | 'upcoming' | 'ended';
+  imageUrl?: string;
+  category: string[];
+  registrationDate: Date | null;
+  location: {
+    address: string;
+    coordinates: [number, number];
+  };
+  gallery?: string[];
+}
 
-const mockSubmitTaskReport = async (formData: FormData): Promise<void> => {
-  // Giả lập gửi báo cáo
-  console.log('Form data:', Object.fromEntries(formData));
-};
+interface CampaignDetailsModalProps {
+  open: boolean;
+  onClose: () => void;
+  campaign: Campaign;
+}
 
-// Component chính
-const TaskListModal: React.FC<TaskListModalProps> = ({ campaignId, open, onClose }) => {
+const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ open, onClose, campaign }) => {
   const [phases, setPhases] = useState<Phase[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [checkinModalOpen, setCheckinModalOpen] = useState(false);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [selectedPhaseDayId, setSelectedPhaseDayId] = useState<string | null>(null);
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [formMode, setFormMode] = useState<'complete' | 'issue'>('complete');
-  const [image, setImage] = useState<File | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  // Lấy danh sách phases từ campaignId
   useEffect(() => {
-    if (!campaignId || !open) {
-      setPhases([]);
-      setError(null);
-      return;
-    }
-
     const fetchPhases = async () => {
-      setLoading(true);
-      setError(null);
+      if (!open || !campaign?.id) return;
       try {
-        const campaign: CampaignVolunteer = await getCampaignVolunteerDetail(campaignId);
-        setPhases(campaign.phases ?? []);
-      } catch (err) {
-    console.error('Lỗi khi tải campaign:', err);
-    setError('Không thể tải danh sách giai đoạn. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
+        const userString = localStorage.getItem('user');
+        const token = userString ? JSON.parse(userString).token : null;
+        if (!token) throw new Error('No token found');
+
+        const res = await fetch(`http://localhost:4000/phase/${campaign.id}/phases`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!res.ok) throw new Error('Failed to fetch phases');
+        const data = await res.json();
+        setPhases(data.data || []);
+      } catch (err: any) {
+        setError('Lỗi khi tải phases');
+        console.error('Lỗi lấy phase:', err);
       }
     };
 
     fetchPhases();
-  }, [campaignId, open]);
+  }, [campaign, open]);
 
-  const handleOpenCheckin = (phaseDayId: string) => {
-    setSelectedPhaseDayId(phaseDayId);
-    setCheckinModalOpen(true);
-  };
+  // Lấy tasks từ phaseDayId
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!selectedPhaseDayId || !campaign.id) return;
+      setLoadingTasks(true);
+      setError(null);
+      try {
+        const userString = localStorage.getItem('user');
+        const token = userString ? JSON.parse(userString).token : null;
+        if (!token) throw new Error('No token found');
 
-  const handleConfirmCheckin = async () => {
-    if (!selectedPhaseDayId) {
-      setMessage('Không có ngày được chọn.');
-      return;
-    }
-    try {
-      const isWithinRange = await mockCheckInPhaseDay(selectedPhaseDayId);
-      if (isWithinRange) {
-        setMessage(`Check-in thành công cho ngày ${dayjs().format('DD/MM/YYYY')}!`);
-        setCheckinModalOpen(false);
-      } else {
-        setMessage('Bạn không ở trong bán kính 100m từ điểm tập kết!');
+        const res = await fetch(
+          `http://localhost:4000/phase/${selectedPhaseDayId}/taskss?campaignId=${campaign.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        const data = await res.json();
+        setTasks(data.data || []);
+      } catch (err: any) {
+        setError('Lỗi khi tải tasks');
+      } finally {
+        setLoadingTasks(false);
       }
-    } catch (err) {
-      setMessage('Lỗi khi check-in. Vui lòng thử lại.');
+    };
+
+    fetchTasks();
+  }, [selectedPhaseDayId, campaign.id]);
+
+  // Placeholder cho Check-in
+  const handleCheckin = (phaseDayId: string) => {
+    alert(`Check-in cho PhaseDay ${phaseDayId} (API chưa được triển khai)`);
+  };
+
+  // Placeholder cho Hoàn thành task
+  const handleCompleteTask = (taskId: string) => {
+    alert(`Hoàn thành task ${taskId} (API chưa được triển khai)`);
+  };
+
+  // Placeholder cho Báo cáo sự cố
+  const handleReportIssue = (taskId: string) => {
+    const issueDescription = prompt('Vui lòng nhập mô tả sự cố:');
+    if (issueDescription) {
+      alert(`Báo cáo sự cố cho task ${taskId}: ${issueDescription} (API chưa được triển khai)`);
     }
   };
 
-  const handleOpenReportForm = (task: Task, mode: 'complete' | 'issue') => {
-    setSelectedTask(task);
-    setFormMode(mode);
-    setReportModalOpen(true);
+  const handlePhaseClick = (phaseId: string) => {
+    setSelectedPhaseId(phaseId === selectedPhaseId ? null : phaseId);
+    setSelectedPhaseDayId(null); // Reset phaseDay và tasks khi chọn phase mới
+    setTasks([]);
   };
 
-  const handleCloseReportForm = () => {
-    setReportModalOpen(false);
-    setSelectedTask(null);
-    setImage(null);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
-      setImage(file);
-    } else {
-      setMessage('Vui lòng chọn file ảnh dưới 5MB.');
-    }
-  };
-
-  const handleSubmitReport = async () => {
-    if (!selectedTask) {
-      setMessage('Không có nhiệm vụ được chọn.');
-      return;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('taskId', selectedTask._id);
-      formData.append('mode', formMode);
-      formData.append(
-        'description',
-        (document.getElementById('report-description') as HTMLInputElement)?.value || ''
-      );
-      if (image) formData.append('image', image);
-
-      await mockSubmitTaskReport(formData);
-      setMessage(
-        `Đã gửi ${formMode === 'complete' ? 'báo cáo hoàn thành' : 'báo sự cố'} cho nhiệm vụ: ${selectedTask.title}`
-      );
-      handleCloseReportForm();
-    } catch (err) {
-      setMessage('Lỗi khi gửi báo cáo. Vui lòng thử lại.');
-    }
+  const handlePhaseDayClick = (phaseDayId: string) => {
+    setSelectedPhaseDayId(phaseDayId === selectedPhaseDayId ? null : phaseDayId);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Danh sách giai đoạn</DialogTitle>
-      <DialogContent>
-        {loading ? (
-          <Box display="flex" justifyContent="center" my={4}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Typography color="error">{error}</Typography>
-        ) : phases.length === 0 ? (
-          <Typography color="text.secondary">
-            Không có giai đoạn nào cho chiến dịch này.
+    <Modal
+      open={open}
+      onClose={onClose}
+      closeAfterTransition
+      slots={{ backdrop: Backdrop }}
+      slotProps={{ backdrop: { timeout: 500 } }}
+    >
+      <Fade in={open}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 800,
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+            maxHeight: '80vh',
+            overflowY: 'auto',
+          }}
+        >
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+            Chi tiết chiến dịch: {campaign.name}
           </Typography>
-        ) : (
-          <Stack spacing={2}>
-            {phases.map((phase) => (
-              <Accordion
-                key={phase._id}
-                defaultExpanded={phase.phaseDays.length > 0}
-                disableGutters
-              >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700}>
-                      🧭 {phase.name}
+
+          <Typography variant="h6" sx={{ mb: 1 }}>Giai đoạn (Phases)</Typography>
+          {phases.length === 0 && !error && (
+            <Typography color="text.secondary">Không có giai đoạn nào.</Typography>
+          )}
+          {error && <Typography color="error">{error}</Typography>}
+          <List>
+            {phases.map(phase => (
+              <Box key={phase._id}>
+                <ListItem
+                  button
+                  onClick={() => handlePhaseClick(phase._id)}
+                  sx={{
+                    bgcolor: selectedPhaseId === phase._id ? 'primary.light' : 'inherit',
+                    borderRadius: 1,
+                    mb: 0.5,
+                  }}
+                >
+                  <ListItemText
+                    primary={phase.name}
+                    secondary={`${phase.description} (${formatDate(phase.startDate)} - ${formatDate(
+                      phase.endDate
+                    )})`}
+                  />
+                  {selectedPhaseId === phase._id ? <ExpandLess /> : <ExpandMore />}
+                </ListItem>
+                <Collapse in={selectedPhaseId === phase._id} timeout="auto" unmountOnExit>
+                  <Box sx={{ ml: 4, mt: 1 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Ngày hoạt động (Phase Days)
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                      (Từ {dayjs(phase.startDate).format('DD/MM/YYYY')} đến{' '}
-                      {dayjs(phase.endDate).format('DD/MM/YYYY')})
-                    </Typography>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {phase.description && (
-                    <Typography
-                      variant="body1"
-                      color="text.secondary"
-                      sx={{ mb: 2, whiteSpace: 'pre-line' }}
-                    >
-                      {phase.description}
-                    </Typography>
-                  )}
-                  {phase.phaseDays.length === 0 ? (
-                    <Typography color="text.secondary">
-                      Không có ngày hoạt động nào trong giai đoạn này.
-                    </Typography>
-                  ) : (
-                    <Stack spacing={2}>
-                      {phase.phaseDays.map((day) => (
-                        <Box key={day._id}>
-                          <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            justifyContent="space-between"
-                            alignItems={{ xs: 'flex-start', sm: 'center' }}
-                            sx={{ mb: 1 }}
-                          >
-                            <Typography fontWeight={600}>
-                              📅 {dayjs(day.date).format('DD/MM/YYYY')}
-                            </Typography>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              onClick={() => handleOpenCheckin(day._id)}
+                    {phase.phaseDays.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Không có ngày hoạt động
+                      </Typography>
+                    ) : (
+                      <List dense>
+                        {phase.phaseDays.map(day => (
+                          <Box key={day._id}>
+                            <ListItem
+                              button
+                              onClick={() => handlePhaseDayClick(day._id)}
+                              sx={{
+                                bgcolor: selectedPhaseDayId === day._id ? 'action.selected' : 'inherit',
+                                borderRadius: 1,
+                                mb: 0.5,
+                              }}
                             >
-                              Check-in
-                            </Button>
-                          </Stack>
-                          {day.tasks.length === 0 ? (
-                            <Typography color="text.secondary" sx={{ ml: 2 }}>
-                              Không có nhiệm vụ.
-                            </Typography>
-                          ) : (
-                            <Stack spacing={1} sx={{ ml: 2, mt: 1 }}>
-                              {day.tasks.map((task) => (
-                                <Stack
-                                  key={task._id}
-                                  direction={{ xs: 'column', sm: 'row' }}
-                                  justifyContent="space-between"
-                                  alignItems={{ xs: 'flex-start', sm: 'center' }}
-                                  spacing={2}
+                              <ListItemText
+                                primary={`Ngày: ${formatDate(day.date)}`}
+                                secondary={`Địa điểm: ${day.checkinLocation.address} | Trạng thái: ${day.status}`}
+                              />
+                              <ListItemSecondaryAction sx={{ right: 40 }}>
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() => handleCheckin(day._id)}
+                                  disabled={day.status === 'checked_in'}
                                 >
-                                  <Typography variant="body2">
-                                    🔧 {task.title} ({task.status.status})
-                                  </Typography>
-                                  <Stack direction="row" spacing={1}>
-                                    <Button
-                                      size="small"
-                                      variant="contained"
-                                      onClick={() => handleOpenReportForm(task, 'complete')}
-                                    >
-                                      Hoàn thành
-                                    </Button>
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      color="warning"
-                                      onClick={() => handleOpenReportForm(task, 'issue')}
-                                    >
-                                      Báo sự cố
-                                    </Button>
-                                  </Stack>
-                                </Stack>
-                              ))}
-                            </Stack>
-                          )}
-                        </Box>
-                      ))}
-                    </Stack>
-                  )}
-                </AccordionDetails>
-              </Accordion>
+                                  Check-in
+                                </Button>
+                              </ListItemSecondaryAction>
+                              {selectedPhaseDayId === day._id ? <ExpandLess /> : <ExpandMore />}
+                            </ListItem>
+                            <Collapse in={selectedPhaseDayId === day._id} timeout="auto" unmountOnExit>
+                              <Box sx={{ ml: 4, mt: 1 }}>
+                                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                  Nhiệm vụ (Tasks)
+                                </Typography>
+                                {loadingTasks ? (
+                                  <Typography>Đang tải...</Typography>
+                                ) : error ? (
+                                  <Typography color="error">{error}</Typography>
+                                ) : tasks.length === 0 ? (
+                                  <Typography>Không có nhiệm vụ nào.</Typography>
+                                ) : (
+                                  <List dense>
+                                    {tasks.map(task => (
+                                      <ListItem key={task._id}>
+                                        <ListItemText
+                                          primary={task.title}
+                                          secondary={`Mô tả: ${task.description} | Trạng thái: ${task.status.label}`}
+                                        />
+                                        <ListItemSecondaryAction>
+                                          <Button
+                                            variant="contained"
+                                            size="small"
+                                            onClick={() => handleCompleteTask(task._id)}
+                                            disabled={task.status.code === 'completed'}
+                                            sx={{ mr: 1 }}
+                                          >
+                                            Hoàn thành
+                                          </Button>
+                                          <Button
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            onClick={() => handleReportIssue(task._id)}
+                                          >
+                                            Báo cáo
+                                          </Button>
+                                        </ListItemSecondaryAction>
+                                      </ListItem>
+                                    ))}
+                                  </List>
+                                )}
+                              </Box>
+                            </Collapse>
+                          </Box>
+                        ))}
+                      </List>
+                    )}
+                  </Box>
+                </Collapse>
+              </Box>
             ))}
-          </Stack>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Đóng</Button>
-      </DialogActions>
+          </List>
 
-      {/* Modal Check-in PhaseDay */}
-      <Dialog open={checkinModalOpen} onClose={() => setCheckinModalOpen(false)}>
-        <DialogTitle>Check-in ngày hoạt động</DialogTitle>
-        <DialogContent>
-          <Typography mb={2}>
-            Bạn cần đứng gần điểm tập kết trong bán kính <strong>100m</strong> để check-in. Vui lòng kiểm tra vị trí của bạn!
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCheckinModalOpen(false)}>Hủy</Button>
-          <Button variant="contained" onClick={handleConfirmCheckin}>
-            Xác nhận check-in
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal Báo cáo Task */}
-      <Dialog open={reportModalOpen} onClose={handleCloseReportForm} fullWidth maxWidth="sm">
-        <DialogTitle>{formMode === 'complete' ? 'Báo cáo hoàn thành' : 'Báo sự cố'}</DialogTitle>
-        <DialogContent>
-          {selectedTask ? (
-            <Typography mb={2}>
-              <strong>Nhiệm vụ: {selectedTask.title}</strong> –{' '}
-              {selectedTask.description || 'Không có mô tả'}
-            </Typography>
-          ) : (
-            <Typography color="error">Không có nhiệm vụ được chọn.</Typography>
-          )}
-          {formMode === 'complete' ? (
-            <>
-              <TextField
-                id="report-description"
-                fullWidth
-                multiline
-                rows={4}
-                label="Mô tả kết quả công việc"
-                placeholder="Ví dụ: Đã hoàn thành nhiệm vụ và kiểm tra kết quả."
-                sx={{ mb: 2 }}
-              />
-              <Button variant="outlined" component="label">
-                Tải ảnh minh chứng
-                <input hidden accept="image/*" type="file" onChange={handleImageChange} />
-              </Button>
-              {image && <Typography mt={1}>📎 {image.name}</Typography>}
-            </>
-          ) : (
-            <TextField
-              id="report-description"
-              fullWidth
-              multiline
-              rows={3}
-              label="Lý do không thể thực hiện"
-              placeholder="Ví dụ: Thiết bị hỏng, cần hỗ trợ thêm..."
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseReportForm}>Hủy</Button>
-          <Button variant="contained" onClick={handleSubmitReport}>
-            Gửi
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={!!message}
-        autoHideDuration={4000}
-        onClose={() => setMessage(null)}
-        message={message}
-      />
-    </Dialog>
+          <Divider sx={{ my: 2 }} />
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button variant="contained" onClick={onClose}>
+              Đóng
+            </Button>
+          </Box>
+        </Box>
+      </Fade>
+    </Modal>
   );
 };
 
-export default TaskListModal;
+export default CampaignDetailsModal;
