@@ -1,42 +1,26 @@
-// ManageTask.tsx
 import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
   Button,
   Paper,
-  Tabs,
-  Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Chip,
   CircularProgress,
   IconButton,
   Breadcrumbs,
   Link,
   Alert,
   Snackbar,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Stack,
-  TableContainer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
   Table,
-  TableHead,
   TableBody,
-  TableRow,
   TableCell,
+  TableRow,
+  TableContainer,
 } from "@mui/material";
-import {
-  ArrowBack,
-  Add,
-  Assignment,
-  RateReview,
-  ExpandMore,
-  Close,
-} from "@mui/icons-material";
+import { ArrowBack, Add, Assignment, RateReview } from "@mui/icons-material";
 import {
   Volunteer,
   getCampaignVolunteers,
@@ -49,10 +33,9 @@ import {
   PhaseDay,
   Department,
   getDepartmentsByVolunteerId,
+  reviewTask,
 } from "../../apis/staff";
 import TaskCRUDModal from "./TaskCRUDModal";
-
-type TaskEvaluation = "excellent" | "good" | "average" | "poor";
 
 interface ManageTaskProps {
   campaignId: string;
@@ -69,12 +52,12 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [departments, setDepartments] = useState<Record<string, Department[]>>(
     {}
-  ); // Store departments by volunteerId
+  );
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
@@ -102,7 +85,6 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       setSelectedPhaseDay(null);
     }
   }, [selectedPhase]);
-  console.log("selectedPhaseDay", selectedPhaseDay);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,7 +98,6 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           setTasks(tasksData);
           setVolunteers(volunteersData);
 
-          // Fetch departments for each volunteer
           const departmentsMap: Record<string, Department[]> = {};
           await Promise.all(
             volunteersData.map(async (volunteer) => {
@@ -154,16 +135,11 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         title: taskData.title,
         description: taskData.description,
         assignedUsers: taskData.assignedUsers || [],
-        status: {
-          status:
-            taskData.assignedUsers.length > 0 ? "in_progress" : "not-started",
-        },
-        phaseDayDate: selectedPhaseDay.date, // Pass the phaseDay date
+        phaseDayDate: selectedPhaseDay.date,
       });
-      setTasks((prevTasks) => [
-        newTask,
-        ...(Array.isArray(prevTasks) ? prevTasks : []),
-      ]);
+
+      const updatedTasks = await getTasksByPhaseDayId(selectedPhaseDay._id);
+      setTasks(updatedTasks);
       setTaskModalOpen(false);
       setSnackbarMessage("Task created successfully!");
       setSnackbarSeverity("success");
@@ -187,12 +163,14 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     try {
       const updatedTask = await updateTask(taskId, {
         assignedUsers: assignedUsers || [],
-        status: { status: "in_progress" },
-        phaseDayDate: selectedPhaseDay?.date, // Pass the phaseDay date
+        phaseDayDate: selectedPhaseDay?.date,
       });
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => (t._id === taskId ? updatedTask : t))
+
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
       );
+      setTasks(updatedTasks);
+      setTaskModalOpen(false);
       setSnackbarMessage("Volunteers assigned successfully!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
@@ -206,20 +184,56 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
 
   const handleReviewTask = async (
     taskId: string,
-    evaluation: TaskEvaluation,
-    feedback: string
+    userId: string,
+    status: string,
+    evaluation: string,
+    staffComment: string
   ) => {
     try {
-      const updatedTask = await updateTask(taskId, {
-        status: {
-          status: "approved",
-          evaluation,
-          feedback,
-          submittedAt: new Date(),
-        },
-      });
-      setTasks(tasks.map((t) => (t._id === taskId ? updatedTask : t)));
+      const updatedTask = await reviewTask(
+        taskId,
+        userId,
+        status,
+        evaluation,
+        staffComment
+      );
+
+      // Update the specific task in the tasks array with proper typing
+      setTasks(
+        tasks.map((task) => {
+          if (task._id === taskId) {
+            const updatedAssignedUsers = task.assignedUsers.map((au) => {
+              if (au.userId === userId) {
+                return {
+                  ...au,
+                  review: {
+                    status: status as "pending" | "approved" | "rejected",
+                    evaluation: evaluation as
+                      | "excellent"
+                      | "good"
+                      | "average"
+                      | "poor",
+                    staffComment,
+                    reviewedAt: new Date(),
+                    reviewedBy: JSON.parse(localStorage.getItem("user") || "{}")
+                      ._id,
+                  },
+                };
+              }
+              return au;
+            });
+
+            return {
+              ...task,
+              assignedUsers: updatedAssignedUsers,
+            };
+          }
+          return task;
+        })
+      );
+
       setReviewModalOpen(false);
+      setSelectedUserId(null);
       setSnackbarMessage("Task reviewed successfully!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
@@ -239,13 +253,6 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const goBackToPhaseDays = () => {
     setSelectedPhaseDay(null);
   };
-
-  const notStartedTasks =
-    tasks?.filter((t) => t?.status?.status === "not-started") || [];
-  const inProgressTasks =
-    tasks?.filter((t) => t?.status?.status === "in_progress") || [];
-  const submittedTasks =
-    tasks?.filter((t) => t?.status?.status === "submitted") || [];
 
   if (!selectedPhase) {
     return (
@@ -269,6 +276,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
                   <ListItemSecondaryAction>
                     <Button
                       variant="contained"
+                      size="small"
                       onClick={() => setSelectedPhase(phase)}
                     >
                       Select
@@ -318,6 +326,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
                 <ListItemSecondaryAction>
                   <Button
                     variant="contained"
+                    size="small"
                     onClick={() => setSelectedPhaseDay(day)}
                   >
                     Select
@@ -358,21 +367,20 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           {new Date(selectedPhaseDay.date).toLocaleDateString()}
         </Typography>
       </Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={(_, newValue) => setActiveTab(newValue)}
-        >
-          <Tab label="Not Started" />
-          <Tab label="In Progress" />
-          <Tab label="Submitted" />
-        </Tabs>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
         <Button
           variant="contained"
+          size="small"
           startIcon={<Add />}
           onClick={() => {
             setSelectedTask(null);
             setTaskModalOpen(true);
+          }}
+          sx={{
+            px: 1.5,
+            py: 0.5,
+            minWidth: "unset",
+            fontSize: "0.75rem",
           }}
         >
           Create Task
@@ -382,54 +390,20 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         <CircularProgress />
       ) : (
         <Paper sx={{ p: 2 }}>
-          {activeTab === 0 && (
-            <TaskList
-              tasks={notStartedTasks}
-              volunteers={volunteers}
-              departments={departments}
-              onAssign={(task) => {
-                setSelectedTask(task);
-                setTaskModalOpen(true);
-              }}
-              onUnassign={(task, userId) => {
-                const updatedUsers = task.assignedUsers.filter(
-                  (id) => id !== userId
-                );
-                handleAssignTask(task._id, updatedUsers);
-              }}
-            />
-          )}
-          {activeTab === 1 && (
-            <TaskList
-              tasks={inProgressTasks}
-              volunteers={volunteers}
-              departments={departments}
-              onAction={(task) => {
-                updateTask(task._id, { status: { status: "submitted" } }).then(
-                  (updatedTask) => {
-                    setTasks(
-                      tasks.map((t) => (t._id === task._id ? updatedTask : t))
-                    );
-                  }
-                );
-              }}
-              actionLabel="Mark as Submitted"
-              actionIcon={<Assignment />}
-            />
-          )}
-          {activeTab === 2 && (
-            <TaskList
-              tasks={submittedTasks}
-              volunteers={volunteers}
-              departments={departments}
-              onAction={(task) => {
-                setSelectedTask(task);
-                setReviewModalOpen(true);
-              }}
-              actionLabel="Review Task"
-              actionIcon={<RateReview />}
-            />
-          )}
+          <TaskList
+            tasks={tasks}
+            volunteers={volunteers}
+            departments={departments}
+            onAssign={(task) => {
+              setSelectedTask(task);
+              setTaskModalOpen(true);
+            }}
+            onReview={(task, userId) => {
+              setSelectedTask(task);
+              setSelectedUserId(userId);
+              setReviewModalOpen(true);
+            }}
+          />
           {(!tasks || tasks.length === 0) && (
             <Alert severity="info" sx={{ mt: 2 }}>
               No tasks found for this phase day.
@@ -453,13 +427,23 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       />
       <TaskCRUDModal
         open={reviewModalOpen}
-        onClose={() => setReviewModalOpen(false)}
+        onClose={() => {
+          setReviewModalOpen(false);
+          setSelectedUserId(null);
+        }}
         onSubmit={(taskData) => {
-          if (selectedTask && taskData.evaluation && taskData.feedback) {
+          if (
+            selectedTask &&
+            selectedUserId &&
+            taskData.evaluation &&
+            taskData.staffComment
+          ) {
             handleReviewTask(
               selectedTask._id,
-              taskData.evaluation as TaskEvaluation,
-              taskData.feedback
+              selectedUserId,
+              taskData.status || "approved",
+              taskData.evaluation,
+              taskData.staffComment
             );
           }
         }}
@@ -467,6 +451,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         departments={departments}
         task={selectedTask}
         isReviewMode={true}
+        selectedUserId={selectedUserId}
       />
       <Snackbar
         open={snackbarOpen}
@@ -490,10 +475,7 @@ interface TaskListProps {
   volunteers: Volunteer[];
   departments: Record<string, Department[]>;
   onAssign?: (task: Task) => void;
-  onUnassign?: (task: Task, userId: string) => void;
-  onAction?: (task: Task) => void;
-  actionLabel?: string;
-  actionIcon?: React.ReactNode;
+  onReview?: (task: Task, userId: string) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -501,15 +483,12 @@ const TaskList: React.FC<TaskListProps> = ({
   volunteers,
   departments,
   onAssign,
-  onUnassign,
-  onAction,
-  actionLabel,
-  actionIcon,
+  onReview,
 }) => {
   if (!tasks || tasks.length === 0) {
     return (
       <Typography variant="body1" sx={{ p: 2, textAlign: "center" }}>
-        No tasks found in this category
+        No tasks found
       </Typography>
     );
   }
@@ -538,82 +517,79 @@ const TaskList: React.FC<TaskListProps> = ({
               mr: 1,
             }}
           />
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ flex: 0, alignItems: "center", height: "56px" }}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+              flex: 0,
+              alignItems: "center",
+              height: "56px",
+            }}
           >
             {onAssign && (
               <Button
                 variant="outlined"
+                size="small"
                 startIcon={<Assignment />}
                 onClick={() => onAssign(task)}
                 sx={{
-                  mr: 1,
-                  height: "100%",
-                  minHeight: "56px",
+                  mb: 1,
                   padding: "6px 16px",
                 }}
               >
                 Assign Volunteers
               </Button>
             )}
-            {onAction && (
-              <Button
-                variant="contained"
-                startIcon={actionIcon}
-                onClick={() => onAction(task)}
-                sx={{ height: "100%", minHeight: "56px", padding: "6px 16px" }}
-              >
-                {actionLabel}
-              </Button>
-            )}
-          </Stack>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}
-          >
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}>
             {task.assignedUsers && task.assignedUsers.length > 0 ? (
-              <Accordion
-                sx={{
-                  width: "100%",
-                  boxShadow: "none",
-                  "&:before": { display: "none" },
-                }}
-              >
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography variant="subtitle2">
-                    Volunteers ({task.assignedUsers.length})
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <TableContainer>
-                    <Table>
-                      <TableBody>
-                        {task.assignedUsers.map((userId) => {
-                          const volunteer = volunteers.find(
-                            (v) => v.user._id === userId
-                          );
-                          return (
-                            <TableRow key={userId}>
-                              <TableCell>
-                                {volunteer?.user.fullName || "Unknown"}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </AccordionDetails>
-              </Accordion>
+              <>
+                <Typography variant="subtitle2">
+                  Volunteers ({task.assignedUsers.length})
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableBody>
+                      {task.assignedUsers.map((au) => {
+                        const volunteer = volunteers.find(
+                          (v) => v.user._id === au.userId
+                        );
+                        return (
+                          <TableRow key={au.userId}>
+                            <TableCell>
+                              {volunteer?.user.fullName || "Unknown"}
+                            </TableCell>
+                            <TableCell>
+                              {onReview && (
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  startIcon={<RateReview />}
+                                  onClick={() => onReview(task, au.userId)}
+                                  sx={{ padding: "4px 8px" }}
+                                  disabled={
+                                    !au.submission ||
+                                    au.review?.status !== "pending"
+                                  }
+                                >
+                                  Review
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
             ) : (
               <Typography variant="caption" color="textSecondary">
                 No volunteers assigned
               </Typography>
             )}
-          </Stack>
+          </Box>
         </ListItem>
       ))}
     </List>

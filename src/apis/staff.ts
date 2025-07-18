@@ -12,6 +12,7 @@ export interface Campaign {
     coordinates: [number, number];
     address: string;
   };
+  phases: Phase[];
   startDate: Date;
   endDate: Date;
   gallery: string[];
@@ -127,20 +128,26 @@ export interface Task {
   _id: string;
   title: string;
   description: string;
-  status: {
-    status:
-      | "not-started"
-      | "in_progress"
-      | "submitted"
-      | "approved"
-      | "rejected";
-    submittedAt?: Date;
-    feedback?: string;
-    evaluation?: "excellent" | "good" | "average" | "poor";
-  };
-  assignedUsers: string[];
+  assignedUsers: {
+    userId: string;
+    checkinTime?: Date;
+    checkoutTime?: Date;
+    submission?: {
+      content: string;
+      images: string[];
+      submittedAt: Date;
+      submittedBy: string;
+    };
+    review?: {
+      status: "pending" | "approved" | "rejected";
+      evaluation?: "excellent" | "good" | "average" | "poor";
+      staffComment?: string;
+      reviewedBy?: string;
+      reviewedAt?: Date;
+    };
+  }[];
   phaseDayId: string;
-  campaignId: string;
+  campaignId?: string;
   updatedAt: Date;
 }
 
@@ -188,8 +195,6 @@ export const getPhasesByCampaignId = async (
     const response = await axios.get(`${API_BASE}/phase/${campaignId}/phases`, {
       headers: getAuthHeaders(),
     });
-
-    console.log("API: Phases response:", response.data);
 
     // Handle both response.data and response.data.data cases
     const phasesData = response.data.data || response.data || [];
@@ -239,11 +244,16 @@ export const createPhase = async (
     const endDate = new Date(payload.endDate);
 
     // Validate dates
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      throw new Error("Invalid date format provided");
+    if (isNaN(startDate.getTime())) {
+      throw new Error("Invalid start date");
+    }
+    if (isNaN(endDate.getTime())) {
+      throw new Error("Invalid end date");
+    }
+    if (startDate >= endDate) {
+      throw new Error("End date must be after start date");
     }
 
-    // Format dates to ISO string (UTC) - try both with and without campaignId in body
     const formattedPayload = {
       name: payload.name.trim(),
       description: payload.description?.trim() || "",
@@ -254,59 +264,33 @@ export const createPhase = async (
     const response = await axios.post(
       `${API_BASE}/phase/${cleanCampaignId}/phases`,
       formattedPayload,
-      {
-        headers: getAuthHeaders(),
-      }
+      { headers: getAuthHeaders() }
     );
 
-    return response.data.data;
+    // Handle response
+    const phaseData = response.data?.data;
+    if (!phaseData?._id) {
+      throw new Error("Invalid response format from server");
+    }
+
+    return {
+      _id: phaseData._id,
+      campaignId: phaseData.campaignId || cleanCampaignId,
+      name: phaseData.name,
+      description: phaseData.description || "",
+      startDate: new Date(phaseData.startDate),
+      endDate: new Date(phaseData.endDate),
+      status: phaseData.status || "upcoming",
+      phaseDays: phaseData.phaseDays || [],
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Error creating phase:", error.response?.data);
-
-      // Log detailed error information
-      if (error.response) {
-        console.error(
-          "Response data:",
-          JSON.stringify(error.response.data, null, 2)
-        );
-        console.error("Response status:", error.response.status);
-        console.error("Response headers:", error.response.headers);
-
-        // Log specific error details if available
-        if (error.response.data?.errors) {
-          console.error(
-            "Validation errors:",
-            JSON.stringify(error.response.data.errors, null, 2)
-          );
-          error.response.data.errors.forEach((err: any, index: number) => {
-            console.error(`Error ${index + 1}:`, JSON.stringify(err, null, 2));
-          });
-        }
-      }
-
-      // Create a more specific error message
-      let errorMessage = "Failed to create phase";
-      if (
-        error.response?.data?.errors &&
-        error.response.data.errors.length > 0
-      ) {
-        // Extract the first error message
-        const firstError = error.response.data.errors[0];
-        if (typeof firstError === "string") {
-          errorMessage = firstError;
-        } else if (firstError.message) {
-          errorMessage = firstError.message;
-        } else if (firstError.msg) {
-          errorMessage = firstError.msg;
-        }
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      }
-
-      throw new Error(errorMessage);
+      throw new Error(
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          "Failed to create phase"
+      );
     } else {
       console.error("Error creating phase:", error);
       throw new Error("Failed to create phase");
@@ -432,6 +416,53 @@ export const createPhaseDay = async (
   }
 };
 
+export const startPhase = async (phaseId: string): Promise<Phase> => {
+  try {
+    // Validate phaseId format
+    if (!phaseId || !phaseId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid phase ID format: ${phaseId}`);
+    }
+
+    const response = await axios.put(
+      `${API_BASE}/phase/${phaseId}/start`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+
+    const responseData = response.data.data || response.data;
+
+    return {
+      _id: responseData._id,
+      campaignId: responseData.campaignId,
+      name: responseData.name,
+      description: responseData.description || "",
+      startDate: new Date(responseData.startDate),
+      endDate: new Date(responseData.endDate),
+      status: responseData.status || "in-progress",
+      phaseDays: (responseData.phaseDays || []).map((day: any) => ({
+        _id: day._id,
+        phaseId: day.phaseId || responseData._id,
+        date: new Date(day.date),
+        checkinLocation: day.checkinLocation,
+        status: day.status || "upcoming",
+        tasks: day.tasks || [],
+      })),
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("Error starting phase:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to start phase"
+      );
+    } else {
+      console.error("Error starting phase:", error);
+      throw new Error("Failed to start phase");
+    }
+  }
+};
+
 export const updatePhaseDay = async (
   phaseDayId: string,
   payload: Partial<PhaseDay>
@@ -543,7 +574,7 @@ export const getCampaignVolunteers = async (
   }
 };
 
-//Department 
+//Department
 export const getDepartmentsByCampaignId = async (
   campaignId: string
 ): Promise<Department[]> => {
@@ -605,9 +636,13 @@ export const getDepartmentsByVolunteerId = async (
     }));
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error("Error fetching departments by volunteer:", error.response?.data);
+      console.error(
+        "Error fetching departments by volunteer:",
+        error.response?.data
+      );
       throw new Error(
-        error.response?.data?.message || "Failed to fetch departments by volunteer"
+        error.response?.data?.message ||
+          "Failed to fetch departments by volunteer"
       );
     } else {
       console.error("Error fetching departments by volunteer:", error);
@@ -731,21 +766,29 @@ export const getTasksByPhaseDayId = async (
       headers: getAuthHeaders(),
     });
 
-    // Log the raw response for debugging
-    console.log("Raw tasks response:", response.data);
+    // Log the response for debugging
+    console.log("Tasks response:", response.data);
 
-    // Handle both response.data and response.data.data cases
-    const responseData = response.data.data || response.data;
+    // Handle different response structures
+    const tasksData = response.data.data || response.data;
 
-    // Transform the backend response to match our frontend Task interface
-    return responseData.map((task: any) => ({
-      _id: task._id || task.id, // Use either _id or id from backend
-      phaseDayId: task.phaseDayId,
-      title: task.title || task.name, // Use either title or name from backend
-      description: task.description,
-      status: task.status || { status: "not-started" }, // Default status if missing
-      assignedUsers:
-        task.assignedUsers?.map((u: any) => u.userId._id || u._id) || [],
+    if (!tasksData) {
+      return [];
+    }
+
+    // Ensure tasksData is an array
+    const tasksArray = Array.isArray(tasksData) ? tasksData : [tasksData];
+
+    return tasksArray.map((task: any) => ({
+      _id: task._id || task.id,
+      phaseDayId: task.phaseDayId || phaseDayId,
+      title: task.title || task.name || "Untitled Task",
+      description: task.description || "",
+      assignedUsers: task.assignedUsers?.map((au: any) => ({
+        userId: au.userId?._id || au.userId || au._id,
+        submission: au.submission,
+        review: au.review
+      })) || [],
       campaignId: task.campaignId,
       updatedAt: task.updatedAt ? new Date(task.updatedAt) : new Date(),
     }));
@@ -760,22 +803,20 @@ export const createTask = async (
   payload: {
     title: string;
     description: string;
-    status?: Task["status"];
     assignedUsers?: string[];
-    phaseDayDate?: Date; // Use the passed date
+    phaseDayDate?: Date;
   }
 ): Promise<Task> => {
   try {
-    // Use the provided phaseDayDate or default to current date if not provided
-    const phaseDayDate = payload.phaseDayDate ? new Date(payload.phaseDayDate) : new Date();
+    const phaseDayDate = payload.phaseDayDate
+      ? new Date(payload.phaseDayDate)
+      : new Date();
 
-    // Set checkinTime to 7 AM and checkoutTime to 8 PM of the phaseDay date
     const checkinTime = new Date(phaseDayDate);
-    checkinTime.setHours(7, 0, 0, 0); // 7:00 AM
+    checkinTime.setHours(7, 0, 0, 0);
     const checkoutTime = new Date(phaseDayDate);
-    checkoutTime.setHours(20, 0, 0, 0); // 8:00 PM
+    checkoutTime.setHours(20, 0, 0, 0);
 
-    // Transform to backend format with calculated times
     const backendPayload = {
       ...payload,
       assignedUsers: (payload.assignedUsers || []).map((userId) => ({
@@ -807,29 +848,24 @@ export const updateTask = async (
   payload: {
     title?: string;
     description?: string;
-    status?: Partial<Task["status"]>;
     assignedUsers?: string[];
-    evaluation?: "excellent" | "good" | "average" | "poor";
-    feedback?: string;
-    phaseDayDate?: Date; // Use the passed date
+    phaseDayDate?: Date;
   }
 ): Promise<Task> => {
   try {
-    // Validate task ID
     if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
       throw new Error(`Invalid task ID: ${taskId}`);
     }
 
-    // Use the provided phaseDayDate or default to current date if not provided
-    const phaseDayDate = payload.phaseDayDate ? new Date(payload.phaseDayDate) : new Date();
+    const phaseDayDate = payload.phaseDayDate
+      ? new Date(payload.phaseDayDate)
+      : new Date();
 
-    // Set checkinTime to 7 AM and checkoutTime to 8 PM of the phaseDay date
     const checkinTime = new Date(phaseDayDate);
-    checkinTime.setHours(7, 0, 0, 0); // 7:00 AM
+    checkinTime.setHours(7, 0, 0, 0);
     const checkoutTime = new Date(phaseDayDate);
-    checkoutTime.setHours(20, 0, 0, 0); // 8:00 PM
+    checkoutTime.setHours(20, 0, 0, 0);
 
-    // Transform to backend format with calculated times
     const backendPayload = {
       ...payload,
       ...(payload.assignedUsers && {
@@ -853,15 +889,74 @@ export const updateTask = async (
       phaseDayId: updatedTaskData.phaseDayId,
       title: updatedTaskData.title || updatedTaskData.name,
       description: updatedTaskData.description,
-      status: updatedTaskData.status || { status: "not-started" },
       assignedUsers:
         updatedTaskData.assignedUsers?.map((u: any) => u.userId || u._id) || [],
       campaignId: updatedTaskData.campaignId,
-      updatedAt: updatedTaskData.updatedAt ? new Date(updatedTaskData.updatedAt) : new Date(),
+      updatedAt: updatedTaskData.updatedAt
+        ? new Date(updatedTaskData.updatedAt)
+        : new Date(),
     };
   } catch (error) {
     console.error("Error updating task:", error);
     throw new Error("Failed to update task");
+  }
+};
+
+export const reviewTask = async (
+  taskId: string,
+  userId: string,
+  status: string,
+  evaluation: string,
+  staffComment: string
+): Promise<Task> => {
+  try {
+    if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid task ID: ${taskId}`);
+    }
+    if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid user ID: ${userId}`);
+    }
+
+    // Get current user ID from localStorage
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const reviewedBy = user._id;
+
+    const response = await axios.post(
+      `${API_BASE}/phase/tasks/${taskId}/review/${userId}`,
+      { 
+        status,
+        evaluation,
+        staffComment,
+        reviewedBy  // Include the reviewer's ID
+      },
+      { headers: getAuthHeaders() }
+    );
+
+    const updatedTaskData = response.data.data || response.data;
+    return {
+      _id: updatedTaskData._id || updatedTaskData.id,
+      phaseDayId: updatedTaskData.phaseDayId,
+      title: updatedTaskData.title || updatedTaskData.name,
+      description: updatedTaskData.description,
+      assignedUsers: updatedTaskData.assignedUsers?.map((u: any) => ({
+        userId: u.userId || u._id,
+        submission: u.submission,
+        review: u.review,
+      })) || [],
+      campaignId: updatedTaskData.campaignId,
+      updatedAt: updatedTaskData.updatedAt
+        ? new Date(updatedTaskData.updatedAt)
+        : new Date(),
+    };
+  } catch (error) {
+    console.error("Error reviewing task:", error);
+    if (axios.isAxiosError(error)) {
+      console.error("Error details:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to review task"
+      );
+    }
+    throw new Error("Failed to review task");
   }
 };
 
@@ -908,13 +1003,15 @@ export const createManualCheckin = async (
  */
 export const getCheckinListByPhaseDay = async (
   phasedayId: string
-): Promise<Array<{
-  userId: string;
-  fullName: string;
-  checkin: boolean;
-  method?: string;
-  checkinAt?: Date;
-}>> => {
+): Promise<
+  Array<{
+    userId: string;
+    fullName: string;
+    checkin: boolean;
+    method?: string;
+    checkinAt?: Date;
+  }>
+> => {
   try {
     const response = await axios.get(`${API_BASE}/checkin/${phasedayId}`, {
       headers: getAuthHeaders(),

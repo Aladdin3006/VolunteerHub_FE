@@ -14,7 +14,14 @@ import {
   Paper,
   DialogActions,
   Button,
+  LinearProgress,
 } from "@mui/material";
+import {
+  FiberManualRecord as FiberManualRecordIcon,
+  Schedule as ScheduleIcon,
+  CheckCircle as CheckCircleIcon,
+} from "@mui/icons-material";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 import {
   INewCampaignDialogRef,
   NewCampaignDialog,
@@ -70,6 +77,7 @@ const ManagerCampaignStaff: React.FC = () => {
   const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
     null
   );
+  const [filterStatus, setFilterStatus] = useState<string>("");
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -109,6 +117,7 @@ const ManagerCampaignStaff: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
+    setFilterStatus(["", "in-progress", "upcoming", "completed"][newValue]);
   };
 
   const handleAfterSubmit = async () => {
@@ -122,8 +131,36 @@ const ManagerCampaignStaff: React.FC = () => {
 
   const handleOpenUpdateCampaign = (campaignId: string) => {
     updateCampaignDialogRef.current?.open(campaignId);
-    setOverviewModalOpen(false); // Close overview modal when opening update dialog
+    setOverviewModalOpen(false);
   };
+
+  const getStatusCount = (status: string) => {
+    return campaigns.filter((campaign) => campaign.status === status).length;
+  };
+
+  const getCompletedPhasesCount = (campaign: Campaign) => {
+    return (
+      campaign.phases?.filter((phase) => phase.status === "completed").length ||
+      0
+    );
+  };
+
+  const getTotalPhasesCount = (campaign: Campaign) => {
+    return campaign.phases?.length || 0;
+  };
+
+  const getInProgressPhases = (campaign: Campaign) => {
+    return (
+      campaign.phases
+        ?.filter((phase) => phase.status === "in-progress")
+        .map((phase) => phase.name)
+        .join(", ") || "No active phases"
+    );
+  };
+
+  const filteredCampaigns = campaigns.filter((campaign) =>
+    filterStatus ? campaign.status === filterStatus : true
+  );
 
   return (
     <Box
@@ -143,19 +180,72 @@ const ManagerCampaignStaff: React.FC = () => {
           mb: 4,
           marginTop: { xs: 2, sm: 4 },
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 2,
         }}
       >
-        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-          Campaign Management
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography variant="h4" component="h1" fontWeight="bold">
+            Campaign Management
+          </Typography>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="campaign status tabs"
+          >
+            <Tab
+              label={
+                <Box display="flex" alignItems="center">
+                  <ListAltIcon sx={{ fontSize: "small", mr: 1 }} />
+                  Tất cả ({campaigns.length})
+                </Box>
+              }
+              value={0}
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center">
+                  <FiberManualRecordIcon
+                    sx={{ color: "green", fontSize: "small", mr: 1 }}
+                  />
+                  Đang diễn ra ({getStatusCount("in-progress")})
+                </Box>
+              }
+              value={1}
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center">
+                  <ScheduleIcon sx={{ fontSize: "small", mr: 1 }} />
+                  Chưa diễn ra ({getStatusCount("upcoming")})
+                </Box>
+              }
+              value={2}
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center">
+                  <CheckCircleIcon sx={{ fontSize: "small", mr: 1 }} />
+                  Đã kết thúc ({getStatusCount("completed")})
+                </Box>
+              }
+              value={3}
+            />
+          </Tabs>
+        </Box>
         <Button
           variant="contained"
           onClick={() => {
             newCampaignDialogRef.current?.open();
           }}
-          sx={{ mr: 4 }}
         >
           Create New Campaign
         </Button>
@@ -164,7 +254,7 @@ const ManagerCampaignStaff: React.FC = () => {
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>
-      ) : campaigns.length === 0 ? (
+      ) : filteredCampaigns.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: "center", width: "100%" }}>
           <Typography variant="h6" color="textSecondary" gutterBottom>
             No campaigns available
@@ -174,35 +264,96 @@ const ManagerCampaignStaff: React.FC = () => {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3}>
-          {campaigns.map((campaign) => (
+        <Grid container spacing={3} justifyContent="flex-start">
+          {filteredCampaigns.map((campaign) => (
             <Grid key={campaign._id}>
               <Card
                 className="campaign-card"
                 onClick={() => handleOpenOverviewModal(campaign)}
+                sx={{
+                  transition: "box-shadow 0.3s ease",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  width: 300,
+                  mx: "auto",
+                  "&:hover": {
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+                  },
+                }}
               >
-                <CardContent>
+                <CardContent
+                  sx={{
+                    p: 0,
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  {/* Image section */}
                   <Box
                     component="img"
                     src={
-                      campaign.image || "https://via.placeholder.com/300x150"
+                      campaign.image ||
+                      "https://via.placeholder.com/300x150?text=No+Image"
                     }
                     alt={campaign.name}
                     sx={{
                       width: "100%",
                       height: 150,
                       objectFit: "cover",
-                      borderRadius: "4px 4px 0 0",
+                      backgroundColor: campaign.image
+                        ? "transparent"
+                        : "#f5f5f5",
                     }}
                   />
-                  <Box sx={{ p: 2 }}>
-                    <Typography variant="h6" gutterBottom>
+                  {/* Content section */}
+                  <Box sx={{ p: 2, flex: 1 }}>
+                    <Typography
+                      variant="body1"
+                      gutterBottom
+                      sx={{
+                        fontWeight: "bold",
+                        fontSize: "1rem",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "100%",
+                      }}
+                    >
                       {campaign.name}
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
                       {new Date(campaign.startDate).toLocaleDateString()} -{" "}
                       {new Date(campaign.endDate).toLocaleDateString()}
                     </Typography>
+                    <Typography variant="body2" color="textSecondary" mt={1}>
+                      Tiến độ tổng thể
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={100}
+                      sx={{ mb: 1 }}
+                    />
+                    <Typography variant="caption" color="textSecondary">
+                      {getCompletedPhasesCount(campaign)}/
+                      {getTotalPhasesCount(campaign)} Phases completed
+                    </Typography>
+                    <Box
+                      sx={{
+                        border: "1px solid #1976d2",
+                        borderRadius: "4px",
+                        p: 1,
+                        mt: 1,
+                      }}
+                    >
+                      <Typography variant="body2" color="textSecondary">
+                        Giai đoạn hiện tại
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {getInProgressPhases(campaign)}
+                      </Typography>
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>
@@ -225,9 +376,9 @@ const ManagerCampaignStaff: React.FC = () => {
               {
                 0: "Phases",
                 1: "Tasks",
-                2: "Departments",
-                3: "Volunteers",
-                4: "CheckIn",
+                2: "CheckIn",
+                3: "Departments",
+                4: "Volunteers",
               }[activeTab]
             }
             "
@@ -273,7 +424,7 @@ const ManagerCampaignStaff: React.FC = () => {
               <VolunteerRequestsModal
                 open={activeTab === 4}
                 onClose={handleCloseModal}
-                campaignId={selectedCampaign?._id}
+                campaignId={selectedCampaign._id}
                 selectedCampaign={{
                   name: selectedCampaign?.name || "Campaign",
                 }}

@@ -4,16 +4,16 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: titleGlow 2s ease-in-out infinite alternate;
-  font-size: 1.4rem; /* Adjusted font size */
-  line-height: 1.5; /* Adjusted line height */
+  font-size: 1.4rem;
+  line-height: 1.5;
 }
 
 @keyframes titleGlow {
   0% {
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3); /* Smaller shadow */
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
   }
   100% {
-    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5); /* Smaller shadow */
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
   }
 }
 
@@ -98,6 +98,13 @@
 .action-button:hover {
   background: #5a6fd8;
   transform: translateY(-2px);
+}
+
+/* Map Container Styling */
+.google-map-container {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
 }
 
 /* Responsive Design */

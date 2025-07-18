@@ -21,7 +21,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { Task, Volunteer, Department, getDepartmentsByVolunteerId } from "../../apis/staff";
+import { Task, Volunteer, Department } from "../../apis/staff";
 
 interface TaskCRUDModalProps {
   open: boolean;
@@ -30,13 +30,15 @@ interface TaskCRUDModalProps {
     title: string;
     description: string;
     assignedUsers: string[];
+    status?: string;
     evaluation?: string;
-    feedback?: string;
+    staffComment?: string;
   }) => void;
   volunteers: Volunteer[];
-  departments?: Record<string, Department[]>; // Optional departments prop
+  departments?: Record<string, Department[]>;
   task?: Task | null;
   isReviewMode?: boolean;
+  selectedUserId?: string | null;
 }
 
 const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
@@ -44,49 +46,78 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
   onClose,
   onSubmit,
   volunteers,
-  departments = {}, // Default to empty object if not provided
+  departments = {},
   task,
   isReviewMode = false,
+  selectedUserId,
 }) => {
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
-  const [assignedUsers, setAssignedUsers] = useState<string[]>(task?.assignedUsers || []);
-  const [evaluation, setEvaluation] = useState<string>(task?.status?.evaluation || "");
-  const [feedback, setFeedback] = useState<string>(task?.status?.feedback || "");
+  const [assignedUsers, setAssignedUsers] = useState<string[]>(
+    task?.assignedUsers?.map((au) =>
+      typeof au === "string" ? au : au.userId
+    ) || []
+  );
+  const [status, setStatus] = useState<string>("pending");
+  const [evaluation, setEvaluation] = useState<string>("");
+  const [staffComment, setStaffComment] = useState<string>("");
 
   useEffect(() => {
-    if (task) {
+    if (task && isReviewMode && selectedUserId) {
+      const assignedUser = task.assignedUsers.find(
+        (au) => au.userId === selectedUserId
+      );
       setTitle(task.title || "");
       setDescription(task.description || "");
-      setAssignedUsers(task.assignedUsers || []);
-      setEvaluation(task.status?.evaluation || "");
-      setFeedback(task.status?.feedback || "");
+      setAssignedUsers(task.assignedUsers?.map((au) => au.userId) || []);
+      setStatus(assignedUser?.review?.status || "pending");
+      setEvaluation(assignedUser?.review?.evaluation || "");
+      setStaffComment(assignedUser?.review?.staffComment || "");
+    } else if (task) {
+      setTitle(task.title || "");
+      setDescription(task.description || "");
+      setAssignedUsers(task.assignedUsers?.map((au) => au.userId) || []);
+      setStatus("pending");
+      setEvaluation("");
+      setStaffComment("");
     } else {
       resetForm();
     }
-  }, [task]);
+  }, [task, isReviewMode, selectedUserId]);
 
   const resetForm = () => {
     setTitle("");
     setDescription("");
     setAssignedUsers([]);
+    setStatus("pending");
     setEvaluation("");
-    setFeedback("");
+    setStaffComment("");
   };
 
   const handleSubmit = () => {
-    onSubmit({
-      title,
-      description,
-      assignedUsers,
-      evaluation: isReviewMode ? evaluation : undefined,
-      feedback: isReviewMode ? feedback : undefined,
-    });
+    if (isReviewMode) {
+      onSubmit({
+        title,
+        description,
+        assignedUsers,
+        status,
+        evaluation,
+        staffComment,
+      });
+    } else {
+      onSubmit({
+        title,
+        description,
+        assignedUsers,
+      });
+    }
   };
 
   const handleToggleVolunteer = (userId: string) => {
     setAssignedUsers((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
     );
   };
 
@@ -95,7 +126,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
       <DialogTitle>
         {isReviewMode ? "Review Task" : task ? "Edit Task" : "Create New Task"}
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ maxHeight: "70vh", overflowY: "auto" }}>
         <TextField
           fullWidth
           label="Title"
@@ -103,6 +134,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
           onChange={(e) => setTitle(e.target.value)}
           margin="normal"
           required
+          sx={{ input: { color: 'black' } }}
           disabled={isReviewMode}
         />
         <TextField
@@ -135,15 +167,20 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                     .filter((v) => v.status === "approved")
                     .map((volunteer) => {
                       const deptList = departments[volunteer.user._id] || [];
-                      const deptNames = deptList.map((dept) => dept.name).join(", ") || "N/A";
+                      const deptNames =
+                        deptList.map((dept) => dept.name).join(", ") || "N/A";
                       return (
                         <TableRow key={volunteer.user._id}>
                           <TableCell>{volunteer.user.fullName}</TableCell>
                           <TableCell>{deptNames}</TableCell>
                           <TableCell>
                             <Checkbox
-                              checked={assignedUsers.includes(volunteer.user._id)}
-                              onChange={() => handleToggleVolunteer(volunteer.user._id)}
+                              checked={assignedUsers.includes(
+                                volunteer.user._id
+                              )}
+                              onChange={() =>
+                                handleToggleVolunteer(volunteer.user._id)
+                              }
                             />
                           </TableCell>
                         </TableRow>
@@ -155,26 +192,100 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
           </>
         )}
 
-        {isReviewMode && task && (
+        {isReviewMode && task && selectedUserId && (
           <>
             <Typography variant="subtitle1" sx={{ mt: 2 }}>
               Assigned Volunteers
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
-              {task.assignedUsers?.map((userId) => (
+              {task.assignedUsers?.map((au) => (
                 <Chip
-                  key={userId}
-                  label={volunteers.find((v) => v.user._id === userId)?.user.fullName || "Unknown Volunteer"}
+                  key={au.userId}
+                  label={
+                    volunteers.find((v) => v.user._id === au.userId)?.user
+                      .fullName || "Unknown Volunteer"
+                  }
                 />
               ))}
             </Box>
 
+            <Typography variant="subtitle1" sx={{ mt: 2 }}>
+              Submission
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              {(() => {
+                const submission = task.assignedUsers.find(
+                  (au) => au.userId === selectedUserId
+                )?.submission;
+                if (!submission) {
+                  return (
+                    <Typography variant="body2">
+                      No submission available
+                    </Typography>
+                  );
+                }
+                return (
+                  <>
+                    <Typography variant="body2">
+                      Content: {submission.content || "No content"}
+                    </Typography>
+                    <Typography variant="body2">
+                      Submitted At:{" "}
+                      {submission.submittedAt
+                        ? new Date(submission.submittedAt).toLocaleString()
+                        : "Not submitted"}
+                    </Typography>
+                    {submission.images?.length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2">Images:</Typography>
+                        {submission.images.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`Submission ${index}`}
+                            style={{ maxWidth: "100px", margin: "5px" }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </>
+                );
+              })()}
+            </Box>
+
             <FormControl fullWidth margin="normal">
-              <InputLabel>Evaluation</InputLabel>
+              <InputLabel>Status</InputLabel>
               <Select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                label="Status"
+              >
+                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="approved">Approved</MenuItem>
+                <MenuItem value="rejected">Rejected</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth margin="normal">
+              <InputLabel
+                id="evaluation-label"
+                sx={{
+                  top: "50%", ml: 2,
+                  transform: "translateY(-50%) scale(1)",
+                  "&.MuiInputLabel-shrink": {
+                    top: 0,
+                    transform: "translateY(-100%) scale(0.75)", // floating style
+                  },
+                }}
+              >
+                Evaluation
+              </InputLabel>
+              <Select
+                labelId="evaluation-label"
                 value={evaluation}
                 onChange={(e) => setEvaluation(e.target.value)}
                 label="Evaluation"
+                fullWidth
               >
                 <MenuItem value="excellent">Excellent</MenuItem>
                 <MenuItem value="good">Good</MenuItem>
@@ -185,9 +296,9 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
 
             <TextField
               fullWidth
-              label="Feedback"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+              label="Comment for task"
+              value={staffComment}
+              onChange={(e) => setStaffComment(e.target.value)}
               margin="normal"
               multiline
               rows={3}
@@ -196,8 +307,10 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained">
+        <Button onClick={onClose} size="small">
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} variant="contained" size="small">
           {isReviewMode ? "Submit Review" : task ? "Update" : "Create"}
         </Button>
       </DialogActions>

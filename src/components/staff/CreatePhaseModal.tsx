@@ -27,6 +27,7 @@ import {
   Delete as DeleteIcon,
   LocationOn,
   CalendarToday,
+  PlayArrow as PlayArrowIcon,
 } from "@mui/icons-material";
 import {
   MapContainer,
@@ -42,6 +43,7 @@ import {
   createPhaseDay,
   getPhasesByCampaignId,
   deletePhaseDay as deletePhaseDayApi,
+  startPhase,
   Phase,
   PhaseDay,
 } from "../../apis/staff";
@@ -77,6 +79,7 @@ interface PhaseData {
   description: string;
   startDate: Date;
   endDate: Date;
+  status: "upcoming" | "in-progress" | "completed"; // Added status field
   phaseDays: PhaseDayData[];
 }
 
@@ -165,6 +168,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             description: phase.description || "",
             startDate: phase.startDate ? new Date(phase.startDate) : new Date(),
             endDate: phase.endDate ? new Date(phase.endDate) : new Date(),
+            status: phase.status || "upcoming", // Added status mapping
             phaseDays: phase.phaseDays.map((day) => ({
               id: day._id,
               date: day.date ? new Date(day.date) : new Date(),
@@ -196,6 +200,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         description: "",
         startDate: new Date(),
         endDate: new Date(),
+        status: "upcoming", // Set default status for new phases
         phaseDays: [],
       },
     ]);
@@ -337,20 +342,37 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
     return null;
   };
 
+  const handleStartPhase = async (phaseId: string) => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      const updatedPhase = await startPhase(phaseId);
+      setPhases(
+        phases.map((phase) =>
+          phase._id === phaseId
+            ? {
+                ...phase,
+                status: updatedPhase.status,
+              }
+            : phase
+        )
+      );
+      alert("Phase started successfully!");
+    } catch (error: any) {
+      console.error("Error starting phase:", error);
+      setError(`Failed to start phase: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
-    const createUTCDate = (date: Date) => {
-      const d = new Date(date);
-      if (isNaN(d.getTime())) {
-        throw new Error(`Invalid date: ${date}`);
-      }
-      return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    };
-
     try {
+      // Validate all phases first
       for (const phase of phases) {
         const validationError = validatePhase(phase);
         if (validationError) {
@@ -365,52 +387,53 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         }
       }
 
+      // Process each phase
+      const updatedPhases = [];
       for (const phase of phases) {
-        let phaseId = phase._id;
-
         if (phase._id.startsWith("new-phase-")) {
-          const phasePayload = {
+          // This is a new phase that needs to be created
+          const createdPhase = await createPhase({
             campaignId,
             name: phase.name.trim(),
             description: phase.description?.trim() || "",
-            startDate: createUTCDate(phase.startDate),
-            endDate: createUTCDate(phase.endDate),
-          };
-          const createdPhase = await createPhase(phasePayload);
-          phaseId = createdPhase._id;
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+            startDate: phase.startDate,
+            endDate: phase.endDate,
+          });
 
-        for (const day of phase.phaseDays) {
-          if (day.id.startsWith("new-day-")) {
-            const dayPayload = {
-              date: createUTCDate(day.date),
-              checkinLocation: {
-                coordinates: day.location.coordinates as [number, number],
-                address: day.location.address || "No address provided",
-              },
-            };
-
-            try {
-              const createdDay = await createPhaseDay(phaseId, dayPayload);
-              console.log("Created phase day:", createdDay);
-            } catch (dayError: any) {
-              console.error(
-                `Failed to create phase day for phase ${phaseId}:`,
-                dayError
-              );
-              throw new Error(
-                `Failed to create phase day: ${dayError.message}`
-              );
+          // Create phase days for this new phase
+          for (const day of phase.phaseDays) {
+            if (day.id.startsWith("new-day-")) {
+              await createPhaseDay(createdPhase._id, {
+                date: day.date,
+                checkinLocation: {
+                  coordinates: day.location.coordinates as [number, number],
+                  address: day.location.address || "No address provided",
+                },
+              });
             }
           }
+
+          updatedPhases.push(createdPhase);
+        } else {
+          // This is an existing phase - just update phase days if needed
+          const existingPhase = phase;
+          for (const day of phase.phaseDays) {
+            if (day.id.startsWith("new-day-")) {
+              await createPhaseDay(existingPhase._id, {
+                date: day.date,
+                checkinLocation: {
+                  coordinates: day.location.coordinates as [number, number],
+                  address: day.location.address || "No address provided",
+                },
+              });
+            }
+          }
+          updatedPhases.push(existingPhase);
         }
       }
 
-      setDeletedPhaseDays([]);
-
+      // Refresh the phases list after all operations
       const refreshedPhases = await getPhasesByCampaignId(campaignId);
-
       setPhases(
         refreshedPhases.map((phase) => ({
           _id: phase._id,
@@ -419,6 +442,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           description: phase.description || "",
           startDate: phase.startDate ? new Date(phase.startDate) : new Date(),
           endDate: phase.endDate ? new Date(phase.endDate) : new Date(),
+          status: phase.status || "upcoming", // Added status mapping
           phaseDays: phase.phaseDays.map((day) => ({
             id: day._id,
             date: day.date ? new Date(day.date) : new Date(),
@@ -434,13 +458,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       alert("Phases and phase days updated successfully!");
     } catch (error: any) {
       console.error("Error in handleSubmit:", error);
-      let errorMessage = "Unknown error occurred";
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      }
-      setError(`Failed to update phases: ${errorMessage}`);
+      setError(`Failed to update phases: ${error.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -520,9 +538,30 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                       defaultExpanded={phase._id.startsWith("new-phase-")}
                     >
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="subtitle1">
-                          {phase.name || `New Phase`}
-                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "100%",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Typography variant="subtitle1">
+                            {phase.name || `New Phase`} ({phase.status})
+                          </Typography>
+                          {!phase._id.startsWith("new-phase-") && (
+                            <Button
+                              variant="contained"
+                              color="success"
+                              startIcon={<PlayArrowIcon />}
+                              onClick={() => handleStartPhase(phase._id)}
+                              disabled={phase.status !== "upcoming" || isSubmitting}
+                              sx={{ mr: 2 }}
+                            >
+                              Start Phase
+                            </Button>
+                          )}
+                        </Box>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Grid container spacing={2}>
