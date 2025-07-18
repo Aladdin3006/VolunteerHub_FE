@@ -313,7 +313,9 @@ export const FORUM_API = {
         Authorization: `Bearer ${getAccessToken() || ""}`,
       },
     });
-    return handleResponse<unknown, unknown>(response);
+    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
+      response
+    );
   },
 
   async getNewForumPosts(skip: number, limit = 20) {

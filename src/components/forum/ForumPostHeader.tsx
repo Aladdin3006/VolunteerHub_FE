@@ -12,6 +12,7 @@ import {
 import {
   Bookmark,
   CloseOutlined,
+  Delete,
   MoreHorizOutlined,
   OutlinedFlagOutlined,
   VisibilityOffOutlined,
@@ -26,11 +27,12 @@ interface IProps extends StackProps {
   onHide?: () => void;
   onSave?: () => void;
   onReport?: () => void;
+  onDelete?: () => void;
 }
 
 export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
   (props, ref) => {
-    const { post, onHide, onSave, onReport, ...rest } = props;
+    const { post, onHide, onSave, onReport, onDelete, ...rest } = props;
     const { createdBy } = post;
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -42,7 +44,7 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
       setAnchorEl(null);
     };
 
-    const actionVisible = Boolean(onSave || onReport || onHide);
+    const actionVisible = Boolean(onSave || onReport || onHide || onDelete);
 
     return (
       <Stack ref={ref} direction={"row"} gap={1} {...rest}>
@@ -127,6 +129,17 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
               transformOrigin={{ horizontal: "right", vertical: "top" }}
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             >
+              {onDelete && (
+                <MenuItem
+                  onClick={() => {
+                    onDelete();
+                    handleClose();
+                  }}
+                  sx={{ gap: 2 }}
+                >
+                  <Delete color="error" /> Xóa bài viết
+                </MenuItem>
+              )}
               {onSave && (
                 <MenuItem
                   onClick={() => {
@@ -135,7 +148,7 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
                   }}
                   sx={{ gap: 2 }}
                 >
-                  <Bookmark color="secondary" /> Save
+                  <Bookmark color="secondary" /> Lưu bài viết
                 </MenuItem>
               )}
               {onReport && (
@@ -146,7 +159,7 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
                   }}
                   sx={{ gap: 2 }}
                 >
-                  <OutlinedFlagOutlined color="error" /> Report
+                  <OutlinedFlagOutlined color="error" /> Báo cáo
                 </MenuItem>
               )}
               {onHide && (
@@ -157,7 +170,7 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
                   }}
                   sx={{ gap: 2 }}
                 >
-                  <VisibilityOffOutlined color="warning" /> Hide
+                  <VisibilityOffOutlined color="warning" /> Ẩn bài viết
                 </MenuItem>
               )}
             </Menu>

@@ -30,8 +30,8 @@ const ForumLeftSide = ({ shortcuts, onOpenShortcut }: IProps) => {
       sx={{
         width: 280,
         p: 1,
-        position: "fixed",
-        top: "calc(100vh-100px)",
+        position: "sticky",
+        top: "100px",
         color: "black",
       }}
     >

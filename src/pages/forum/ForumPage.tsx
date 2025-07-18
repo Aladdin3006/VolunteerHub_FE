@@ -26,15 +26,23 @@ import { FORUM_API, IForumPostListItem, IUserShort } from "../../apis/forum";
 import { EditOutlined } from "@mui/icons-material";
 import { getLocalUser } from "../../apis/utils";
 import ErrorMessage from "../../components/utils/ErrorMessage";
+import "../news/News.css";
+import { useNavigate } from "react-router-dom";
+import ConfirmDialog, {
+  IConfirmDialogRef,
+} from "@/components/utils/ConfirmDialog";
 
 export default function ForumPage() {
   const { posts, setPosts, state, fetch, ref } = userForumData();
   const forumPostDialogRef = useRef<IForumPostDialogRef | null>(null);
   const forumPostNewDialogRef = useRef<IForumPostNewDialogRef | null>(null);
+  const confirmDialogRef = useRef<IConfirmDialogRef | null>(null);
   const userRef = useRef<IUserShort | null>(getLocalUser());
 
   const [shortcuts, setShortcuts] = useState<IForumPostListItem[]>([]);
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+
+  const navigate = useNavigate();
 
   const afterPostDialogClosed = (post: IForumPostListItem | null) => {
     if (post != null) {
@@ -94,6 +102,23 @@ export default function ForumPage() {
     }
   };
 
+  const deletePost = async (post: IForumPostListItem) => {
+    confirmDialogRef.current?.open(
+      "Xác nhận xóa bài viết",
+      "Bạn có chắc chắn muốn xóa bài viết này không?",
+      async () => {
+        try {
+          const res = await FORUM_API.deletePost(post._id);
+          if (!res.data) throw new Error(String(res.error));
+
+          setPosts((posts) => posts.filter((ePost) => ePost._id !== post._id));
+        } catch (error) {
+          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+        }
+      }
+    );
+  };
+
   const copyLinkToNew = async (postId: string) => {
     await navigator.clipboard.writeText(
       `${window.location.host}/news/${postId}`
@@ -103,6 +128,31 @@ export default function ForumPage() {
   return (
     <Box className="page-wrapper" sx={{ position: "relative" }}>
       <Header />
+      <div className="heroSection">
+        <Header />
+        <div className="heroContent">
+          <h1 className="title">Cộng đồng</h1>
+          <div className="breadcrumbs">
+            <span>Trang chủ</span>
+            <span className="breadcrumbDivider">/</span>
+            <span className="current">Cộng đồng</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <ul className="tab-list">
+          <li
+            className={"ongoing"}
+            onClick={() => {
+              navigate("/news");
+            }}
+          >
+            Tin tức
+          </li>
+          <li className={"active"}>Diễn đàn</li>
+        </ul>
+      </div>
       <Stack direction={"row"} gap={0.5} pt={2} justifyContent={"center"}>
         <Box sx={{ flex: 1, display: ["none", "none", "block"] }}></Box>
         <Stack
@@ -136,6 +186,11 @@ export default function ForumPage() {
               onLikeClick={() => likePost(post)}
               onUnLikeClick={() => unlikePost(post)}
               onShareClick={() => copyLinkToNew(post._id)}
+              onDeleteClick={
+                post.createdBy._id === userRef.current?._id
+                  ? () => deletePost(post)
+                  : undefined
+              }
               hideComment
             />
           ))}
@@ -159,13 +214,14 @@ export default function ForumPage() {
               />
             </Stack>
           )}
+
+          {state === "error" && (
+            <ErrorMessage
+              sx={{ height: "100px" }}
+              onRetry={() => fetch(ref, posts.length, 50)}
+            />
+          )}
         </Stack>
-        {state === "error" && (
-          <ErrorMessage
-            sx={{ height: "100px" }}
-            onRetry={() => fetch(ref, posts.length, 50)}
-          />
-        )}
         <Stack
           direction={"column"}
           sx={{
@@ -204,6 +260,7 @@ export default function ForumPage() {
         afterClose={afterPostDialogClosed}
       />
       <ForumPostNewDialog ref={forumPostNewDialogRef} />
+      <ConfirmDialog ref={confirmDialogRef} />
       {/* Error message */}
       <Snackbar
         open={Boolean(snackbarMessage)}

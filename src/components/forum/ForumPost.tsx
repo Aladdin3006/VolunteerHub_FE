@@ -14,6 +14,7 @@ interface IProps extends StackProps {
   post: IForumPostListItem;
 
   onHideClick?: () => void;
+  onDeleteClick?: () => void;
   onLikeClick?: () => void;
   onUnLikeClick?: () => void;
   onCommentClick?: () => void;
@@ -37,6 +38,7 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const {
     post,
     onHideClick,
+    onDeleteClick,
     onLikeClick,
     onUnLikeClick,
     onCommentClick,
@@ -75,6 +77,7 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         onHide={onHideClick}
         onSave={onSaveClick}
         onReport={onReportClick}
+        onDelete={onDeleteClick}
       />
       <ForumPostContent
         post={post}
