@@ -12,10 +12,12 @@ import {
 import Slider from "react-slick";
 import "./Profile.css";
 import Header from "../../components/Header/Header";
-import { updateUserAvatar } from "../../apis/profile";
+import { updateUserAvatar, addSkillsToUser, updateSkillsOfUser } from "../../apis/profile";
 import ImageGallery from "../../components/image/ImageGallery";
-import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js"
+import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js";
 import CheckinFaceModal from "../../components/image/uploadFaceRecognize/CheckinFace.js";
+import { suggestedSkills } from "@/configs/constant.js";
+import CampaignChatModal from "@/components/chat/CampaignChat.js";
 
 interface UserProfile {
   id: string;
@@ -31,7 +33,7 @@ interface UserProfile {
 }
 
 interface ProfileProps {
-  loginData?: any; // Accept login data as prop
+  loginData?: any;
 }
 
 const Profile: React.FC<ProfileProps> = ({ loginData }) => {
@@ -39,7 +41,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [newSkill, setNewSkill] = useState("");
   const sliderRef = useRef<Slider>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createProfileFromLoginData = (apiData: any): UserProfile => {
     const formatDate = (dateString: string) => {
@@ -55,8 +59,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       phone: apiData.phone || "",
       dateOfBirth: formatDate(apiData.date_of_birth) || "",
       address: apiData.address || "",
-      bio:
-        apiData.bio || "Tình nguyện viên chăm chỉ vì một thế giới tốt đẹp hơn.",
+      bio: apiData.bio || "Tình nguyện viên chăm chỉ vì một thế giới tốt đẹp hơn.",
       avatar: apiData.avatar || "user-default.png",
       skills: apiData.skills || [],
       certificates: [
@@ -66,7 +69,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     };
   };
 
-  // Initialize with empty data
   const [profileData, setProfileData] = useState<UserProfile>({
     id: "",
     fullName: "",
@@ -81,17 +83,13 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
   });
 
   const [tempData, setTempData] = useState<UserProfile>(profileData);
-  const [newSkill, setNewSkill] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load data from loginData prop or from stored login response
   useEffect(() => {
     if (loginData) {
       const userData = createProfileFromLoginData(loginData);
       setProfileData(userData);
       setTempData(userData);
     } else {
-      // Try to get from localStorage using the same key as Header component
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         try {
@@ -112,8 +110,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-
-    // Debug logs
     console.log("File selected:", file);
     console.log("Profile ID:", profileData.id);
     console.log("Token:", token);
@@ -135,13 +131,11 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       return;
     }
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       alert("Please select an image file");
       return;
     }
 
-    // Validate file size (e.g., 5MB limit)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       alert("File size must be less than 5MB");
@@ -149,7 +143,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     }
 
     try {
-      // Show preview immediately
+      setAvatarUploading(true);
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
@@ -157,19 +151,13 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       };
       reader.readAsDataURL(file);
 
-      // Upload to server
-      setAvatarUploading(true);
-
       const response = await updateUserAvatar(profileData.id, file, token);
-
-      // Use server-returned avatar URL
       const newAvatarUrl = response.user?.result.avatar;
 
       if (newAvatarUrl) {
         setTempData((prev) => ({ ...prev, avatar: newAvatarUrl }));
         setProfileData((prev) => ({ ...prev, avatar: newAvatarUrl }));
 
-        // Update localStorage
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
           const user = JSON.parse(storedUser);
@@ -184,16 +172,11 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }
     } catch (error) {
       alert(
-        `Avatar upload failed: ${error instanceof Error ? error.message : "Unknown error"
-        }`
+        `Avatar upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
       );
-
-      // Revert to previous avatar on error
       setTempData((prev) => ({ ...prev, avatar: profileData.avatar }));
     } finally {
       setAvatarUploading(false);
-
-      // Clear the file input so the same file can be selected again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -204,21 +187,67 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     setTempData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const addSkill = () => {
+  const addSkill = async () => {
     if (newSkill.trim() && !tempData.skills.includes(newSkill.trim())) {
-      setTempData((prev) => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim()],
-      }));
-      setNewSkill("");
+      if (tempData.skills.length >= 5) {
+        alert("You can only have up to 5 skills.");
+        return;
+      }
+
+      const newSkills = [...tempData.skills, newSkill.trim()];
+      try {
+        setLoading(true);
+        const response = await addSkillsToUser(profileData.id, [newSkill.trim()], token!);
+        setTempData((prev) => ({
+          ...prev,
+          skills: response.data.skills,
+        }));
+        setProfileData((prev) => ({
+          ...prev,
+          skills: response.data.skills,
+        }));
+        setNewSkill("");
+      } catch (error) {
+        alert(
+          `Failed to add skill: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const removeSkill = (skillToRemove: string) => {
-    setTempData((prev) => ({
-      ...prev,
-      skills: prev.skills.filter((skill) => skill !== skillToRemove),
-    }));
+  const removeSkill = async (skillToRemove: string) => {
+    const newSkills = tempData.skills.filter((skill) => skill !== skillToRemove);
+    try {
+      setLoading(true);
+      const response = await updateSkillsOfUser(profileData.id, newSkills, token!);
+      setTempData((prev) => ({
+        ...prev,
+        skills: response.data.skills,
+      }));
+      setProfileData((prev) => ({
+        ...prev,
+        skills: response.data.skills,
+      }));
+    } catch (error) {
+      alert(
+        `Failed to remove skill: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkillSelect = (skill: string) => {
+    if (!tempData.skills.includes(skill) && tempData.skills.length < 5) {
+      setNewSkill(skill);
+      addSkill();
+    } else if (tempData.skills.includes(skill)) {
+      alert("Skill already added.");
+    } else {
+      alert("You can only have up to 5 skills.");
+    }
   };
 
   const goToPrev = () => {
@@ -236,7 +265,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Prepare data for API update - convert back to API format
       const updateData = {
         fullName: tempData.fullName,
         email: tempData.email,
@@ -248,10 +276,14 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
         skills: tempData.skills,
       };
 
+      const response = await updateSkillsOfUser(profileData.id, tempData.skills, token!);
       setProfileData(tempData);
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
+      alert(
+        `Failed to save profile: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -260,9 +292,17 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
   const handleCancel = () => {
     setTempData(profileData);
     setIsEditing(false);
+    setNewSkill("");
   };
 
   const currentData = isEditing ? tempData : profileData;
+
+  // Flatten suggested skills from all departments for the dropdown
+  const allSuggestedSkills: string[] = Array.from(
+    new Set(
+      Object.values(suggestedSkills).flat() as string[]
+    )
+  );
 
   return (
     <div className="profile-page">
@@ -291,7 +331,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                     )}
                   </button>
                 )}
-
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -340,11 +379,10 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
             </div>
           </div>
         </div>
-                <RegisterFaceModal />       
-                <p>testcheckin: </p>
-                <CheckinFaceModal/>
+        <RegisterFaceModal />
+        <p>testcheckin: </p>
+        <CheckinFaceModal />
         <div className="profile-content">
-          {/* Personal Information */}
           <div className="main-content">
             <div className="card">
               <h2 className="card-title">Personal Information</h2>
@@ -427,8 +465,8 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                       <span>
                         {currentData.dateOfBirth
                           ? new Date(
-                            currentData.dateOfBirth
-                          ).toLocaleDateString()
+                              currentData.dateOfBirth
+                            ).toLocaleDateString()
                           : "Not provided"}
                       </span>
                     </div>
@@ -481,16 +519,13 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
               {currentData.certificates.length > 0 ? (
                 <ImageGallery
                   images={currentData.certificates}
-                // onImageClick={(img) => window.open(img, "_blank")}
                 />
               ) : (
                 <p className="no-certificates">No certificates available</p>
               )}
             </div>
           </div>
-          {/* Skills and Volunteer Stats */}
           <div className="card-half-row reduced-spacing">
-            {/* Skills Card */}
             <div className="card card-half">
               <h3 className="card-subtitle">Skills</h3>
               <div className="tags-container">
@@ -516,22 +551,43 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                 )}
                 {isEditing && (
                   <div className="add-tag-container">
+                    <select
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      className="form-input"
+                      disabled={loading}
+                    >
+                      <option value="">Select a skill or type below</option>
+                      {allSuggestedSkills.map((skill) => (
+                        <option key={skill} value={skill}>
+                          {skill}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="text"
                       value={newSkill}
                       onChange={(e) => setNewSkill(e.target.value)}
-                      placeholder="Add new skill"
+                      placeholder="Or type custom skill"
                       className="add-tag-input"
                       disabled={loading}
                     />
                     <button
                       onClick={addSkill}
                       className="add-tag-btn"
-                      disabled={loading}
+                      disabled={loading || !newSkill.trim() || tempData.skills.length >= 5}
                     >
                       Add
                     </button>
                   </div>
+                )}
+                {isEditing && (
+                  <p className="skills-note">
+                    <small>
+                      {tempData.skills.length}/5 skills added
+                      {tempData.skills.length >= 5 && " (Maximum reached)"}
+                    </small>
+                  </p>
                 )}
               </div>
             </div>
@@ -554,6 +610,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
               </div>
             </div>
           </div>
+          <CampaignChatModal campaignId="665fabcd92cbe12beff12345" />
         </div>
       </div>
     </div>

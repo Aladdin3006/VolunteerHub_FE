@@ -81,7 +81,9 @@ const News: React.FC = () => {
           </li>
           <li
             className={activeTab === "finished" ? "active" : ""}
-            onClick={() => setActiveTab("finished")}
+            onClick={() => {
+              navigate("/forum")
+            }}
           >
             Diễn đàn
           </li>

@@ -20,7 +20,7 @@ import {
 import CampaignCard from './CampaignListCard';
 import Header from '../../components/Header/Header';
 import TaskListModal from './TaskListModal';
-
+import { useNavigate } from 'react-router-dom';
 
 // Định nghĩa interface Campaign
 interface Campaign {
@@ -66,7 +66,7 @@ const MyCampaignList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [openModal, setOpenModal] = useState(false);
-
+  const navigate = useNavigate();
 
   // Fetch campaigns từ API
   useEffect(() => {
@@ -137,8 +137,7 @@ const MyCampaignList: React.FC = () => {
 
   const handleCardClick = (campaign: Campaign) => {
     if (campaign.status === 'ongoing') {
-      setSelectedCampaign(campaign);
-      setOpenModal(true);
+      navigate(`/campaigns/${campaign.id}/tasks`);
     }
   };
 
@@ -290,16 +289,6 @@ const MyCampaignList: React.FC = () => {
         </Paper>
       </Container>
 
-      {selectedCampaign && (
-        <>
-        {console.log('Modal mở với campaign:', selectedCampaign)}
-        <TaskListModal
-          open={openModal}
-          onClose={() => setOpenModal(false)}
-          campaign={selectedCampaign}
-        />
-        </>
-      )}
 
     </>
   );

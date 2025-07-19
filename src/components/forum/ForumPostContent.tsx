@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { IForumPost } from "../../apis/forum";
+import { IForumPostListItem } from "../../apis/forum";
 import { Stack, StackProps, Typography } from "@mui/material";
 import { ForumPostImages } from "./ForumPostIImages";
 
@@ -7,7 +7,7 @@ interface IProps extends StackProps {
   /**
    * Post data
    */
-  post: IForumPost;
+  post: IForumPostListItem;
   onImageClick?: (images: string[], idx: number) => void;
 }
 
@@ -17,8 +17,12 @@ export const ForumPostContent = forwardRef<HTMLDivElement, IProps>(
 
     return (
       <Stack ref={ref} {...rest}>
+        {/* Title */}
+        <Typography variant="h6">{post.title}</Typography>
         {/* Content */}
-        <Typography>{post.content}</Typography>
+        <Typography sx={{ whiteSpace: "pre-line", mt: 1 }}>
+          {post.content}
+        </Typography>
         {/* Tags */}
         <Stack direction={"row"} gap={1}>
           {post.tags.map((tag) => (

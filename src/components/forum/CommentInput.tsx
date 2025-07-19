@@ -1,4 +1,4 @@
-import React, { forwardRef, useState } from "react";
+import { forwardRef, useState } from "react";
 import {
   Box,
   Avatar,
@@ -11,18 +11,23 @@ import SendIcon from "@mui/icons-material/Send";
 
 interface IProps extends BoxProps {
   avatar?: string;
-  onSend: (text: string) => void;
+  onSend: (text: string) => Promise<boolean>;
 }
 
 export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const { avatar, onSend, ...rest } = props;
 
   const [value, setValue] = useState("");
+  const [sending, setSending] = useState<boolean>(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!value.trim()) return;
-    onSend(value.trim());
-    setValue("");
+    setSending(true);
+    const result = await onSend(value.trim());
+    if (result) {
+      setValue("");
+    }
+    setSending(false);
   };
   return (
     <Box
@@ -48,7 +53,7 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           <TextField
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="Write your comment..."
+            placeholder="Viết bình luận..."
             multiline
             maxRows={4}
             variant="standard"
@@ -57,6 +62,7 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
               sx: { flex: 1, fontSize: 14 },
             }}
             fullWidth
+            disabled={sending}
           />
 
           <IconButton

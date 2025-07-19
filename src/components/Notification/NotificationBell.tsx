@@ -22,7 +22,11 @@ dayjs.extend(relativeTime);
 const API_URL = "http://localhost:4000";
 const SOCKET_URL = "http://localhost:4000";
 
-const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  color?: string;
+}
+
+const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -46,7 +50,7 @@ const NotificationBell: React.FC = () => {
       setNotifications(data);
       const unread = data.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   useEffect(() => {
@@ -65,13 +69,13 @@ const NotificationBell: React.FC = () => {
       transports: ["websocket"],
     });
 
-    socketInstance.on("connect", () => {});
+    socketInstance.on("connect", () => { });
 
     socketInstance.on("notification", (data) => {
       setNotifications((prev) => [data, ...prev]);
       setUnreadCount((prev) => prev + 1);
       if (audioRef.current) {
-        audioRef.current.play().catch(() => {});
+        audioRef.current.play().catch(() => { });
       }
     });
 
@@ -79,6 +83,30 @@ const NotificationBell: React.FC = () => {
       socketInstance.disconnect();
     };
   }, []);
+  const handleReadNotification = async (id: string) => {
+    try {
+      await axios.patch(
+        `${API_URL}/notification/${id}/read`,
+        {}, 
+        {
+          headers: {
+            Authorization: `Bearer ${authService.getToken() || ""}`,
+          },
+        }
+      );
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === id ? { ...n, isRead: true } : n
+        )
+      );
+
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
+    } catch (err) {
+      console.error("Đánh dấu đã đọc thất bại", err);
+    }
+  };
+
 
   const handleOpen = (e: React.MouseEvent<SVGElement>) => {
     setAnchorEl(e.currentTarget as unknown as HTMLElement);
@@ -94,7 +122,7 @@ const NotificationBell: React.FC = () => {
           audioRef.current?.pause();
           audioRef.current!.currentTime = 0;
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   };
 
@@ -106,10 +134,10 @@ const NotificationBell: React.FC = () => {
     <>
       {/* Use the same structure as other dropdown items */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <FaBell 
-          className="dropdown-icon" 
+        <FaBell
+          className="dropdown-icon"
           onClick={handleOpen}
-          style={{ cursor: 'pointer', width: '24px', height: '19.2px' }}
+          style={{ cursor: 'pointer', width: '24px', height: '19.2px', color }}
         />
         {unreadCount > 0 && (
           <span
@@ -159,6 +187,7 @@ const NotificationBell: React.FC = () => {
               href={noti.link || "#"}
               target="_blank"
               rel="noreferrer"
+              onClick={() => handleReadNotification(noti._id)}
               sx={{
                 display: "block",
                 textDecoration: "none",
@@ -172,6 +201,7 @@ const NotificationBell: React.FC = () => {
                 },
               }}
             >
+
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Avatar
                   src={noti.image || "/default-avatar.png"}

@@ -1,179 +1,279 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import "./StaffSidebar.css";
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Box,
+  Typography,
+  Avatar,
+  IconButton,
+  Badge,
+  Divider,
+} from "@mui/material";
+import {
+  Home as HiHome,
+  Add as HiPlus,
+  CardGiftcard as HiGift,
+  CalendarToday as HiCalendar,
+  Business as HiOfficeBuilding,
+  ListAlt as HiClipboardList,
+  Person as HiUser,
+  Menu as HiMenu,
+} from "@mui/icons-material";
+import { styled } from "@mui/material/styles";
+import authService from "../../services/Authentication.service"; // Adjust path as needed
+import NotificationBell from "../Notification/NotificationBell"; // Adjust path as needed
+
+const SidebarContainer = styled(Box)(({ theme }) => ({
+  background: "linear-gradient(180deg, #4bc816 0%, #18ae0a 100%)",
+  color: theme.palette.common.white,
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  transition: theme.transitions.create(["all"], {
+    duration: theme.transitions.duration.standard,
+  }),
+}));
+
+const SidebarHeader = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  borderBottom: `1px solid rgba(255, 255, 255, 0.1)`,
+}));
+
+const UserInfo = styled(Box)(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  marginTop: theme.spacing(1),
+  gap: theme.spacing(1),
+}));
+
+const SidebarItem = styled(ListItemButton)(({ theme, selected }) => ({
+  borderRadius: theme.shape.borderRadius,
+  margin: theme.spacing(0.5, 1),
+  padding: theme.spacing(1.5, 2),
+  color: "rgba(255, 255, 255, 0.8)",
+  "&:hover": {
+    background: "rgba(255, 255, 255, 0.1)",
+    color: theme.palette.common.white,
+    transform: "translateX(2px)",
+  },
+  ...(selected && {
+    background: "rgba(255, 255, 255, 0.2)",
+    color: theme.palette.common.white,
+    fontWeight: 600,
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      left: 0,
+      top: "50%",
+      transform: "translateY(-50%)",
+      width: 3,
+      height: "70%",
+      background: theme.palette.common.white,
+      borderRadius: "0 2px 2px 0",
+    },
+  }),
+}));
 
 const StaffSidebar: React.FC = () => {
   const location = useLocation();
+  const user = authService.getUser(); // Fetch user data
 
   const menuItems = [
     {
-      path: "/staff/dashboard",
-      label: "Dashboard",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"
-          />
-        </svg>
-      ),
+      path: "/staff/campaigns",
+      label: "campaigns",
+      icon: <HiHome />,
     },
     {
       path: "/staff/campaigns/new",
       label: "Create Campaign",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-          />
-        </svg>
-      ),
+      icon: <HiPlus />,
+      badge: "New",
     },
     {
       path: "/staff/donations/new",
       label: "Create Donation",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-          />
-        </svg>
-      ),
+      icon: <HiGift />,
+      badge: "New",
     },
     {
       path: "/staff/phase-campaigns",
       label: "Create Phase Campaign",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-          />
-        </svg>
-      ),
+      icon: <HiCalendar />,
     },
-    
     {
       path: "/staff/departments",
       label: "Department Management",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
-        </svg>
-      ),
+      icon: <HiOfficeBuilding />,
     },
     {
       path: "/staff/tasks",
       label: "Task Management",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-          />
-        </svg>
-      ),
+      icon: <HiClipboardList />,
     },
   ];
 
+  const SidebarContent = () => (
+    <SidebarContainer>
+      <SidebarHeader>
+        <Box display="flex" alignItems="center">
+          <Avatar
+            src="/logo.png"
+            alt="Logo"
+            sx={{
+              width: 40,
+              height: 40,
+              mr: 1.5,
+              bgcolor: "rgba(255, 255, 255, 0.2)",
+            }}
+          >
+            CN
+          </Avatar>
+          <Typography variant="h6" fontWeight={700}>
+            Staff Portal
+          </Typography>
+        </Box>
+        <UserInfo sx={{ pl: 7 }}>
+          <Box>
+            <Typography variant="body2" fontWeight={500}>
+              {user?.fullName || "Staff Member"}
+            </Typography>
+            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+              {user?.role || "Staff"}
+            </Typography>
+          </Box>
+          <NotificationBell />
+        </UserInfo>
+      </SidebarHeader>
+
+      <List sx={{ flex: 1, overflowY: "auto", p: 1 }}>
+        {menuItems.map((item) => (
+          <ListItem key={item.path} disablePadding>
+            <SidebarItem selected={location.pathname === item.path}>
+              <Link
+                to={item.path}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  display: "flex",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                  }}
+                />
+                {item.badge && (
+                  <Badge
+                    badgeContent={item.badge}
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        bgcolor: "rgba(255, 255, 255, 0.2)",
+                        color: "white",
+                        fontSize: "0.75rem",
+                        height: 18,
+                        minWidth: 18,
+                      },
+                    }}
+                  />
+                )}
+              </Link>
+            </SidebarItem>
+          </ListItem>
+        ))}
+      </List>
+
+      <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.1)" }} />
+      <Box p={2}>
+        <SidebarItem selected={location.pathname === "/staff/profile"}>
+          <Link
+            to="/staff/profile"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+              <HiUser />
+            </ListItemIcon>
+            <ListItemText
+              primary="My Profile"
+              primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: 500 }}
+            />
+          </Link>
+        </SidebarItem>
+      </Box>
+    </SidebarContainer>
+  );
+
   return (
-    <aside className="staff-sidebar">
-      <div className="sidebar-header">
-        <img src="/logo.png" alt="Logo" className="logo-image" />
-        <h2 className="sidebar-title">Staff</h2>
-      </div>
+    <>
+      {/* Mobile Sidebar (Drawer) */}
+      <Box
+        sx={{
+          display: { xs: "block", md: "none" },
+          position: "fixed",
+          top: 16,
+          left: 16,
+          zIndex: 1400,
+        }}
+      >
+        <Drawer
+          anchor="left"
+          sx={{
+            "& .MuiDrawer-paper": {
+              width: 280,
+              bgcolor: "transparent",
+              boxShadow: "2px 0 10px rgba(0, 0, 0, 0.1)",
+            },
+          }}
+        >
+          <SidebarContent />
+        </Drawer>
+        <IconButton
+          sx={{
+            bgcolor: "rgba(255, 255, 255, 0.1)",
+            color: "white",
+            "&:hover": { bgcolor: "rgba(255, 255, 255, 0.2)" },
+          }}
+        >
+          <HiMenu />
+        </IconButton>
+      </Box>
 
-      <div className="sidebar-content">
-        <nav className="sidebar-nav">
-          {menuItems.map((item, index) => (
-            <Link
-              key={index}
-              to={item.path}
-              className={`nav-item ${
-                location.pathname === item.path ? "active" : ""
-              }`}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
-
-      <div className="sidebar-footer">
-        <Link to="/staff/profile" className="nav-item">
-          <span className="nav-icon">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          </span>
-          <span className="nav-label">My Profile</span>
-        </Link>
-      </div>
-    </aside>
+      {/* Desktop Sidebar */}
+      <Box
+        sx={{
+          display: { xs: "none", md: "flex" },
+          width: 280,
+          height: "100vh",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          boxShadow: "2px 0 10px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <SidebarContent />
+      </Box>
+    </>
   );
 };
 

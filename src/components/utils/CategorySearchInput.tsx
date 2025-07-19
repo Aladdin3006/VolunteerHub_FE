@@ -3,24 +3,25 @@ import {
   Autocomplete,
   TextField,
   CircularProgress,
-  Theme,
-  SxProps,
+  AutocompleteProps,
+  TextFieldProps,
 } from "@mui/material";
-import { CAMPAIGN_API, ICategory } from "../../apis/campaign-new";
+import { CAMPAIGN_API, ICategory } from "../../apis/campaign";
 
 interface IProps {
   onChange: (value: ICategory | null) => void;
   value?: ICategory | null;
-  autoCompleteSx?: SxProps<Theme>;
-  textfieldSx?: SxProps<Theme>;
+  slotProps?: {
+    autocomplete?: AutocompleteProps<any, any, any, any>;
+    textfield?: TextFieldProps;
+  };
   suggestText?: string;
 }
 
 const CategorySearchInput: React.FC<IProps> = ({
   onChange,
   value,
-  autoCompleteSx,
-  textfieldSx,
+  slotProps,
   suggestText,
 }) => {
   const [options, setOptions] = useState<ICategory[]>([]);
@@ -43,7 +44,7 @@ const CategorySearchInput: React.FC<IProps> = ({
     try {
       setLoading(true);
       const res = await CAMPAIGN_API.searchCategories(query);
-      setOptions(res.data); // Make sure res.data is an array of Category
+      setOptions(res.data || []); // Make sure res.data is an array of Category
     } catch (err) {
       console.error("Failed to fetch categories:", err);
       setOptions([]);
@@ -59,6 +60,7 @@ const CategorySearchInput: React.FC<IProps> = ({
 
   return (
     <Autocomplete
+      {...slotProps?.autocomplete}
       fullWidth
       getOptionLabel={(option) => option.name}
       options={options}
@@ -73,6 +75,8 @@ const CategorySearchInput: React.FC<IProps> = ({
       renderInput={(params) => (
         <TextField
           {...params}
+          {...slotProps?.textfield}
+          fullWidth
           label={suggestText || "Search category"}
           variant="outlined"
           InputProps={{
@@ -84,10 +88,8 @@ const CategorySearchInput: React.FC<IProps> = ({
               </>
             ),
           }}
-          sx={textfieldSx}
         />
       )}
-      sx={autoCompleteSx}
     />
   );
 };

@@ -1,6 +1,5 @@
 import React from 'react';
-import StaffSidebar from '../components/staff/StaffSidebar';
-import AdminHeader from '../components/admin/AdminHeader';
+import StaffHeader from '@/components/staff/StaffHeader';
 
 interface StaffLayoutProps {
   children: React.ReactNode;
@@ -8,11 +7,10 @@ interface StaffLayoutProps {
 
 const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
   return (
-    <div className="staff-layout min-h-screen bg-gray-50">
-      <AdminHeader />
+    <div className="staff-layout min-h-screen bg-background text-foreground">
+      <StaffHeader />
       <div className="flex">
-        <StaffSidebar />
-        <main className="flex-1 ml-64 p-6">
+        <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

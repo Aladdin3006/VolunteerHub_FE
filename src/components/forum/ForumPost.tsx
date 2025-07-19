@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { IComment, IForumPost } from "../../apis/forum";
+import { ICommentListItem, IForumPostListItem } from "../../apis/forum";
 import { Divider, Stack, StackProps } from "@mui/material";
 import { ForumPostHeader } from "./ForumPostHeader";
 import { ForumPostFooter } from "./ForumPostFooter";
@@ -11,32 +11,47 @@ interface IProps extends StackProps {
   /**
    * Post data
    */
-  post: IForumPost;
+  post: IForumPostListItem;
+
   onHideClick?: () => void;
+  onDeleteClick?: () => void;
   onLikeClick?: () => void;
   onUnLikeClick?: () => void;
   onCommentClick?: () => void;
+  onShareClick?: () => void;
   onSaveClick?: () => void;
   onReportClick?: () => void;
   onImageClick?: (images: string[], idx: number) => void;
   hideComment?: boolean;
-  onReply?: (comment: IComment | null, text: string) => void;
+  onReply?: (
+    comment: ICommentListItem | null,
+    text: string
+  ) => Promise<boolean>;
+  onShowReplies?: (comment: ICommentListItem) => Promise<boolean>;
   maxComments?: number;
+
+  onLikeCommentClick?: (comment: ICommentListItem) => void;
+  onUnLikeCommentClick?: (comment: ICommentListItem) => void;
 }
 
 export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const {
     post,
     onHideClick,
+    onDeleteClick,
     onLikeClick,
     onUnLikeClick,
     onCommentClick,
     onImageClick,
     onReply,
+    onShowReplies,
     onSaveClick,
     onReportClick,
     hideComment,
     maxComments,
+    onLikeCommentClick,
+    onUnLikeCommentClick,
+    onShareClick,
     ...rest
   } = props;
 
@@ -62,6 +77,7 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         onHide={onHideClick}
         onSave={onSaveClick}
         onReport={onReportClick}
+        onDelete={onDeleteClick}
       />
       <ForumPostContent
         post={post}
@@ -74,13 +90,16 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         onLikeClick={onLikeClick}
         onUnLikeClick={onUnLikeClick}
         onCommentClick={onCommentClick}
+        onShareClick={onShareClick}
       />
       {!hideComment && (
         <ForumPostComments
-          comments={post.comments}
-          currentUserId={"0"}
+          comments={post.comments ?? []}
           maxComments={maxComments ?? 1}
           onReply={onReply}
+          onShowReplies={onShowReplies}
+          onLike={onLikeCommentClick}
+          onUnLike={onUnLikeCommentClick}
         />
       )}
       {onReply && <CommentInput onSend={(text) => onReply(null, text)} />}

@@ -1,10 +1,12 @@
 import { forwardRef } from "react";
-import { IForumPost } from "../../apis/forum";
+import { IForumPostListItem } from "../../apis/forum";
 import { Badge, Button, Stack, StackProps } from "@mui/material";
 import {
   ContentCopyOutlined,
   MapsUgcOutlined,
+  ThumbDownOffAlt,
   ThumbDownOffAltOutlined,
+  ThumbUp,
   ThumbUpOutlined,
 } from "@mui/icons-material";
 
@@ -12,15 +14,23 @@ interface IProps extends StackProps {
   /**
    * Post data
    */
-  post: IForumPost;
+  post: IForumPostListItem;
   onLikeClick?: () => void;
   onUnLikeClick?: () => void;
   onCommentClick?: () => void;
+  onShareClick?: () => void;
 }
 
 export const ForumPostFooter = forwardRef<HTMLDivElement, IProps>(
   (props, ref) => {
-    const { post, onLikeClick, onUnLikeClick, onCommentClick, ...rest } = props;
+    const {
+      post,
+      onLikeClick,
+      onUnLikeClick,
+      onCommentClick,
+      onShareClick,
+      ...rest
+    } = props;
     return (
       <Stack
         ref={ref}
@@ -50,27 +60,33 @@ export const ForumPostFooter = forwardRef<HTMLDivElement, IProps>(
       >
         <Button
           startIcon={
-            <Badge badgeContent={post.upvotes.length} color="secondary">
-              <ThumbUpOutlined />
+            <Badge badgeContent={post.upvotesCount} color="secondary">
+              {post.isUpvoted ? <ThumbUp /> : <ThumbUpOutlined />}
             </Badge>
           }
           sx={{ textTransform: "none" }}
           fullWidth
           onClick={onLikeClick}
+          color={post.isUpvoted ? "info" : "inherit"}
         >
-          Like
+          {post.isUpvoted ? "Đã thích" : "Thích"}
         </Button>
         <Button
           startIcon={
-            <Badge badgeContent={post.downvotes.length} color="secondary">
-              <ThumbDownOffAltOutlined />
+            <Badge badgeContent={post.downvotesCount} color="secondary">
+              {post.isDownvoted ? (
+                <ThumbDownOffAlt />
+              ) : (
+                <ThumbDownOffAltOutlined />
+              )}
             </Badge>
           }
           sx={{ textTransform: "none" }}
           fullWidth
           onClick={onUnLikeClick}
+          color={post.isDownvoted ? "error" : "inherit"}
         >
-          Unlike
+          {post.isDownvoted ? "Đã chê" : "Không thích"}
         </Button>
         <Button
           startIcon={
@@ -81,15 +97,18 @@ export const ForumPostFooter = forwardRef<HTMLDivElement, IProps>(
           sx={{ textTransform: "none" }}
           fullWidth
           onClick={onCommentClick}
+          color="inherit"
         >
-          Comment
+          Bình luận
         </Button>
         <Button
           startIcon={<ContentCopyOutlined />}
           sx={{ textTransform: "none" }}
           fullWidth
+          onClick={onShareClick}
+          color="inherit"
         >
-          Copy
+          Liên kết
         </Button>
       </Stack>
     );
