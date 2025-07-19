@@ -31,11 +31,19 @@ import { useNavigate } from "react-router-dom";
 import ConfirmDialog, {
   IConfirmDialogRef,
 } from "@/components/utils/ConfirmDialog";
+import {
+  ForumPostUpdateDialog,
+  IForumPostUpdateDialogRef,
+} from "./ForumPostUpdateDialog";
+import { IFormPostFormData } from "@/components/forum/ForumPostNew";
 
 export default function ForumPage() {
   const { posts, setPosts, state, fetch, ref } = userForumData();
   const forumPostDialogRef = useRef<IForumPostDialogRef | null>(null);
   const forumPostNewDialogRef = useRef<IForumPostNewDialogRef | null>(null);
+  const forumPostUpdateDialogRef = useRef<IForumPostUpdateDialogRef | null>(
+    null
+  );
   const confirmDialogRef = useRef<IConfirmDialogRef | null>(null);
   const userRef = useRef<IUserShort | null>(getLocalUser());
 
@@ -119,6 +127,24 @@ export default function ForumPage() {
     );
   };
 
+  const updatePost = (id: string, post: IFormPostFormData) => {
+    setPosts((posts) =>
+      posts.map((ePost) => {
+        if (ePost._id === id) {
+          return {
+            ...ePost,
+            title: post.title,
+            content: post.content,
+            images: post.images.map((img) => img.url),
+            tags: post.tags,
+          };
+        } else {
+          return ePost;
+        }
+      })
+    );
+  };
+
   const copyLinkToNew = async (postId: string) => {
     await navigator.clipboard.writeText(
       `${window.location.host}/news/${postId}`
@@ -191,6 +217,13 @@ export default function ForumPage() {
                   ? () => deletePost(post)
                   : undefined
               }
+              onEditClick={
+                post.createdBy._id === userRef.current?._id
+                  ? () => {
+                      forumPostUpdateDialogRef.current?.open(post._id);
+                    }
+                  : undefined
+              }
               hideComment
             />
           ))}
@@ -260,6 +293,10 @@ export default function ForumPage() {
         afterClose={afterPostDialogClosed}
       />
       <ForumPostNewDialog ref={forumPostNewDialogRef} />
+      <ForumPostUpdateDialog
+        ref={forumPostUpdateDialogRef}
+        afterSubmit={updatePost}
+      />
       <ConfirmDialog ref={confirmDialogRef} />
       {/* Error message */}
       <Snackbar
