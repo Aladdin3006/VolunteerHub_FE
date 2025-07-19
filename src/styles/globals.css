@@ -33,6 +33,7 @@
 @layer base {
   * {
     @apply border-border;
+    border-color: hsl(var(--sidebar-border));
   }
   body {
     @apply bg-background text-foreground;

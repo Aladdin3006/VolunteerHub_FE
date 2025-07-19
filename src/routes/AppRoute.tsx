@@ -26,9 +26,11 @@ import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetai
 import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
 import NewDonationPage from "../pages/staff/NewDonationPage";
-import ManagerCampaignStaff from "@/pages/staff/ManagerCampaignStaff";
-import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
+import MyCampaignList from "@/pages/campaignVolunteer/MyCampaignList";
 import ForumPage from "../pages/forum/ForumPage";
+import ManagerCampaignStaff from "../pages/staff/ManagerCampaignStaff";
+import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
+import TaskListPage from "../pages/campaignVolunteer/TaskListPage";
 
 const AppRoutes = () => (
   <Routes>
@@ -119,6 +121,22 @@ const AppRoutes = () => (
       element={
         <LayoutWrapper>
           <CampaignVolunteer />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/myCampaign"
+      element={
+        <LayoutWrapper>
+          <MyCampaignList  />
+        </LayoutWrapper>
+      }
+    />
+     <Route
+      path="/campaigns/:id/tasks"
+      element={
+        <LayoutWrapper>
+          <TaskListPage  />
         </LayoutWrapper>
       }
     />

@@ -29,7 +29,7 @@ import {
 } from "../../apis/campaign";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import VolunteerTaskList, { Task } from "./VolunteerTaskList"; 
+
 
 const CampaignVolunteerDetail: React.FC = () => {
   const { campaignId } = useParams();
@@ -63,16 +63,7 @@ const CampaignVolunteerDetail: React.FC = () => {
   const myVolunteer = campaign?.volunteers?.find(
     (v) => v.user?._id === currentUserId
   );
-  const isVolunteerApproved = myVolunteer?.status === "approved";
-  const isCampaignRunning = campaign?.status === "in-progress";
-  const showTaskUI = isVolunteerApproved && isCampaignRunning;
-
-  /* -------------------- mock tasks (sẽ thay = campaign.tasks) -------------------- */
-  const [tasks] = useState<Task[]>([
-    { _id: "1", name: "Chuẩn bị dụng cụ", status: "todo" },
-    { _id: "2", name: "Phát quà khu A", status: "doing", description: "Khu A" },
-  ]);
-
+  
   /* -------------------- join handler -------------------- */
   const handleJoin = async () => {
     if (!isLoggedIn) {
@@ -115,18 +106,13 @@ const CampaignVolunteerDetail: React.FC = () => {
       </Box>
     );
 
-  /* ============================================================
-     =========== 1. MÀN HÌNH NHIỆM VỤ (khi showTaskUI) ==========
-     ============================================================ */
-  if (showTaskUI) {
-    return <VolunteerTaskList tasks={tasks} />;
-  }
+
 
   /* ============================================================
      =========== 2. MÀN HÌNH CHI TIẾT CHIẾN DỊCH GỐC ============
      ============================================================ */
   const { name, description, startDate, endDate, image, location } = campaign;
-  const phases = campaign.phases ?? [];
+  
 
   /* ------------ nhãn & disable button tham gia ------------ */
   let joinLabel = "Gửi yêu cầu tham gia";
@@ -260,49 +246,7 @@ const CampaignVolunteerDetail: React.FC = () => {
         </Box>
       </Box>
 
-      {/* ---------- phases ---------- */}
-      <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, mt: 6 }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          🧭 Các giai đoạn chiến dịch
-        </Typography>
-
-        {phases.length === 0 ? (
-          <Typography variant="body1" color="text.secondary">
-            Không có thông tin về các giai đoạn chiến dịch.
-          </Typography>
-        ) : (
-          <Stack spacing={3}>
-            {phases.map((phase) => (
-              <Paper
-                key={phase._id}
-                elevation={1}
-                sx={{ p: 3, borderRadius: 2 }}
-              >
-                <Typography variant="h6" fontWeight={600}>
-                  {phase.name}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
-                >
-                  🕓 Từ: {dayjs(phase.start).format("DD/MM/YYYY")} đến{" "}
-                  {dayjs(phase.end).format("DD/MM/YYYY")}
-                </Typography>
-                {phase.description && (
-                  <Typography
-                    variant="body1"
-                    sx={{ mt: 1, whiteSpace: "pre-line" }}
-                  >
-                    {phase.description}
-                  </Typography>
-                )}
-              </Paper>
-            ))}
-          </Stack>
-        )}
-      </Box>
-
+      
       {/* ---------- snackbar ---------- */}
       <Snackbar
         open={!!joinMessage}
