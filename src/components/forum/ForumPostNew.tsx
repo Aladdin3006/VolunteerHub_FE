@@ -13,7 +13,7 @@ import {
 import { PhotoCamera } from "@mui/icons-material";
 import { ForumPostImages } from "./ForumPostIImages";
 import CategoryTag from "../utils/CategoryTag";
-import { ICategory } from "../campaign/CampaignForm";
+import { ICategory, IMediaFile } from "../campaign/CampaignForm";
 import CategorySearchInput from "../utils/CategorySearchInput";
 
 export interface IForumPostNewRef {
@@ -23,14 +23,16 @@ export interface IForumPostNewRef {
 export interface IFormPostFormData {
   title: string;
   content: string;
-  images: File[];
+  images: IMediaFile[];
   tags: ICategory[];
 }
 
 interface IProps extends CardProps<any> {
   avatarUrl: string;
   userName: string;
-  onSubmit?: (data: IFormPostFormData) => void;
+  onSubmit?: (data: IFormPostFormData) => Promise<void>;
+  defaultData?: IFormPostFormData;
+  type?: "create" | "update";
 }
 
 const MAX_CONTENT_LENGTH = 500;
@@ -38,29 +40,30 @@ const MAX_TITLE_LENGTH = 100;
 
 export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
   (props, ref) => {
-    const { avatarUrl, userName, onSubmit, ...rest } = props;
+    const { avatarUrl, userName, onSubmit, defaultData, type, ...rest } = props;
 
-    const [title, setTitle] = useState("");
-    const [content, setContent] = useState("");
-    const [images, setImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [tags, setTags] = useState<ICategory[]>([]);
+    const [title, setTitle] = useState(defaultData?.title || "");
+    const [content, setContent] = useState(defaultData?.content || "");
+    const [images, setImages] = useState<IMediaFile[]>(
+      defaultData?.images || []
+    );
+    const [tags, setTags] = useState<ICategory[]>(defaultData?.tags || []);
+    const [isSubmitting, setSubmitting] = useState<boolean>(false);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files) return;
 
       const files = Array.from(e.target.files);
-      const newFiles = files.filter(
-        (file) =>
-          !images.some(
-            (img) => img.name === file.name && img.size === file.size
-          )
-      );
 
-      setImages((prev) => [...prev, ...newFiles]);
-      setImagePreviews((prev) => [
+      setImages((prev) => [
         ...prev,
-        ...newFiles.map((file) => URL.createObjectURL(file)),
+        ...files.map(
+          (file): IMediaFile => ({
+            type: "image",
+            url: URL.createObjectURL(file),
+            file: file,
+          })
+        ),
       ]);
 
       e.target.value = "";
@@ -70,19 +73,21 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
       setTitle("");
       setContent("");
       setImages([]);
-      setImagePreviews([]);
       setTags([]);
     };
 
-    const handlePost = () => {
+    const handlePost = async () => {
       if (onSubmit) {
-        onSubmit({ title, content, images, tags });
+        setSubmitting(true);
+        try {
+          await onSubmit({ title, content, images, tags });
+        } catch (error) {}
+        setSubmitting(false);
       }
     };
 
     const handleRemoveImage = (index: number) => {
       setImages((prev) => prev.filter((_, i) => i !== index));
-      setImagePreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
     useImperativeHandle(ref, () => ({
@@ -222,11 +227,11 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
             </Stack>
           )}
 
-          {imagePreviews.length > 0 && (
+          {images.length > 0 && (
             <ForumPostImages
               flexWrap="wrap"
               my={2}
-              images={imagePreviews}
+              images={images.map((image) => image.url)}
               onImageRemove={(_img, idx) => {
                 handleRemoveImage(idx);
               }}
@@ -299,13 +304,13 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
 
           <Button
             variant="contained"
-            disabled={!content.trim()}
+            disabled={!content.trim() || isSubmitting}
             onClick={handlePost}
             sx={{
               width: { xs: "100%", sm: "150px" },
             }}
           >
-            Đăng bài
+            {type === "update" ? "Cập nhật" : " Đăng bài"}
           </Button>
         </Stack>
       </Card>

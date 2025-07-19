@@ -54,7 +54,9 @@ export const ForumPostNewDialog = forwardRef<IForumPostNewDialogRef, IProps>(
     const handleSubmitData = async (data: IFormPostFormData) => {
       try {
         const images = await Promise.all(
-          data.images.map((file) => toBase64(file))
+          data.images.map(({ file, url }) =>
+            file != null ? toBase64(file) : url
+          )
         );
         const res = await FORUM_API.createNewPost({
           title: data.title,

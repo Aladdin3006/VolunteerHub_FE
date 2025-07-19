@@ -300,10 +300,13 @@ export const FORUM_API = {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${getAccessToken() || ""}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
     });
-    return handleResponse<unknown, unknown>(response);
+    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
+      response
+    );
   },
 
   async deletePost(postId: string) {
