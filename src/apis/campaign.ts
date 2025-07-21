@@ -301,14 +301,12 @@ const getCampaignDetail = async (
 export const getCampaignVolunteer = async (): Promise<CampaignVolunteer[]> => {
   const res = await axios.get(`${API_BASE}/campaigns`);
 
-  // Lấy đúng mảng campaigns trong result
   const campaigns = res.data?.result?.campaigns;
 
   if (Array.isArray(campaigns)) {
     return campaigns;
   }
 
-  // Nếu backend lỗi cấu trúc, trả mảng rỗng để tránh crash
   console.error("Unexpected volunteer campaigns payload:", res.data);
   return [];
 };
@@ -325,10 +323,7 @@ export const getCampaignVolunteerDetail = async (
   const raw = await res.json();
   console.log("Kết quả từ API:", raw); // ✅ in ra full response
 
-  // Cách 1: nếu backend trả về { data: {...} }
   if (raw.data) return raw.data;
-
-  // Cách 2: nếu backend trả về {...} trực tiếp
   return raw;
 };
 
