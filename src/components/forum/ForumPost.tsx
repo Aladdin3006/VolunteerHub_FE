@@ -105,7 +105,9 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           onUnLike={onUnLikeCommentClick}
         />
       )}
-      {onReply && <CommentInput onSend={(text) => onReply(null, text)} />}
+      {onReply && (
+        <CommentInput onSend={(text) => onReply(null, text)} relyTo={null} />
+      )}
     </Stack>
   );
 });

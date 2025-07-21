@@ -1,6 +1,11 @@
 const API_BASE = "http://localhost:4000";
 import axios from "axios";
-import { getAccessToken, handleResponse, IDataResponse, toBase64 } from "./utils";
+import {
+  getAccessToken,
+  handleResponse,
+  IDataResponse,
+  toBase64,
+} from "./utils";
 
 /* ---------- Kiểu dữ liệu ---------- */
 export interface Campaign {
@@ -38,7 +43,7 @@ export interface CampaignDetailResponse {
 /** ✅ Đổi tên từ Campaign2 thành CampaignVolunteer */
 /** Thông tin mỗi tình nguyện viên đã đăng ký */
 export interface VolunteerRecord {
-  user: { _id: string };                // Có thể bổ sung fullName, avatar...
+  user: { _id: string }; // Có thể bổ sung fullName, avatar...
   status: "pending" | "approved" | "rejected";
   registeredAt?: string;
 }
@@ -64,7 +69,6 @@ export interface CampaignVolunteer {
     description?: string;
   }[];
   status?: "upcoming" | "in-progress" | "completed";
-  
 
   /** 👇 mảng tình nguyện viên */
   volunteers?: VolunteerRecord[];
@@ -76,7 +80,6 @@ export interface Category {
   color: string;
   icon: string;
 }
-
 
 export interface ILocation {
   /**
@@ -160,7 +163,6 @@ export interface ICampaignDataUpload {
    * categories ids
    */
   categories: string[];
-  phases: IPhaseData[];
 }
 
 export const CAMPAIGN_API = {
@@ -248,7 +250,6 @@ export const CAMPAIGN_API = {
   },
 } as const;
 
-
 export const getCampaigns = async (): Promise<Campaign[]> => {
   try {
     const res = await axios.get("http://localhost:4000/donate");
@@ -294,7 +295,6 @@ export const getCampaignVolunteer = async (): Promise<CampaignVolunteer[]> => {
   return [];
 };
 
-
 export const getCampaignVolunteerDetail = async (
   campaignId: string
 ): Promise<CampaignVolunteer> => {
@@ -330,7 +330,7 @@ export const joinCampaign = async (campaignId: string): Promise<string> => {
     throw new Error(err.error?.message || "Đã có lỗi xảy ra");
   }
 
-  const data = await res.json();     // { message: "Registration submitted, waiting for admin approval" }
+  const data = await res.json(); // { message: "Registration submitted, waiting for admin approval" }
   return data.message as string;
 };
 
@@ -349,6 +349,5 @@ export const getCategories = async (): Promise<Category[]> => {
     throw error;
   }
 };
-
 
 export default getCampaignDetail;

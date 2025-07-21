@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FORUM_API, IForumPostListItem, IUserShort } from "../../apis/forum";
 import useLoaderState, { TLoaderState } from "./useLoaderState";
-import { useSearchParams } from "react-router-dom";
 import { getLocalUser } from "../../apis/utils";
 
 interface IResult {
@@ -17,9 +16,7 @@ const DEFAULT_FETCH_LIMIT = 50;
 /**
  * A hooks for manage data for forum page
  */
-export default function userForumData(): IResult {
-  const [searchParams, _setSearchParams] = useSearchParams();
-  const [ref, setRef] = useState<string>("");
+export default function userForumData(ref: string): IResult {
   const userRef = useRef<IUserShort>(
     getLocalUser() || {
       _id: "",
@@ -29,10 +26,6 @@ export default function userForumData(): IResult {
 
   const [posts, setPosts] = useState<IForumPostListItem[]>([]);
   const { state, setState } = useLoaderState();
-
-  useEffect(() => {
-    setRef(searchParams.get("ref") ?? "news");
-  }, [searchParams]);
 
   const fetch = useCallback(
     async (ref: string | null, skip: number, limit = DEFAULT_FETCH_LIMIT) => {

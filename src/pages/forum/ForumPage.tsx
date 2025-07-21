@@ -11,7 +11,7 @@ import Footer from "../../components/Footer/Footer";
 import Header from "../../components/Header/Header";
 import userForumData from "./useForumData";
 import { ForumPost } from "../../components/forum/ForumPost";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ForumPostDialog,
   IForumPostDialogRef,
@@ -27,7 +27,7 @@ import { EditOutlined } from "@mui/icons-material";
 import { getLocalUser } from "../../apis/utils";
 import ErrorMessage from "../../components/utils/ErrorMessage";
 import "../news/News.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ConfirmDialog, {
   IConfirmDialogRef,
 } from "@/components/utils/ConfirmDialog";
@@ -36,15 +36,27 @@ import {
   IForumPostUpdateDialogRef,
 } from "./ForumPostUpdateDialog";
 import { IFormPostFormData } from "@/components/forum/ForumPostNew";
+import {
+  IImageViewerDialogRef,
+  ImageViewerDialog,
+} from "@/components/forum/ImageViewerDialog";
+import ForumPostRightSide from "./ForumPostRightSide";
 
 export default function ForumPage() {
-  const { posts, setPosts, state, fetch, ref } = userForumData();
+  const [ref, setRef] = useState<string>("");
+  const [searchParams, _setSearchParams] = useSearchParams();
+  useEffect(() => {
+    setRef(searchParams.get("ref") ?? "news");
+  }, [searchParams]);
+
+  const { posts, setPosts, state, fetch } = userForumData(ref);
   const forumPostDialogRef = useRef<IForumPostDialogRef | null>(null);
   const forumPostNewDialogRef = useRef<IForumPostNewDialogRef | null>(null);
   const forumPostUpdateDialogRef = useRef<IForumPostUpdateDialogRef | null>(
     null
   );
   const confirmDialogRef = useRef<IConfirmDialogRef | null>(null);
+  const imageViewerDialogRef = useRef<IImageViewerDialogRef | null>(null);
   const userRef = useRef<IUserShort | null>(getLocalUser());
 
   const [shortcuts, setShortcuts] = useState<IForumPostListItem[]>([]);
@@ -151,6 +163,10 @@ export default function ForumPage() {
     );
   };
 
+  const afterCreateNewPost = (data: IForumPostListItem) => {
+    setPosts([data, ...posts]);
+  };
+
   return (
     <Box className="page-wrapper" sx={{ position: "relative" }}>
       <Header />
@@ -180,7 +196,15 @@ export default function ForumPage() {
         </ul>
       </div>
       <Stack direction={"row"} gap={0.5} pt={2} justifyContent={"center"}>
-        <Box sx={{ flex: 1, display: ["none", "none", "block"] }}></Box>
+        <Box sx={{ flex: 1, display: ["none", "none", "block"] }}>
+          <ForumLeftSide
+            shortcuts={shortcuts}
+            onOpenShortcut={(post) => {
+              forumPostDialogRef.current &&
+                forumPostDialogRef.current.open(post._id);
+            }}
+          />
+        </Box>
         <Stack
           direction={"column"}
           gap={3}
@@ -224,6 +248,10 @@ export default function ForumPage() {
                     }
                   : undefined
               }
+              onImageClick={(images, idx) => {
+                imageViewerDialogRef.current &&
+                  imageViewerDialogRef.current.open(images, idx);
+              }}
               hideComment
             />
           ))}
@@ -261,11 +289,15 @@ export default function ForumPage() {
             flex: 1,
             display: ["none", "none", "none", "block"],
             justifyItems: "end",
+            mr: 5,
           }}
         >
-          <ForumLeftSide
-            shortcuts={shortcuts}
-            onOpenShortcut={(post) => {
+          <ForumPostRightSide
+            onClick={(post) => {
+              setShortcuts([
+                post,
+                ...shortcuts.filter((s) => s._id !== post._id),
+              ]);
               forumPostDialogRef.current &&
                 forumPostDialogRef.current.open(post._id);
             }}
@@ -292,11 +324,15 @@ export default function ForumPage() {
         ref={forumPostDialogRef}
         afterClose={afterPostDialogClosed}
       />
-      <ForumPostNewDialog ref={forumPostNewDialogRef} />
+      <ForumPostNewDialog
+        ref={forumPostNewDialogRef}
+        afterSubmit={afterCreateNewPost}
+      />
       <ForumPostUpdateDialog
         ref={forumPostUpdateDialogRef}
         afterSubmit={updatePost}
       />
+      <ImageViewerDialog ref={imageViewerDialogRef} />
       <ConfirmDialog ref={confirmDialogRef} />
       {/* Error message */}
       <Snackbar
