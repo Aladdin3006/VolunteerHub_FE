@@ -126,7 +126,7 @@ export interface ICampaignDataItem {
   /**
    * Image (one)
    */
-  campaignImg: string;
+  image: string;
   /**
    * Images (up to 10)
    */
