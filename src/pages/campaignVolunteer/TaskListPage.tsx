@@ -16,34 +16,49 @@ import {
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header/Header';
-import { fetchTasksByCampaignId, submitTaskApi } from '../../apis/phase';
+import { fetchPhasesByCampaignId, fetchTasksByCampaignId, submitTaskApi } from '../../apis/phase';
 import TaskActionModal from './TaskActionModal';
+import { getCampaignVolunteerDetail } from '../../apis/campaign';
 
 interface Task {
-  taskId: string;
+  _id: string;
   title: string;
   description: string;
-  phaseDay: {
-    date: string;
-    phaseName: string;
-  };
-  submission: {
+  submission?: {
     status: string;
   };
+  phaseDay: {
+    _id: string;
+    date: string;
+  };
+}
+
+interface PhaseDay {
+  _id: string;
+  date: string;
+  tasks: Task[];
+}
+
+interface Phase {
+  _id: string;
+  name: string;
+  phaseDays: PhaseDay[];
 }
 
 const TaskListPage: React.FC = () => {
   const { id: campaignId } = useParams();
   const navigate = useNavigate();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [groupedTasks, setGroupedTasks] = useState<Record<string, Task[]>>({});
+  const [phases, setPhases] = useState<Phase[]>([]);
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
+  const [expandedPhaseDay, setExpandedPhaseDay] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'complete' | 'report'>('complete');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [campaignName, setCampaignName] = useState<string>('');
+  const [campaignImageUrl, setCampaignImageUrl] = useState<string | null>(null);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -54,12 +69,12 @@ const TaskListPage: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'hoàn thành':
         return 'success';
       case 'đang chờ':
         return 'warning';
-      case 'bị tỮ chối':
+      case 'bị từ chối':
         return 'error';
       case 'chưa nộp':
         return 'info';
@@ -68,16 +83,32 @@ const TaskListPage: React.FC = () => {
     }
   };
 
-  const handleSubmitTaskAction = async (content: string, images: File[]) => {
+  const openModalWithTaskId = (taskId: string, mode: 'complete' | 'report') => {
+    setSelectedTaskId(taskId);
+    setModalMode(mode);
+    setTimeout(() => {
+      console.log('Task đã được chọn:', taskId);
+      setModalOpen(true);
+    }, 3);
+  };
+
+  const handleCheckIn = (phaseDayId: string) => {
+    console.log('Check-in cho PhaseDay:', phaseDayId);
+    // Placeholder cho logic API sau này
+  };
+
+  const handleSubmitTaskAction = async (taskId: string, content: string, images: File[]) => {
     const userString = localStorage.getItem('user');
     const token = userString ? JSON.parse(userString).token : null;
-    if (!token || !selectedTaskId) return;
+
+    if (!token || !taskId) {
+      alert('Thiếu token hoặc taskId!');
+      return;
+    }
 
     try {
       if (modalMode === 'complete') {
-        await submitTaskApi(selectedTaskId, content, images, token);
-      } else {
-        // await reportTaskIssueApi(selectedTaskId, content, images, token);
+        await submitTaskApi(taskId, content, images, token);
       }
       alert('Gửi thành công');
     } catch (err) {
@@ -89,131 +120,204 @@ const TaskListPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const getTasks = async () => {
-      if (!campaignId) return;
+    const fetchAll = async () => {
       const userString = localStorage.getItem('user');
       const token = userString ? JSON.parse(userString).token : null;
-      if (!token) {
-        setError('Token không tồn tại. Vui lòng đăng nhập lại.');
+      if (!token || !campaignId) {
+        setError('Token không tồn tại hoặc campaignId không hợp lệ');
         return;
       }
 
       setLoading(true);
       try {
-        const data = await fetchTasksByCampaignId(campaignId, token);
-        setTasks(data);
+        const campaignDetail = await getCampaignVolunteerDetail(campaignId);
+        setCampaignName(campaignDetail.name);
+        setCampaignImageUrl(campaignDetail.image || null);
 
-        const grouped: Record<string, Task[]> = {};
-        data.forEach((task: Task) => {
-          const key = task.phaseDay.phaseName;
-          if (!grouped[key]) grouped[key] = [];
-          grouped[key].push(task);
-        });
-        setGroupedTasks(grouped);
-        if (Object.keys(grouped).length > 0) {
-          setExpandedPhase(Object.keys(grouped)[0]);
+        const phaseRes = await fetchPhasesByCampaignId(campaignId, token);
+        const fetchedPhases = phaseRes.data.phases;
+
+        const fetchedTasks: Task[] = await fetchTasksByCampaignId(campaignId, token);
+
+        for (const phase of fetchedPhases) {
+          for (const day of phase.phaseDays) {
+            day.tasks = fetchedTasks.filter((task) =>
+              task.phaseDay &&
+              task.phaseDay.date === day.date &&
+              task.phaseDay.phaseName === phase.name
+            );
+          }
         }
+
+        setPhases(fetchedPhases);
+        if (fetchedPhases.length > 0) setExpandedPhase(fetchedPhases[0]._id);
       } catch (err) {
-        setError('Không thể tải danh sách nhiệm vụ.');
+        console.error(err);
+        setError('Lỗi khi tải dữ liệu');
       } finally {
         setLoading(false);
       }
     };
 
-    getTasks();
+    fetchAll();
   }, [campaignId]);
 
   return (
     <Container maxWidth="md" sx={{ mb: 5, mt: 20 }}>
       <Header />
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-          Nhiệm vụ của bạn trong chiến dịch
-        </Typography>
+        <Card sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, textAlign: 'center' }}>
+              Nhiệm vụ trong chiến dịch:{' '}
+              <span style={{ color: '#4699ddff' }}>{campaignName}</span>
+            </Typography>
+          <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {campaignImageUrl && (
+              <img
+                src={campaignImageUrl}
+                alt={campaignName}
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  maxHeight: '250px',
+                  borderRadius: '8px',
+                  objectFit: 'cover',
+                  marginBottom: '16px',
+                }}
+              />
+            )}
+          </CardContent>
+        </Card>
         <Button variant="outlined" onClick={() => navigate(-1)}>
           ← Quay lại
         </Button>
       </Box>
 
-      {loading && <Typography>Loading...</Typography>}
+      {loading && <Typography>Đang tải dữ liệu...</Typography>}
       {error && <Typography color="error">{error}</Typography>}
 
       <List>
-        {Object.entries(groupedTasks).map(([phaseName, tasks]) => (
-          <Box key={phaseName} sx={{ mb: 3 }}>
+        {phases.map((phase) => (
+          <Box key={phase._id} sx={{ mb: 2 }}>
             <ListItem
+              button
+              onClick={() =>
+                setExpandedPhase(phase._id === expandedPhase ? null : phase._id)
+              }
               sx={{
-                bgcolor: expandedPhase === phaseName ? 'primary.light' : 'grey.100',
+                bgcolor: expandedPhase === phase._id ? 'primary.light' : 'grey.100',
                 borderRadius: 2,
                 mb: 1,
               }}
             >
               <ListItemText
                 primary={
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    {phaseName} ({tasks.length} nhiệm vụ)
+                  <Typography variant="h6" fontWeight="bold">
+                    {phase.name}
                   </Typography>
                 }
               />
-              <Button onClick={() => setExpandedPhase(phaseName === expandedPhase ? null : phaseName)}>
-                {expandedPhase === phaseName ? <ExpandLess /> : <ExpandMore />}
-              </Button>
+              {expandedPhase === phase._id ? <ExpandLess /> : <ExpandMore />}
             </ListItem>
 
-            <Collapse in={expandedPhase === phaseName} timeout="auto" unmountOnExit>
-              <List dense sx={{ pl: 2, pr: 0, pt: 1 }}>
-                {tasks.map((task) => (
-                  <Card key={task.taskId} sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        {task.title}
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 1 }}>
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {task.description}
-                          </Typography>
-                          <Typography variant="body2" sx={{ mt: 1 }}>
-                            Ngày: {formatDate(task.phaseDay.date)}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <Chip
-                            label={task.submission.status}
-                            color={getStatusColor(task.submission.status)}
+            <Collapse in={expandedPhase === phase._id} timeout="auto" unmountOnExit>
+              <List dense sx={{ pl: 2 }}>
+                {phase.phaseDays.map((day) => (
+                  <Box key={day._id}>
+                    <ListItem
+                      button
+                      onClick={() =>
+                        setExpandedPhaseDay(day._id === expandedPhaseDay ? null : day._id)
+                      }
+                      sx={{
+                        bgcolor: expandedPhaseDay === day._id ? 'secondary.light' : 'grey.50',
+                        borderRadius: 1,
+                        mb: 1,
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body1" fontWeight="medium">
+                              Ngày: {formatDate(day.date)}
+                            </Typography>
+                          }
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Button
+                            variant="contained"
                             size="small"
-                            sx={{ alignSelf: 'flex-end' }}
-                          />
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="success"
-                              onClick={() => {
-                                setSelectedTaskId(task.taskId);
-                                setModalMode('complete');
-                                setModalOpen(true);
-                              }}
-                            >
-                              Hoàn thành
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              onClick={() => {
-                                setSelectedTaskId(task.taskId);
-                                setModalMode('report');
-                                setModalOpen(true);
-                              }}
-                            >
-                              Báo cáo
-                            </Button>
-                          </Box>
+                            color="info"
+                            onClick={() => handleCheckIn(day._id)}
+                          >
+                            Check-in
+                          </Button>
+                          {expandedPhaseDay === day._id ? <ExpandLess /> : <ExpandMore />}
                         </Box>
                       </Box>
-                    </CardContent>
-                  </Card>
+                    </ListItem>
+
+                    <Collapse in={expandedPhaseDay === day._id} timeout="auto" unmountOnExit>
+                      <List dense sx={{ pl: 3 }}>
+                        {day.tasks.length === 0 && (
+                          <Typography variant="body2" sx={{ pl: 2 }}>
+                            Không có nhiệm vụ nào.
+                          </Typography>
+                        )}
+
+                        {day.tasks.map((task) => (
+                          <Card key={task._id} sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
+                            <CardContent>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                {task.title}
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'start',
+                                  flexWrap: 'wrap',
+                                  gap: 1,
+                                }}
+                              >
+                                <Box>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {task.description}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                  <Chip
+                                    label={task.submission?.status || 'chưa nộp'}
+                                    color={getStatusColor(task.submission?.status || 'chưa nộp')}
+                                    size="small"
+                                    sx={{ alignSelf: 'flex-end' }}
+                                  />
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      color="success"
+                                      onClick={() => openModalWithTaskId(task._id, 'complete')}
+                                    >
+                                      Hoàn thành
+                                    </Button>
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      color="error"
+                                      onClick={() => openModalWithTaskId(task._id, 'report')}
+                                    >
+                                      Báo cáo
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </List>
+                    </Collapse>
+                  </Box>
                 ))}
               </List>
             </Collapse>
@@ -226,6 +330,7 @@ const TaskListPage: React.FC = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         mode={modalMode}
+        taskId={selectedTaskId}
         onSubmit={handleSubmitTaskAction}
       />
     </Container>

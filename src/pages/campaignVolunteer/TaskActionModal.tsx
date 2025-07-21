@@ -14,13 +14,15 @@ interface TaskActionModalProps {
   open: boolean;
   onClose: () => void;
   mode: 'complete' | 'report';
-  onSubmit: (content: string, images: File[]) => void;
+  taskId: string | null;
+  onSubmit: (taskId: string, content: string, images: File[]) => void;
 }
 
 const TaskActionModal: React.FC<TaskActionModalProps> = ({
   open,
   onClose,
   mode,
+  taskId,
   onSubmit,
 }) => {
   const [content, setContent] = useState('');
@@ -40,7 +42,11 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
   };
 
   const handleSubmit = () => {
-    onSubmit(content, images);
+    if (!taskId) {
+      alert('Không tìm thấy taskId');
+      return;
+    }
+    onSubmit(taskId, content, images);
     onClose();
   };
 

@@ -1,6 +1,17 @@
 // apis/task.ts
 import axios from 'axios';
 
+
+export const fetchPhasesByCampaignId = async (campaignId: string, token: string) => {
+  const response = await axios.get(`http://localhost:4000/phase/${campaignId}/tasks`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+
 export const fetchTasksByCampaignId = async (campaignId: string, token: string) => {
   const response = await axios.get(`http://localhost:4000/phase/${campaignId}/task/me`, {
     headers: {
