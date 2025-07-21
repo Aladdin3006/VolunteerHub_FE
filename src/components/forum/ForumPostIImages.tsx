@@ -57,6 +57,7 @@ export const ForumPostImages = forwardRef<HTMLDivElement, IProps>(
                   height: "100%",
                   overflow: "hidden",
                   borderRadius: 1,
+                  cursor: onImageClick ? "pointer" : "default",
                 }}
               >
                 <img
@@ -90,7 +91,7 @@ export const ForumPostImages = forwardRef<HTMLDivElement, IProps>(
           {extraCount > 0 && (
             <ImageListItem
               onClick={() => {
-                onImageClick && onImageClick(images, 0);
+                onImageClick && onImageClick(images, images.length - extraCount);
               }}
             >
               <Box
@@ -111,6 +112,7 @@ export const ForumPostImages = forwardRef<HTMLDivElement, IProps>(
                     width: "100%",
                     height: "100%",
                     filter: "brightness(50%)",
+                    cursor: onImageClick ? "pointer" : "default",
                   }}
                 />
                 <Typography

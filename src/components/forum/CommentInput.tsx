@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import {
   Box,
   Avatar,
@@ -8,17 +8,22 @@ import {
   BoxProps,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import { IUserShort } from "@/apis/forum";
 
 interface IProps extends BoxProps {
   avatar?: string;
   onSend: (text: string) => Promise<boolean>;
+  relyTo: IUserShort | null;
 }
 
 export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
-  const { avatar, onSend, ...rest } = props;
+  const { avatar, onSend, relyTo, ...rest } = props;
 
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(
+    relyTo?.fullName ? `@${relyTo.fullName} ` : ""
+  );
   const [sending, setSending] = useState<boolean>(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSend = async () => {
     if (!value.trim()) return;
@@ -29,6 +34,14 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     }
     setSending(false);
   };
+
+  useEffect(() => {
+    if (inputRef.current) {
+      const len = value.length;
+      inputRef.current.setSelectionRange(len, len);
+    }
+  }, []);
+
   return (
     <Box
       ref={ref}
@@ -51,6 +64,7 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
           }}
         >
           <TextField
+            inputRef={inputRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Viết bình luận..."
@@ -63,6 +77,7 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             }}
             fullWidth
             disabled={sending}
+            autoFocus
           />
 
           <IconButton

@@ -96,7 +96,6 @@ const initialValue: ICampaignFormData = {
   campaignImg: { url: "", type: "image" },
   gallery: [],
   categories: [],
-  phases: [],
 };
 
 const validationSchema = Yup.object({
@@ -132,7 +131,6 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         gallery: values.gallery.map((g) => g.file ?? g.url),
         location: values.location,
         name: values.name,
-        phases: values.phases,
       });
     }
   };

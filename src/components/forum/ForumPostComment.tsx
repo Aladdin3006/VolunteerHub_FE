@@ -9,7 +9,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { ICommentListItem } from "../../apis/forum";
+import { ICommentListItem, IUserShort } from "../../apis/forum";
 import { getRelativeTime } from "./utils";
 import {
   ThumbUpAltOutlined,
@@ -47,9 +47,10 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
       Boolean(comment.isLoadedAllComments)
     );
     const [showCommentInput, setShowCommentInput] = useState(false);
+    const [replyTo, setReplyTo] = useState<IUserShort | null>(null);
 
     const handleToggleReplies = async () => {
-      if (onShowReplies && !showReplies) {
+      if (onShowReplies && !showReplies && !comment.isLoadedAllComments) {
         const rs = await onShowReplies(comment);
         if (rs) {
           setShowReplies(true);
@@ -57,6 +58,15 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
       } else {
         setShowReplies((prev) => !prev);
       }
+    };
+
+    const scrollToCommentInput = () => {
+      setTimeout(() => {
+        const el = document.getElementById(`comment-input-${comment._id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
     };
 
     return (
@@ -117,7 +127,16 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
               <IconButton
                 size="small"
                 color={"default"}
-                onClick={() => setShowCommentInput(!showCommentInput)}
+                onClick={() => {
+                  if (!showCommentInput) {
+                    setReplyTo(comment.createdBy);
+                    setShowCommentInput(true);
+                    scrollToCommentInput();
+                  } else {
+                    setReplyTo(null);
+                    setShowCommentInput(false);
+                  }
+                }}
               >
                 <ReplyOutlined fontSize="small" />
               </IconButton>
@@ -176,7 +195,11 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
           </Collapse>
 
           {showCommentInput && onReply && (
-            <CommentInput onSend={(text) => onReply(comment, text)} />
+            <CommentInput
+              onSend={(text) => onReply(comment, text)}
+              relyTo={replyTo}
+              id={`comment-input-${comment._id}`}
+            />
           )}
         </Box>
       </Box>

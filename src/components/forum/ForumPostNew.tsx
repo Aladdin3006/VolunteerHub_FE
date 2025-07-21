@@ -37,6 +37,7 @@ interface IProps extends CardProps<any> {
 
 const MAX_CONTENT_LENGTH = 500;
 const MAX_TITLE_LENGTH = 100;
+const MAX_IMAGE = 5;
 
 export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
   (props, ref) => {
@@ -55,16 +56,18 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
 
       const files = Array.from(e.target.files);
 
-      setImages((prev) => [
-        ...prev,
-        ...files.map(
-          (file): IMediaFile => ({
-            type: "image",
-            url: URL.createObjectURL(file),
-            file: file,
-          })
-        ),
-      ]);
+      setImages((prev) =>
+        [
+          ...prev,
+          ...files.map(
+            (file): IMediaFile => ({
+              type: "image",
+              url: URL.createObjectURL(file),
+              file: file,
+            })
+          ),
+        ].slice(0, MAX_IMAGE)
+      );
 
       e.target.value = "";
     };
@@ -260,6 +263,7 @@ export const ForumPostNew = forwardRef<IForumPostNewRef, IProps>(
             startIcon={<PhotoCamera />}
             variant="outlined"
             sx={{ borderRadius: 8, width: { xs: "100%", sm: "150px" } }}
+            disabled={images.length >= MAX_IMAGE}
           >
             ẢNH
             <input
