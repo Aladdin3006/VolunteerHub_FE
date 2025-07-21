@@ -1,7 +1,5 @@
 import { forwardRef, useRef } from "react";
 import {
-  Accordion,
-  AccordionSummary,
   Box,
   Button,
   ImageList,
@@ -25,7 +23,7 @@ import {
   ImageViewerDialog,
 } from "../forum/ImageViewerDialog";
 import MapLocationPicker from "../utils/MapLocationPicker";
-import { Add, ExpandMore, VolunteerActivism } from "@mui/icons-material";
+import { VolunteerActivism } from "@mui/icons-material";
 import {
   IUpdatePhasesDialogRef,
   UpdatePhasesDialog,
@@ -58,7 +56,7 @@ export interface ICampaignFormData {
   campaignImg: IMediaFile;
   gallery: IMediaFile[];
   categories: ICategory[];
-  phases: IPhaseData[];
+  // phases: IPhaseData[];
 }
 
 interface IProps extends StackProps {
@@ -489,7 +487,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             </Typography>
           </Box>
 
-          {type === "update" && (
+          {/* {type === "update" && (
             <Box>
               <Typography variant="subtitle1">Giai đoạn chiến dịch</Typography>
               {values.phases.map((phase) => {
@@ -521,7 +519,7 @@ export const CampaignForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
                 Thêm giai đoạn
               </Button>
             </Box>
-          )}
+          )} */}
         </Stack>
         <Button
           type="submit"
