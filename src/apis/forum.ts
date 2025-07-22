@@ -1,5 +1,12 @@
 import { ICategory } from "./campaign";
-import { getAccessToken, handleResponse, IDataResponse } from "./utils";
+import {
+  axiosInstance,
+  getAccessToken,
+  handleResponse,
+  IAxiosExtraConfigOptions,
+  IDataResponse,
+  IDataResponseSuccess,
+} from "./utils";
 
 /**
  * A simple tag
@@ -115,61 +122,231 @@ export interface ICommentListItem {
 }
 
 export const FORUM_API = {
-  async createNewPost(data: IForumPostUploadData) {
-    const response = await fetch(`${API_BASE}/forum`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    return handleResponse<
-      IDataResponse<IForumPostListItem>,
-      IDataResponse<IForumPostListItem>
-    >(response);
-  },
-
-  async updatePost(postId: string, data: IForumPostUploadData) {
-    const response = await fetch(`${API_BASE}/forum/${postId}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
-  },
-
-  async deletePost(postId: string) {
-    const response = await fetch(`${API_BASE}/forum/${postId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
+  async createNewPost(
+    data: IForumPostUploadData,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IForumPostListItem>> {
+    return axiosInstance.post(`/forum`, data, {
+      extraOptions: {
+        ...options,
       },
     });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
   },
 
-  async getNewForumPosts(skip: number, limit = 20) {
-    const response = await fetch(
-      `${API_BASE}/forum/news?skip=${skip}&limit=${limit}`,
+  async updatePost(
+    postId: string,
+    data: IForumPostUploadData,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.put(`/forum/${postId}`, data, {
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async deletePost(
+    postId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.delete(`/forum/${postId}`, {
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async getNewForumPosts(
+    skip: number,
+    limit = 20,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IForumPostListItem[]>> {
+    return axiosInstance.get(`/forum/news?skip=${skip}&limit=${limit}`, {
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async getUserForumPosts(
+    userId: string,
+    skip: number,
+    limit = 20,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IForumPostListItem[]>> {
+    return axiosInstance.get(
+      `/forum/posts/users/${userId}?skip=${skip}&limit=${limit}`,
       {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
+        extraOptions: {
+          ...options,
         },
       }
     );
-    return handleResponse<
-      IDataResponse<IForumPostListItem[]>,
-      IDataResponse<IForumPostListItem[]>
-    >(response);
+  },
+
+  async getForumPostDetail(
+    postId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IForumPostListItem>> {
+    return axiosInstance.get(`/forum/posts/${postId}`, {
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async upvoteForumPost(
+    postId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.post(
+      `/forum/posts/${postId}/upvotes`,
+      {},
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async downvoteForumPost(
+    postId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.post(
+      `/forum/posts/${postId}/downvotes`,
+      {},
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async unvoteForumPost(
+    postId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.delete(`/forum/posts/${postId}/votes`, {
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async commentForumPost(
+    postId: string,
+    content: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IComment>> {
+    return axiosInstance.post(
+      `/forum/posts/${postId}/comments`,
+      { content: content },
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async replyForumPostComment(
+    postId: string,
+    commentId: string,
+    content: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IComment>> {
+    return axiosInstance.post(
+      `/forum/posts/${postId}/comments/${commentId}/comments`,
+      { content: content },
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async upvoteForumPostComment(
+    postId: string,
+    commentId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.post(
+      `/forum/posts/${postId}/comments/${commentId}/upvotes`,
+      {},
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async downvoteForumPostComment(
+    postId: string,
+    commentId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.post(
+      `/forum/posts/${postId}/comments/${commentId}/downvotes`,
+      {},
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async unvoteForumPostComment(
+    postId: string,
+    commentId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
+    return axiosInstance.delete(
+      `/forum/posts/${postId}/comments/${commentId}/votes`,
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async getForumPostComments(
+    postId: string,
+    skip: number,
+    limit = 20,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<ICommentListItem[]>> {
+    return axiosInstance.get(
+      `/forum/posts/${postId}/comments?skip=${skip}&limit=${limit}`,
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
+  },
+
+  async getForumPostCommentRelies(
+    postId: string,
+    commentId: string,
+    skip: number,
+    limit = 20,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<ICommentListItem[]>> {
+    return axiosInstance.get(
+      `/forum/posts/${postId}/comments/${commentId}/comments?skip=${skip}&limit=${limit}`,
+      {
+        extraOptions: {
+          ...options,
+        },
+      }
+    );
   },
 
   async getRelativeForumPosts(skip: number, limit = 20) {
@@ -202,74 +379,6 @@ export const FORUM_API = {
       IDataResponse<IForumPostListItem[]>,
       IDataResponse<IForumPostListItem[]>
     >(response);
-  },
-
-  async getUserForumPosts(userId: string, skip: number, limit = 20) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/users/${userId}?skip=${skip}&limit=${limit}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<
-      IDataResponse<IForumPostListItem[]>,
-      IDataResponse<IForumPostListItem[]>
-    >(response);
-  },
-
-  async getForumPostDetail(postId: string) {
-    const response = await fetch(`${API_BASE}/forum/posts/${postId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-      },
-    });
-    return handleResponse<
-      IDataResponse<IForumPostListItem>,
-      IDataResponse<IForumPostListItem>
-    >(response);
-  },
-
-  async upvoteForumPost(postId: string) {
-    const response = await fetch(`${API_BASE}/forum/posts/${postId}/upvotes`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-      },
-    });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
-  },
-
-  async downvoteForumPost(postId: string) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/downvotes`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
-  },
-
-  async unvoteForumPost(postId: string) {
-    const response = await fetch(`${API_BASE}/forum/posts/${postId}/votes`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-      },
-    });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
   },
 
   async saveForumPost(postId: string) {
@@ -314,20 +423,6 @@ export const FORUM_API = {
     >(response);
   },
 
-  async commentForumPost(postId: string, content: string) {
-    const response = await fetch(`${API_BASE}/forum/posts/${postId}/comments`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ content: content }),
-    });
-    return handleResponse<IDataResponse<IComment>, IDataResponse<IComment>>(
-      response
-    );
-  },
-
   async deleteCommentForumPost(postId: string, commentId: string) {
     const response = await fetch(
       `${API_BASE}/forum/posts/${postId}/comments/${commentId}`,
@@ -341,27 +436,6 @@ export const FORUM_API = {
     return handleResponse<unknown, unknown>(response);
   },
 
-  async replyForumPostComment(
-    postId: string,
-    commentId: string,
-    content: string
-  ) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/comments/${commentId}/comments`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: content }),
-      }
-    );
-    return handleResponse<IDataResponse<IComment>, IDataResponse<IComment>>(
-      response
-    );
-  },
-
   async deleteReplyForumPostComment(postId: string, commentId: string) {
     const response = await fetch(
       `${API_BASE}/forum/posts/${postId}/comments/${commentId}`,
@@ -373,88 +447,6 @@ export const FORUM_API = {
       }
     );
     return handleResponse<unknown, unknown>(response);
-  },
-
-  async upvoteForumPostComment(postId: string, commentId: string) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/comments/${commentId}/upvotes`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
-  },
-
-  async downvoteForumPostComment(postId: string, commentId: string) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/comments/${commentId}/downvotes`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
-  },
-
-  async unvoteForumPostComment(postId: string, commentId: string) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/comments/${commentId}/votes`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
-  },
-
-  async getForumPostComments(postId: string, skip: number, limit = 20) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/comments?skip=${skip}&limit=${limit}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<
-      IDataResponse<ICommentListItem[]>,
-      IDataResponse<ICommentListItem[]>
-    >(response);
-  },
-
-  async getForumPostCommentRelies(
-    postId: string,
-    commentId: string,
-    skip: number,
-    limit = 20
-  ) {
-    const response = await fetch(
-      `${API_BASE}/forum/posts/${postId}/comments/${commentId}/comments?skip=${skip}&limit=${limit}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
-        },
-      }
-    );
-    return handleResponse<
-      IDataResponse<ICommentListItem[]>,
-      IDataResponse<ICommentListItem[]>
-    >(response);
   },
 
   async getUpvoteForumPostCommentUsers(
