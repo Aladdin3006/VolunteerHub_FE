@@ -1,3 +1,4 @@
+import axios, { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { IUserShort } from "./forum";
 
 export const getAccessToken = (): string | null => {
@@ -64,3 +65,76 @@ export interface IDataResponse<Data, Error = unknown> {
   message: string;
   error?: Error;
 }
+
+export interface IDataResponseSuccess<Data = unknown> {
+  data: Data;
+  error?: unknown;
+}
+
+export interface IDataResponseError<Error = unknown> {
+  error: Error;
+  message: string;
+  origin: any;
+}
+
+export interface IAxiosExtraConfigOptions {
+  auth?: boolean;
+}
+
+const BASE_API_URL =
+  import.meta.env.VITE_BASE_API_URL || "http://localhost:4000";
+export const axiosInstance = axios.create({
+  baseURL: BASE_API_URL,
+  withCredentials: true,
+});
+
+axiosInstance.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    /**
+     * No need to add authorization header
+     */
+    if (config.extraOptions?.auth === false) return config;
+
+    /**
+     * Add access token
+     */
+    config.headers.Authorization = `Bearer ${getAccessToken()}`;
+    return config;
+  },
+  (error): Promise<IDataResponseError<unknown>> => {
+    return Promise.reject({
+      message: "axios error",
+      error: error,
+      origin: error,
+    });
+  }
+);
+
+axiosInstance.interceptors.response.use(
+  (response: AxiosResponse) => {
+    const contentType = response.headers["content-type"] ?? "";
+    // Update auth context
+    if (contentType.startsWith("application/json")) {
+      const resData = response as any;
+      const data = resData?.data;
+      const error = resData?.error;
+      if (data == null && error != null) {
+        return Promise.reject({
+          message: resData.message,
+          error: error,
+          origin: error,
+        });
+      }
+      return data;
+    }
+    return response.data;
+  },
+  (error): Promise<IDataResponseError<unknown>> => {
+    const resError = error.response?.data?.error;
+    return Promise.reject({
+      message: "axios error",
+      error: resError,
+      origin: error,
+    });
+  }
+);

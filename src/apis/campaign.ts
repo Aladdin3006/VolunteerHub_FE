@@ -1,9 +1,9 @@
 const API_BASE = "http://localhost:4000";
 import axios from "axios";
 import {
-  getAccessToken,
-  handleResponse,
-  IDataResponse,
+  axiosInstance,
+  IAxiosExtraConfigOptions,
+  IDataResponseSuccess,
   toBase64,
 } from "./utils";
 
@@ -188,23 +188,26 @@ export interface ICampaignDataUpload {
 }
 
 export const CAMPAIGN_API = {
-  async searchCategories(name: string, skip = 0, limit = 20) {
-    const response = await fetch(
-      `${API_BASE}/category?q=${name}&skip=${skip}&limit=${limit}`,
+  async searchCategories(
+    name: string,
+    skip = 0,
+    limit = 20,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<ICategory[]>> {
+    return axiosInstance.get(
+      `/category?q=${name}&skip=${skip}&limit=${limit}`,
       {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
+        extraOptions: {
+          ...options,
         },
       }
     );
-    return handleResponse<
-      IDataResponse<ICategory[]>,
-      IDataResponse<ICategory[]>
-    >(response);
   },
 
-  async createCampaign(data: ICampaignDataUpload) {
+  async createCampaign(
+    data: ICampaignDataUpload,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
     const campaignImg =
       typeof data.campaignImg === "string"
         ? data.campaignImg
@@ -219,18 +222,19 @@ export const CAMPAIGN_API = {
       campaignImg: campaignImg,
       gallery: gallery,
     };
-    const response = await fetch(`${API_BASE}/campaigns`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
+
+    return axiosInstance.post(`/campaigns`, submitData, {
+      extraOptions: {
+        ...options,
       },
-      body: JSON.stringify(submitData),
     });
-    return handleResponse<unknown, unknown>(response);
   },
 
-  async updateCampaign(id: string, data: ICampaignDataUpload) {
+  async updateCampaign(
+    id: string,
+    data: ICampaignDataUpload,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
     const campaignImg =
       typeof data.campaignImg === "string"
         ? data.campaignImg
@@ -245,30 +249,22 @@ export const CAMPAIGN_API = {
       campaignImg: campaignImg,
       gallery: gallery,
     };
-    const response = await fetch(`${API_BASE}/campaigns/${id}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
+    return axiosInstance.put(`/campaigns/${id}`, submitData, {
+      extraOptions: {
+        ...options,
       },
-      body: JSON.stringify(submitData),
     });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
   },
 
-  async getById(id: string) {
-    const response = await fetch(`${API_BASE}/campaigns/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
+  async getById(
+    id: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<ICampaignDataItem> {
+    return axiosInstance.get(`/campaigns/${id}`, {
+      extraOptions: {
+        ...options,
       },
     });
-    return handleResponse<
-      IDataResponse<ICampaignDataItem>,
-      IDataResponse<ICampaignDataItem>
-    >(response);
   },
 } as const;
 
