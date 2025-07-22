@@ -570,6 +570,8 @@ const TaskList: React.FC<TaskListProps> = ({
                                   sx={{ padding: "4px 8px" }}
                                   disabled={
                                     !au.submission ||
+                                    (!au.submission.content?.trim() &&
+                                      au.submission.images.length === 0) ||
                                     au.review?.status !== "pending"
                                   }
                                 >
