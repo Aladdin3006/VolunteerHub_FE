@@ -29,7 +29,7 @@ interface Campaign {
   description: string;
   startDate: Date | null;
   endDate: Date | null;
-  status: 'ongoing' | 'upcoming' | 'ended';
+  status: 'ongoing' | 'upcoming' | 'completed';
   imageUrl?: string;
   category: string[];
   registrationDate: Date | null;
@@ -110,7 +110,12 @@ const MyCampaignList: React.FC = () => {
             description: item.description || 'Không có mô tả',
             startDate: startDate && !isNaN(startDate.getTime()) ? startDate : null,
             endDate: endDate && !isNaN(endDate.getTime()) ? endDate : null,
-            status: item.status === 'in-progress' ? 'ongoing' : item.status,
+            status:
+              item.status === 'in-progress'
+                ? 'ongoing'
+                : item.status === 'ended'
+                  ? 'completed' // ✅ Thay 'ended' thành 'completed'
+                  : item.status,
             imageUrl: item.image || 'https://via.placeholder.com/400x200', // Fallback image
             category: item.categories || [],
             registrationDate:
@@ -146,8 +151,8 @@ const MyCampaignList: React.FC = () => {
   const categorizedCampaigns = useMemo(() => {
     const ongoing = campaigns.filter((c) => c.status === 'ongoing');
     const upcoming = campaigns.filter((c) => c.status === 'upcoming');
-    const ended = campaigns.filter((c) => c.status === 'ended');
-    return { ongoing, upcoming, ended };
+    const completed = campaigns.filter((c) => c.status === 'completed');
+    return { ongoing, upcoming, completed };
   }, [campaigns]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -170,7 +175,7 @@ const MyCampaignList: React.FC = () => {
     {
       label: 'Đã kết thúc',
       icon: <CheckCircle />,
-      campaigns: categorizedCampaigns.ended,
+      campaigns: categorizedCampaigns.completed,
       color: 'error',
     },
   ];

@@ -13,11 +13,11 @@ import {
   IFormPostFormData,
   IForumPostNewRef,
 } from "../../components/forum/ForumPostNew";
-import { FORUM_API, IUserShort } from "../../apis/forum";
+import { FORUM_API, IForumPostListItem, IUserShort } from "../../apis/forum";
 import { getLocalUser, toBase64 } from "../../apis/utils";
 
 type IProps = Omit<DialogProps, "open"> & {
-  afterSubmit?: (data: IFormPostFormData) => void;
+  afterSubmit?: (data: IForumPostListItem) => void;
 };
 
 export interface IForumPostNewDialogRef {
@@ -54,7 +54,9 @@ export const ForumPostNewDialog = forwardRef<IForumPostNewDialogRef, IProps>(
     const handleSubmitData = async (data: IFormPostFormData) => {
       try {
         const images = await Promise.all(
-          data.images.map((file) => toBase64(file))
+          data.images.map(({ file, url }) =>
+            file != null ? toBase64(file) : url
+          )
         );
         const res = await FORUM_API.createNewPost({
           title: data.title,
@@ -62,8 +64,9 @@ export const ForumPostNewDialog = forwardRef<IForumPostNewDialogRef, IProps>(
           images: images,
           tags: data.tags.map((tag) => tag._id),
         });
-        if (res.error == null) {
-          afterSubmit && afterSubmit(data);
+        if (res.data != null) {
+          afterSubmit &&
+            afterSubmit(res.data);
           close();
         } else {
           setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");

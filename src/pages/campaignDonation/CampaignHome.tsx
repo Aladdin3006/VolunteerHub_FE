@@ -42,7 +42,12 @@ const CampaignHome: React.FC = () => {
                     setFundraisingCampaigns(data);
                 } else {
                     const data = await getCampaignVolunteer();
-                    setVolunteerCampaigns(data);
+                    console.log("Fetched volunteer campaigns:", data); // 👈 Dòng cần thêm
+                    const inProgressOnly = Array.isArray(data)
+                        ? data.filter((c) => c.acceptStatus === "approved")
+                        : [];
+                    setVolunteerCampaigns(inProgressOnly);
+
                 }
             } catch (err) {
                 console.error("Fetch campaigns error:", err);
@@ -119,7 +124,7 @@ const CampaignHome: React.FC = () => {
             <Header />
             <Banner />
 
-            <Container maxWidth="xl"  sx={{ mb: 8 }}>
+            <Container maxWidth="xl" sx={{ mb: 8 }}>
                 {/* Tabs */}
                 <Tabs
                     value={activeTab}
