@@ -133,7 +133,7 @@ const ChatRoom: React.FC<{
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>
-        Trò chuyệntrong chiến dịch 
+        Trò chuyện trong chiến dịch 
         <IconButton onClick={onClose} sx={{ position: "absolute", right: 8, top: 8 }}>
           <CloseIcon />
         </IconButton>
