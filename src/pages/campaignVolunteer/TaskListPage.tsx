@@ -12,25 +12,40 @@ import {
   Chip,
   Card,
   CardContent,
+  Fab,
 } from '@mui/material';
-import { ExpandMore, ExpandLess } from '@mui/icons-material';
+import { ExpandMore, ExpandLess, Chat } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header/Header';
 import { fetchPhasesByCampaignId, fetchTasksByCampaignId, submitTaskApi } from '../../apis/phase';
 import TaskActionModal from './TaskActionModal';
 import { getCampaignVolunteerDetail } from '../../apis/campaign';
+import CampaignChatModal from '../../components/chat/CampaignChat';
+import { reportIssueApi } from '../../apis/issue'; 
 
 interface Task {
   _id: string;
   title: string;
   description: string;
-  submission?: {
+  status: {
     status: string;
   };
-  phaseDay: {
-    _id: string;
-    date: string;
-  };
+  assignedUsers: {
+    userId: string;
+    submission?: {
+      content: string;
+      images: string[];
+      submittedAt: string;
+      submittedBy: string;
+    };
+    review?: {
+      status: string;
+      evaluation?: string;
+      staffComment?: string;
+      reviewedBy?: string;
+      reviewedAt?: string;
+    };
+  }[];
 }
 
 interface PhaseDay {
@@ -59,6 +74,7 @@ const TaskListPage: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [campaignName, setCampaignName] = useState<string>('');
   const [campaignImageUrl, setCampaignImageUrl] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false); // Thêm trạng thái cho modal chat
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -98,26 +114,33 @@ const TaskListPage: React.FC = () => {
   };
 
   const handleSubmitTaskAction = async (taskId: string, content: string, images: File[]) => {
-    const userString = localStorage.getItem('user');
-    const token = userString ? JSON.parse(userString).token : null;
+    console.log('Đã submit:', { taskId, content, images, mode: modalMode }); 
+  const userString = localStorage.getItem('user');
+  const token = userString ? JSON.parse(userString).token : null;
 
-    if (!token || !taskId) {
-      alert('Thiếu token hoặc taskId!');
-      return;
-    }
+  if (!token || !taskId) {
+    alert('Thiếu token hoặc taskId!');
+    return;
+  }
 
-    try {
-      if (modalMode === 'complete') {
-        await submitTaskApi(taskId, content, images, token);
-      }
-      alert('Gửi thành công');
-    } catch (err) {
-      alert('Thất bại khi gửi');
-      console.error(err);
-    } finally {
-      setModalOpen(false);
+  try {
+    if (modalMode === 'complete') {
+      await submitTaskApi(taskId, content, images, token);
+      alert('Gửi hoàn thành nhiệm vụ thành công');
+    } else if (modalMode === 'report') {
+      const [title, ...descParts] = content.trim().split('\n');
+      const description = descParts.join('\n') || 'Không có mô tả chi tiết';
+      await reportIssueApi(title || 'Không có tiêu đề', description, taskId, token);
+      alert('Gửi báo cáo sự cố thành công');
     }
-  };
+  } catch (err) {
+    alert('Thất bại khi gửi');
+    console.error(err);
+  } finally {
+    setModalOpen(false);
+  }
+};
+
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -136,18 +159,6 @@ const TaskListPage: React.FC = () => {
 
         const phaseRes = await fetchPhasesByCampaignId(campaignId, token);
         const fetchedPhases = phaseRes.data.phases;
-
-        const fetchedTasks: Task[] = await fetchTasksByCampaignId(campaignId, token);
-
-        for (const phase of fetchedPhases) {
-          for (const day of phase.phaseDays) {
-            day.tasks = fetchedTasks.filter((task) =>
-              task.phaseDay &&
-              task.phaseDay.date === day.date &&
-              task.phaseDay.phaseName === phase.name
-            );
-          }
-        }
 
         setPhases(fetchedPhases);
         if (fetchedPhases.length > 0) setExpandedPhase(fetchedPhases[0]._id);
@@ -168,9 +179,9 @@ const TaskListPage: React.FC = () => {
       <Box sx={{ mt: 4, mb: 4 }}>
         <Card sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, textAlign: 'center' }}>
-              Nhiệm vụ trong chiến dịch:{' '}
-              <span style={{ color: '#4699ddff' }}>{campaignName}</span>
-            </Typography>
+            Nhiệm vụ trong chiến dịch:{' '}
+            <span style={{ color: '#4699ddff' }}>{campaignName}</span>
+          </Typography>
           <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {campaignImageUrl && (
               <img
@@ -325,6 +336,29 @@ const TaskListPage: React.FC = () => {
           </Box>
         ))}
       </List>
+
+      {/* Nút chat nổi (FAB) */}
+      <Fab
+        color="primary"
+        aria-label="chat"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          zIndex: 1200,
+          '&:hover': { transform: 'scale(1.1)', transition: 'transform 0.2s' },
+        }}
+        onClick={() => setChatOpen(true)}
+      >
+        <Chat />
+      </Fab>
+
+      {/* Modal chat chiến dịch */}
+      <CampaignChatModal
+        campaignId="665fabcd92cbe12beff12345"
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
 
       <TaskActionModal
         open={modalOpen}
