@@ -21,6 +21,7 @@ import { fetchPhasesByCampaignId, fetchTasksByCampaignId, submitTaskApi } from '
 import TaskActionModal from './TaskActionModal';
 import { getCampaignVolunteerDetail } from '../../apis/campaign';
 import CampaignChatModal from '../../components/chat/CampaignChat';
+import { reportIssueApi } from '../../apis/issue'; 
 
 interface Task {
   _id: string;
@@ -113,26 +114,33 @@ const TaskListPage: React.FC = () => {
   };
 
   const handleSubmitTaskAction = async (taskId: string, content: string, images: File[]) => {
-    const userString = localStorage.getItem('user');
-    const token = userString ? JSON.parse(userString).token : null;
+    console.log('Đã submit:', { taskId, content, images, mode: modalMode }); 
+  const userString = localStorage.getItem('user');
+  const token = userString ? JSON.parse(userString).token : null;
 
-    if (!token || !taskId) {
-      alert('Thiếu token hoặc taskId!');
-      return;
-    }
+  if (!token || !taskId) {
+    alert('Thiếu token hoặc taskId!');
+    return;
+  }
 
-    try {
-      if (modalMode === 'complete') {
-        await submitTaskApi(taskId, content, images, token);
-      }
-      alert('Gửi thành công');
-    } catch (err) {
-      alert('Thất bại khi gửi');
-      console.error(err);
-    } finally {
-      setModalOpen(false);
+  try {
+    if (modalMode === 'complete') {
+      await submitTaskApi(taskId, content, images, token);
+      alert('Gửi hoàn thành nhiệm vụ thành công');
+    } else if (modalMode === 'report') {
+      const [title, ...descParts] = content.trim().split('\n');
+      const description = descParts.join('\n') || 'Không có mô tả chi tiết';
+      await reportIssueApi(title || 'Không có tiêu đề', description, taskId, token);
+      alert('Gửi báo cáo sự cố thành công');
     }
-  };
+  } catch (err) {
+    alert('Thất bại khi gửi');
+    console.error(err);
+  } finally {
+    setModalOpen(false);
+  }
+};
+
 
   useEffect(() => {
     const fetchAll = async () => {
