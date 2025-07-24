@@ -13,10 +13,7 @@ import {
   Paper,
   Stack,
   Badge,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Avatar,
 } from "@mui/material";
 import {
   LocationOn,
@@ -26,11 +23,12 @@ import {
   Cancel,
   PlayCircle,
   StopCircle,
-  Image,
+  Image as ImageIcon,
 } from "@mui/icons-material";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import { managerCampaignService } from "../../apis/manager";
 import { Category } from "../../apis/campaign";
+import CampaignModal from "../../components/manager/CampaignModal";
 
 // Map settings
 const mapContainerStyle = {
@@ -47,9 +45,10 @@ interface Campaign {
     coordinates: [number, number];
     address: string;
   };
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | string;
+  endDate: Date | string;
   gallery: string[];
+  image: string;
   categories: Category[];
   status: "upcoming" | "in-progress" | "completed";
   acceptStatus: "pending" | "approved" | "rejected";
@@ -57,13 +56,14 @@ interface Campaign {
 
 const ManagerCampaign: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
+    | "all"
     | "pending"
     | "approved"
     | "rejected"
     | "upcoming"
     | "in-progress"
     | "completed"
-  >("pending");
+  >("all");
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
@@ -76,15 +76,18 @@ const ManagerCampaign: React.FC = () => {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
   });
 
-  // Fetch all campaigns on component mount
   useEffect(() => {
     const fetchAllCampaigns = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all campaigns without any filters
-        const data = await managerCampaignService.getListCampaigns({});
-        setAllCampaigns(data);
+        const data = await managerCampaignService.getListCampaigns();
+        const processedData = data.map((campaign) => ({
+          ...campaign,
+          startDate: new Date(campaign.startDate),
+          endDate: new Date(campaign.endDate),
+        }));
+        setAllCampaigns(processedData);
       } catch (err) {
         setError("Failed to load campaigns. Please try again later.");
         console.error("Error fetching campaigns:", err);
@@ -96,7 +99,6 @@ const ManagerCampaign: React.FC = () => {
     fetchAllCampaigns();
   }, []);
 
-  // Filter campaigns based on active tab
   useEffect(() => {
     if (allCampaigns.length === 0) {
       setFilteredCampaigns([]);
@@ -106,6 +108,9 @@ const ManagerCampaign: React.FC = () => {
     let filtered: Campaign[] = [];
 
     switch (activeTab) {
+      case "all":
+        filtered = allCampaigns;
+        break;
       case "pending":
         filtered = allCampaigns.filter(
           (campaign) => campaign.acceptStatus === "pending"
@@ -144,7 +149,7 @@ const ManagerCampaign: React.FC = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const data = await managerCampaignService.getListCampaigns({});
+      const data = await managerCampaignService.getListCampaigns();
       setAllCampaigns(data);
     } catch (error) {
       console.error("Error refreshing campaigns:", error);
@@ -154,19 +159,19 @@ const ManagerCampaign: React.FC = () => {
   const handleAction = async (action: Function, id: string) => {
     try {
       await action(id);
-      // Refresh campaigns after action
       await fetchCampaigns();
     } catch (error) {
       console.error("Action failed:", error);
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = date instanceof Date ? date : new Date(date);
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
-    }).format(date);
+    }).format(dateObj);
   };
 
   const getStatusColor = (status: string) => {
@@ -195,8 +200,13 @@ const ManagerCampaign: React.FC = () => {
     setIsDialogOpen(true);
   };
 
+  const truncateAddress = (address: string, maxLength = 25) => {
+    return address.length > maxLength
+      ? `${address.substring(0, maxLength)}...`
+      : address;
+  };
+
   const renderActionButtons = (campaign: Campaign) => {
-    // For pending campaigns - show approve/reject buttons
     if (campaign.acceptStatus === "pending") {
       return (
         <>
@@ -231,7 +241,6 @@ const ManagerCampaign: React.FC = () => {
       );
     }
 
-    // For approved campaigns - show start/end buttons based on status
     if (campaign.acceptStatus === "approved") {
       if (campaign.status === "upcoming") {
         return (
@@ -268,7 +277,6 @@ const ManagerCampaign: React.FC = () => {
       }
     }
 
-    // For rejected campaigns or completed campaigns - no actions
     return null;
   };
 
@@ -276,7 +284,6 @@ const ManagerCampaign: React.FC = () => {
     return (
       <Box
         sx={{
-          marginLeft: "280px",
           padding: "30px",
           minHeight: "100vh",
           backgroundColor: "#f5f5f5",
@@ -294,7 +301,6 @@ const ManagerCampaign: React.FC = () => {
     return (
       <Box
         sx={{
-          marginLeft: "280px",
           padding: "30px",
           minHeight: "100vh",
           backgroundColor: "#f5f5f5",
@@ -311,87 +317,162 @@ const ManagerCampaign: React.FC = () => {
   return (
     <Box
       sx={{
-        marginLeft: "280px",
+        justifyContent: "center",
         padding: "30px",
         minHeight: "100vh",
         backgroundColor: "#f5f5f5",
       }}
     >
-      {/* Header */}
-      <Box
+      {/* Header and Filter */}
+      <Paper
         sx={{
+          mb: 3,
+          p: 2,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 4,
-          marginTop: "40px",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2,
         }}
       >
         <Typography variant="h4" component="h1" fontWeight="bold">
           Campaign Management
         </Typography>
-      </Box>
 
-      {/* Debug Info */}
-      <Box sx={{ mb: 2, p: 2, bgcolor: "background.paper", borderRadius: 1 }}>
-        <Typography variant="body2" color="text.secondary">
-          Debug: Total campaigns: {allCampaigns.length}, Filtered:{" "}
-          {filteredCampaigns.length}, Active tab: {activeTab}
-        </Typography>
-      </Box>
-
-      {/* Tabs */}
-      <Paper sx={{ mb: 3 }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
-          sx={{ px: 2 }}
           variant="scrollable"
+          scrollButtons="auto"
+          sx={{ maxWidth: "100%" }}
         >
           <Tab
-            label={`Pending (${
-              allCampaigns.filter((c) => c.acceptStatus === "pending").length
-            })`}
+            label={
+              <Badge badgeContent={allCampaigns.length} color="default">
+                <Typography>Tất cả</Typography>
+              </Badge>
+            }
+            value="all"
+          />
+          <Tab
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.acceptStatus === "pending")
+                    .length
+                }
+                color="warning"
+              >
+                <Typography>Pending</Typography>
+              </Badge>
+            }
             value="pending"
           />
           <Tab
-            label={`Approved (${
-              allCampaigns.filter((c) => c.acceptStatus === "approved").length
-            })`}
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.acceptStatus === "approved")
+                    .length
+                }
+                color="success"
+              >
+                <Typography>Approved</Typography>
+              </Badge>
+            }
             value="approved"
           />
           <Tab
-            label={`Rejected (${
-              allCampaigns.filter((c) => c.acceptStatus === "rejected").length
-            })`}
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.acceptStatus === "rejected")
+                    .length
+                }
+                color="error"
+              >
+                <Typography>Rejected</Typography>
+              </Badge>
+            }
             value="rejected"
           />
           <Tab
-            label={`Upcoming (${
-              allCampaigns.filter((c) => c.status === "upcoming").length
-            })`}
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.status === "upcoming").length
+                }
+                color="info"
+              >
+                <Typography>Upcoming</Typography>
+              </Badge>
+            }
             value="upcoming"
           />
           <Tab
-            label={`In Progress (${
-              allCampaigns.filter((c) => c.status === "in-progress").length
-            })`}
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.status === "in-progress").length
+                }
+                color="info"
+              >
+                <Typography>In Progress</Typography>
+              </Badge>
+            }
             value="in-progress"
           />
           <Tab
-            label={`Completed (${
-              allCampaigns.filter((c) => c.status === "completed").length
-            })`}
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.status === "completed").length
+                }
+                color="primary"
+              >
+                <Typography>Completed</Typography>
+              </Badge>
+            }
             value="completed"
           />
         </Tabs>
       </Paper>
 
       {/* Campaign Cards */}
-      <Grid container spacing={3}>
+      <Grid
+        container
+        spacing={3}
+        sx={{
+          justifyContent: "center",
+          "& > .MuiGrid-item": {
+            flexGrow: 0,
+            flexShrink: 0,
+            flexBasis: {
+              xs: "100%",
+              sm: "calc(50% - 24px)",
+              md: "calc(33.33% - 24px)",
+              lg: "calc(20% - 24px)",
+            },
+            maxWidth: {
+              xs: "100%",
+              sm: "calc(50% - 24px)",
+              md: "calc(33.33% - 24px)",
+              lg: "calc(20% - 24px)",
+            },
+            padding: "12px !important",
+          },
+        }}
+      >
         {filteredCampaigns.length === 0 ? (
           <Grid>
-            <Paper sx={{ p: 4, textAlign: "center" }}>
+            <Paper
+              sx={{
+                p: 4,
+                textAlign: "center",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
               <Typography variant="h6" color="text.secondary">
                 No campaigns found for {activeTab} status
               </Typography>
@@ -399,49 +480,111 @@ const ManagerCampaign: React.FC = () => {
           </Grid>
         ) : (
           filteredCampaigns.map((campaign) => (
-            <Grid key={campaign._id}>
+            <Grid
+              key={campaign._id}
+              sx={{
+                flexBasis: "20%",
+                maxWidth: "20%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Card
                 sx={{
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
                   cursor: "pointer",
-                  "&:hover": { boxShadow: 3 },
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: 3,
+                  },
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  position: "relative",
+                  width: "100%", // Ensure card takes full width of its container
                 }}
                 onClick={() => openCampaignDetail(campaign)}
               >
-                <CardContent>
+                {/* Accept Status Tag */}
+                <Chip
+                  label={campaign.acceptStatus.toUpperCase()}
+                  color={getStatusColor(campaign.acceptStatus) as any}
+                  size="small"
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    zIndex: 1,
+                    fontWeight: "bold",
+                  }}
+                />
+
+                {/* Campaign Image */}
+                {campaign.image?.length > 0 ? (
                   <Box
                     sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mb: 2,
+                      height: 160,
+                      position: "relative",
+                      overflow: "hidden",
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      border: "1px solid #e0e0e0",
+                      m: 1,
+                      mt: 1.5,
                     }}
                   >
-                    <Chip
-                      label={campaign.acceptStatus.toUpperCase()}
-                      color={getStatusColor(campaign.acceptStatus) as any}
-                      size="small"
+                    <img
+                      src={campaign.image}
+                      alt={campaign.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
                     />
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      height: 160,
+                      bgcolor: "grey.200",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 1,
+                      m: 1,
+                      mt: 1.5,
+                      border: "1px solid #e0e0e0",
+                    }}
+                  >
+                    <ImageIcon fontSize="large" color="disabled" />
+                  </Box>
+                )}
+
+                <CardContent
+                  sx={{
+                    border: "1px solid #f0f0f0",
+                    borderRadius: 1,
+                    m: 1,
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <Box sx={{ mb: 2 }}>
                     <Chip
                       label={campaign.status.toUpperCase()}
                       color={getStatusColor(campaign.status) as any}
                       size="small"
+                      sx={{ width: "100%" }}
                     />
                   </Box>
 
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" gutterBottom noWrap>
                     {campaign.name}
-                  </Typography>
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    {campaign.description.length > 100
-                      ? `${campaign.description.substring(0, 100)}...`
-                      : campaign.description}
                   </Typography>
 
                   <Stack spacing={1} sx={{ mb: 2 }}>
@@ -451,8 +594,8 @@ const ManagerCampaign: React.FC = () => {
                         color="action"
                         sx={{ mr: 1 }}
                       />
-                      <Typography variant="caption">
-                        {campaign.location.address}
+                      <Typography variant="body2" noWrap>
+                        {truncateAddress(campaign.location.address)}
                       </Typography>
                     </Box>
 
@@ -462,7 +605,7 @@ const ManagerCampaign: React.FC = () => {
                         color="action"
                         sx={{ mr: 1 }}
                       />
-                      <Typography variant="caption">
+                      <Typography variant="body2">
                         {formatDate(campaign.startDate)} -{" "}
                         {formatDate(campaign.endDate)}
                       </Typography>
@@ -472,37 +615,60 @@ const ManagerCampaign: React.FC = () => {
                       <Box
                         sx={{
                           display: "flex",
-                          alignItems: "center",
-                          flexWrap: "wrap",
+                          flexDirection: "column",
                           gap: 1,
                         }}
                       >
-                        <CategoryIcon
-                          fontSize="small"
-                          color="action"
-                          sx={{ mr: 1 }}
-                        />
-                        {campaign.categories.map((category) => (
-                          <Chip
-                            key={category._id}
-                            label={category.name}
-                            size="small"
-                            sx={{ backgroundColor: category.color }}
-                            icon={
-                              <img
-                                src={category.icon}
-                                alt={category.name}
-                                style={{ width: 16, height: 16 }}
-                              />
-                            }
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <CategoryIcon
+                            fontSize="small"
+                            color="action"
+                            sx={{ mr: 1 }}
                           />
-                        ))}
+                        </Box>
+                        <Box
+                          sx={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(2, 1fr)",
+                            gap: 1,
+                          }}
+                        >
+                          {campaign.categories.map((category) => (
+                            <Chip
+                              key={category._id}
+                              label={category.name}
+                              size="small"
+                              sx={{
+                                backgroundColor: category.color,
+                                color: "white",
+                                "& .MuiChip-label": {
+                                  fontSize: "0.7rem",
+                                },
+                                maxWidth: "100%",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                              avatar={
+                                <Avatar
+                                  src={category.icon}
+                                  alt={category.name}
+                                  sx={{ width: 20, height: 20 }}
+                                />
+                              }
+                            />
+                          ))}
+                        </Box>
                       </Box>
                     )}
                   </Stack>
 
                   <Box
-                    sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-start",
+                      gap: 1,
+                      mt: "auto",
+                    }}
                   >
                     {renderActionButtons(campaign)}
                   </Box>
@@ -514,142 +680,16 @@ const ManagerCampaign: React.FC = () => {
       </Grid>
 
       {/* Campaign Detail Dialog */}
-      <Dialog
+      <CampaignModal
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        {selectedCampaign && (
-          <>
-            <DialogTitle>{selectedCampaign.name}</DialogTitle>
-            <DialogContent dividers>
-              <Typography variant="body1" gutterBottom>
-                {selectedCampaign.description}
-              </Typography>
-
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid>
-                  <Typography
-                    variant="subtitle1"
-                    gutterBottom
-                    sx={{ display: "flex", alignItems: "center" }}
-                  >
-                    <LocationOn sx={{ mr: 1 }} /> Location
-                  </Typography>
-                  {isLoaded ? (
-                    <GoogleMap
-                      mapContainerStyle={mapContainerStyle}
-                      center={{
-                        lat: selectedCampaign.location.coordinates[1],
-                        lng: selectedCampaign.location.coordinates[0],
-                      }}
-                      zoom={15}
-                    >
-                      <Marker
-                        position={{
-                          lat: selectedCampaign.location.coordinates[1],
-                          lng: selectedCampaign.location.coordinates[0],
-                        }}
-                      />
-                    </GoogleMap>
-                  ) : (
-                    <Box
-                      sx={{
-                        height: 200,
-                        bgcolor: "grey.200",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Typography>Loading map...</Typography>
-                    </Box>
-                  )}
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    {selectedCampaign.location.address}
-                  </Typography>
-                </Grid>
-
-                <Grid>
-                  <Typography
-                    variant="subtitle1"
-                    gutterBottom
-                    sx={{ display: "flex", alignItems: "center" }}
-                  >
-                    <DateRange sx={{ mr: 1 }} /> Dates
-                  </Typography>
-                  <Typography variant="body2">
-                    <strong>Start:</strong>{" "}
-                    {formatDate(selectedCampaign.startDate)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>End:</strong> {formatDate(selectedCampaign.endDate)}
-                  </Typography>
-
-                  <Typography
-                    variant="subtitle1"
-                    gutterBottom
-                    sx={{ display: "flex", alignItems: "center" }}
-                  >
-                    <CategoryIcon sx={{ mr: 1 }} /> Categories
-                  </Typography>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {selectedCampaign.categories.map((category) => (
-                      <Chip
-                        key={category._id}
-                        label={category.name}
-                        size="small"
-                        sx={{ backgroundColor: category.color }}
-                        icon={
-                          <img
-                            src={category.icon}
-                            alt={category.name}
-                            style={{ width: 16, height: 16 }}
-                          />
-                        }
-                      />
-                    ))}
-                  </Box>
-
-                  {selectedCampaign.gallery.length > 0 && (
-                    <>
-                      <Typography
-                        variant="subtitle1"
-                        gutterBottom
-                        sx={{ display: "flex", alignItems: "center", mt: 2 }}
-                      >
-                        <Image sx={{ mr: 1 }} /> Gallery
-                      </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        {selectedCampaign.gallery
-                          .slice(0, 3)
-                          .map((img, index) => (
-                            <img
-                              key={index}
-                              src={img}
-                              alt={`Gallery ${index + 1}`}
-                              style={{
-                                width: 80,
-                                height: 80,
-                                objectFit: "cover",
-                                borderRadius: 4,
-                              }}
-                            />
-                          ))}
-                      </Box>
-                    </>
-                  )}
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
-              {renderActionButtons(selectedCampaign)}
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
+        campaign={selectedCampaign}
+        isLoaded={isLoaded}
+        renderActionButtons={() =>
+          selectedCampaign ? renderActionButtons(selectedCampaign) : null
+        }
+        formatDate={formatDate}
+      />
     </Box>
   );
 };

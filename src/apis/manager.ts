@@ -14,6 +14,7 @@ export interface Campaign {
   startDate: Date;
   endDate: Date;
   gallery: string[];
+  image: string;
   categories: Category[];
   status: "upcoming" | "in-progress" | "completed";
   acceptStatus: "pending" | "approved" | "rejected";
@@ -29,15 +30,9 @@ const getAuthHeaders = () => {
 
 export const managerCampaignService = {
   // Get campaigns with filtering
-  getListCampaigns: async (
-    filters: {
-      status?: string;
-      acceptStatus?: string;
-    } = {}
-  ): Promise<Campaign[]> => {
-    const query = new URLSearchParams(filters).toString();
+  getListCampaigns: async (): Promise<Campaign[]> => {
     try {
-      const response = await fetch(`${API_BASE}/campaigns?${query}`, {
+      const response = await fetch(`${API_BASE}/campaigns?all=true`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -53,7 +48,6 @@ export const managerCampaignService = {
 
       // Extract campaigns from new response structure
       const campaignsData = result.result?.campaigns || [];
-
       return campaignsData.map((campaign: any) => ({
         ...campaign,
         _id: campaign._id || campaign.id,

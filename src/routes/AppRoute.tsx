@@ -23,7 +23,6 @@ import ThankYou from "../pages/campaignVolunteer/Thanhyou";
 
 import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetail";
 
-import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
 import NewDonationPage from "../pages/staff/NewDonationPage";
 import MyCampaignList from "@/pages/campaignVolunteer/MyCampaignList";
@@ -50,7 +49,7 @@ const AppRoutes = () => (
           if (user?.role === "organization")
             return <Navigate to="/staff" replace />;
           if (user?.role === "manager")
-            return <Navigate to="/manager/dashboard" replace />;
+            return <Navigate to="/manager/campaigns" replace />;
         }
 
         // Allow guest or normal user
@@ -130,15 +129,15 @@ const AppRoutes = () => (
       path="/myCampaign"
       element={
         <LayoutWrapper>
-          <MyCampaignList  />
+          <MyCampaignList />
         </LayoutWrapper>
       }
     />
-     <Route
+    <Route
       path="/campaigns/:id/tasks"
       element={
         <LayoutWrapper>
-          <TaskListPage  />
+          <TaskListPage />
         </LayoutWrapper>
       }
     />
@@ -260,29 +259,29 @@ const AppRoutes = () => (
               }
             />
             <Route
-                path="campaigns/:id"
-                element={
-                  <LayoutWrapper requireAuth={true} requiredRole="organization">
-                    <OverViewCampaign />
-                  </LayoutWrapper>
-                }
-              />
-              <Route
-                path="campaigns/:id/manage"
-                element={
-                  <LayoutWrapper requireAuth={true} requiredRole="organization">
-                    <ManagerCampaignStaff />
-                  </LayoutWrapper>
-                }
-              />
-              <Route
-                path="campaigns/:id/update"
-                element={
-                  <LayoutWrapper requireAuth={true} requiredRole="organization">
-                    <UpdateCampaignDialog />
-                  </LayoutWrapper>
-                }
-              />
+              path="campaigns/:id"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <OverViewCampaign />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="campaigns/:id/manage"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <ManagerCampaignStaff />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="campaigns/:id/update"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <UpdateCampaignDialog />
+                </LayoutWrapper>
+              }
+            />
             <Route
               path="donations/new"
               element={
@@ -398,14 +397,6 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute requiredRole="manager">
           <Routes>
-            <Route
-              path="dashboard"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="manager">
-                  <ManagerDashboard /> {/* Updated to use ManagerDashboard */}
-                </LayoutWrapper>
-              }
-            />
             <Route
               path="campaigns"
               element={
