@@ -21,7 +21,8 @@ import { fetchPhasesByCampaignId, fetchTasksByCampaignId, submitTaskApi } from '
 import TaskActionModal from './TaskActionModal';
 import { getCampaignVolunteerDetail } from '../../apis/campaign';
 import CampaignChatModal from '../../components/chat/CampaignChat';
-import { reportIssueApi } from '../../apis/issue'; 
+import { reportIssueApi } from '../../apis/issue';
+import {FaceCheckinModal} from './FaceCheckinModal';
 
 interface Task {
   _id: string;
@@ -75,6 +76,12 @@ const TaskListPage: React.FC = () => {
   const [campaignName, setCampaignName] = useState<string>('');
   const [campaignImageUrl, setCampaignImageUrl] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false); // Thêm trạng thái cho modal chat
+  const [chatOpen1, setChatOpen1] = useState(false);
+  const [checkinModalOpen, setCheckinModalOpen] = useState(false);
+  const [selectedPhaseDayId, setSelectedPhaseDayId] = useState<string | null>(null);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+
+
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -108,38 +115,39 @@ const TaskListPage: React.FC = () => {
     }, 3);
   };
 
-  const handleCheckIn = (phaseDayId: string) => {
-    console.log('Check-in cho PhaseDay:', phaseDayId);
-    // Placeholder cho logic API sau này
+  const handleCheckIn = (phaseId: string, phaseDayId: string) => {
+    setSelectedPhaseId(phaseId);
+    setSelectedPhaseDayId(phaseDayId);
+    setCheckinModalOpen(true);
   };
 
   const handleSubmitTaskAction = async (taskId: string, content: string, images: File[]) => {
-    console.log('Đã submit:', { taskId, content, images, mode: modalMode }); 
-  const userString = localStorage.getItem('user');
-  const token = userString ? JSON.parse(userString).token : null;
+    console.log('Đã submit:', { taskId, content, images, mode: modalMode });
+    const userString = localStorage.getItem('user');
+    const token = userString ? JSON.parse(userString).token : null;
 
-  if (!token || !taskId) {
-    alert('Thiếu token hoặc taskId!');
-    return;
-  }
-
-  try {
-    if (modalMode === 'complete') {
-      await submitTaskApi(taskId, content, images, token);
-      alert('Gửi hoàn thành nhiệm vụ thành công');
-    } else if (modalMode === 'report') {
-      const [title, ...descParts] = content.trim().split('\n');
-      const description = descParts.join('\n') || 'Không có mô tả chi tiết';
-      await reportIssueApi(title || 'Không có tiêu đề', description, taskId, token);
-      alert('Gửi báo cáo sự cố thành công');
+    if (!token || !taskId) {
+      alert('Thiếu token hoặc taskId!');
+      return;
     }
-  } catch (err) {
-    alert('Thất bại khi gửi');
-    console.error(err);
-  } finally {
-    setModalOpen(false);
-  }
-};
+
+    try {
+      if (modalMode === 'complete') {
+        await submitTaskApi(taskId, content, images, token);
+        alert('Gửi hoàn thành nhiệm vụ thành công');
+      } else if (modalMode === 'report') {
+        const [title, ...descParts] = content.trim().split('\n');
+        const description = descParts.join('\n') || 'Không có mô tả chi tiết';
+        await reportIssueApi(title || 'Không có tiêu đề', description, taskId, token);
+        alert('Gửi báo cáo sự cố thành công');
+      }
+    } catch (err) {
+      alert('Thất bại khi gửi');
+      console.error(err);
+    } finally {
+      setModalOpen(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -259,7 +267,7 @@ const TaskListPage: React.FC = () => {
                             variant="contained"
                             size="small"
                             color="info"
-                            onClick={() => handleCheckIn(day._id)}
+                            onClick={() => handleCheckIn(phase._id, day._id)}
                           >
                             Check-in
                           </Button>
@@ -353,12 +361,49 @@ const TaskListPage: React.FC = () => {
         <Chat />
       </Fab>
 
-      {/* Modal chat chiến dịch */}
-      <CampaignChatModal
-        campaignId="665fabcd92cbe12beff12345"
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-      />
+      <Fab
+        color="secondary"
+        aria-label="open-chat"
+        onClick={() => setChatOpen1(true)}
+        sx={{
+          position: 'fixed',
+          bottom: 100,
+          right: 26,
+          zIndex: 1300,
+        }}
+      >
+        <Chat />
+      </Fab>
+
+      {chatOpen1 && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 90, // cách mép dưới một chút để không đè nút FAB
+            right: 25,
+            width: 360,
+            height: 480,
+            zIndex: 1400,
+            boxShadow: 6,
+            borderRadius: 2,
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            border: '2px solid #1976d2'
+          }}
+        >
+          {/* Nút đóng ở góc trong modal */}
+          <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1500 }}>
+            <Button size="small" onClick={() => setChatOpen1(false)}>
+              Đóng
+            </Button>
+          </Box>
+
+          <CampaignChatModal campaignId={campaignId || ''} />
+        </Box>
+      )}
+
+
+
 
       <TaskActionModal
         open={modalOpen}
@@ -367,6 +412,17 @@ const TaskListPage: React.FC = () => {
         taskId={selectedTaskId}
         onSubmit={handleSubmitTaskAction}
       />
+
+      {checkinModalOpen && selectedPhaseId && selectedPhaseDayId && (
+        <FaceCheckinModal
+          open={checkinModalOpen}
+          onClose={() => setCheckinModalOpen(false)}
+          campaignId={campaignId || ""}
+          phaseId={selectedPhaseId}
+          phaseDayId={selectedPhaseDayId}
+        />
+      )}
+
     </Container>
   );
 };

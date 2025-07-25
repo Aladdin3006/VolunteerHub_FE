@@ -852,17 +852,7 @@ const OverViewCampaign: React.FC = () => {
                 >
                   Cập nhật chiến dịch
                 </Button>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  className="action-button"
-                  disabled={isCompleted}
-                  sx={{
-                    opacity: isCompleted ? 0.7 : 1,
-                  }}
-                >
-                  Chat nhóm chiến dịch
-                </Button>
+                
               </Box>
             </Box>
 
