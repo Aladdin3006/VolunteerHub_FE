@@ -33,6 +33,8 @@ import TaskListPage from "../pages/campaignVolunteer/TaskListPage";
 import OverViewCampaign from "@/components/staff/OverViewCampaign";
 import { UpdateCampaignDialog } from "@/components/staff/UpdateCampaignDialog";
 
+import ReliefPointManager from "@/pages/manager/reliefPointManager/ReliefPointManager";
+
 const AppRoutes = () => (
   <Routes>
     {/* Public Routes */}
@@ -406,17 +408,10 @@ const AppRoutes = () => (
               }
             />
             <Route
-              path="reports"
+              path="storms"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="manager">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Reports
-                    </h1>
-                    <p className="text-gray-600">
-                      Generate and view system reports.
-                    </p>
-                  </div>
+                 <ReliefPointManager/>
                 </LayoutWrapper>
               }
             />
