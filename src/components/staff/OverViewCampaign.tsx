@@ -1,75 +1,93 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Button,
   Box,
   Typography,
   Chip,
   List,
   ListItem,
   ListItemText,
-  IconButton,
   Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   CircularProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Tabs,
+  Tab,
+  DialogActions,
+  Badge,
 } from "@mui/material";
 import {
-  Close as CloseIcon,
   LocationOn as LocationOnIcon,
   CalendarToday as CalendarTodayIcon,
   Category as CategoryIcon,
   Info as InfoIcon,
   ExpandMore as ExpandMoreIcon,
+  ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
-import { Campaign } from "../../apis/staff";
-import { getPhasesByCampaignId } from "../../apis/staff";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Campaign,
+  getStaffCampaigns,
+  getPhasesByCampaignId,
+  Phase,
+  PhaseDay,
+} from "../../apis/staff";
 import ImageGallery from "@/components/image/ImageGallery";
 import CheckInDialog from "@/components/staff/CheckInDialog";
+import {
+  IUpdateCampaignDialogRef,
+  UpdateCampaignDialog,
+} from "../../components/staff/UpdateCampaignDialog";
+import CreatePhaseModal from "../../components/staff/CreatePhaseModal";
+import ManageTask from "../../components/staff/ManageTask";
+import DepartmentManager from "../../components/staff/DepartmentManager";
+import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import "./OverViewCampaign.css";
+import CampaignChatModal from "../chat/CampaignChat";
 
-interface Phase {
-  _id: string;
-  name: string;
-  description: string;
-  startDate: Date;
-  endDate: Date;
-  phaseDays: PhaseDay[];
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
-interface PhaseDay {
-  _id: string;
-  date: Date;
-  checkinLocation: {
-    coordinates: [number, number];
-    address: string;
-  };
-}
+const TabPanel: React.FC<TabPanelProps> = ({
+  children,
+  value,
+  index,
+  ...other
+}) => (
+  <div
+    role="tabpanel"
+    hidden={value !== index}
+    id={`simple-tabpanel-${index}`}
+    aria-labelledby={`simple-tab-${index}`}
+    {...other}
+  >
+    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+  </div>
+);
 
-interface OverViewCampaignProps {
-  campaign: Campaign;
-  open: boolean;
-  onClose: () => void;
-  onOpenManagement: (tabIndex?: number) => void;
-  onOpenUpdateCampaign: (campaignId: string) => void;
-}
-
-const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
-  campaign,
-  open,
-  onClose,
-  onOpenManagement,
-  onOpenUpdateCampaign,
-}) => {
+const OverViewCampaign: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loadingPhases, setLoadingPhases] = useState(false);
+  const [loadingCampaign, setLoadingCampaign] = useState(true);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
-  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(null);
+  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
+    null
+  );
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const updateCampaignDialogRef = useRef<IUpdateCampaignDialogRef | null>(null);
 
   const truncateDescription = (text: string, maxLength: number = 100) => {
     if (!text) return "No description available";
@@ -85,32 +103,58 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
     });
   };
 
-  useEffect(() => {
-    if (open && campaign?._id) {
-      fetchPhases();
-    }
-  }, [open, campaign?._id]);
-
-  const fetchPhases = async () => {
-    try {
-      setLoadingPhases(true);
-      const data = await getPhasesByCampaignId(campaign._id);
-      const formattedPhases = data.map((phase) => ({
-        ...phase,
-        startDate: new Date(phase.startDate),
-        endDate: new Date(phase.endDate),
-        phaseDays: phase.phaseDays.map((day) => ({
-          ...day,
-          date: new Date(day.date),
-        })),
-      }));
-      setPhases(formattedPhases);
-    } catch (error) {
-      console.error("Error fetching phases:", error);
-    } finally {
-      setLoadingPhases(false);
-    }
+  const isPhaseInProgress = (phase: Phase) => {
+    return phase.status === "in-progress";
   };
+
+  const isPhaseDayInProgress = (day: PhaseDay) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize to start of day
+    const dayDate = new Date(day.date);
+    dayDate.setHours(0, 0, 0, 0);
+    return now.getTime() === dayDate.getTime(); // Check if it's the current day
+  };
+
+  useEffect(() => {
+    const fetchCampaign = async () => {
+      if (!id) return;
+      try {
+        setLoadingCampaign(true);
+        const campaigns = await getStaffCampaigns();
+        const selectedCampaign = campaigns.find((c) => c._id === id);
+        setCampaign(selectedCampaign || null);
+      } catch (error) {
+        console.error("Error fetching campaign:", error);
+      } finally {
+        setLoadingCampaign(false);
+      }
+    };
+
+    const fetchPhases = async () => {
+      if (!id) return;
+      try {
+        setLoadingPhases(true);
+        const data = await getPhasesByCampaignId(id);
+        const formattedPhases = data.map((phase) => ({
+          ...phase,
+          startDate: new Date(phase.startDate),
+          endDate: new Date(phase.endDate),
+          phaseDays: phase.phaseDays.map((day) => ({
+            ...day,
+            date: new Date(day.date),
+          })),
+        }));
+        setPhases(formattedPhases);
+      } catch (error) {
+        console.error("Error fetching phases:", error);
+      } finally {
+        setLoadingPhases(false);
+      }
+    };
+
+    fetchCampaign();
+    fetchPhases();
+  }, [id]);
 
   const handleOpenCheckInDialog = (phase: Phase, phaseDay: PhaseDay) => {
     setSelectedPhase(phase);
@@ -124,6 +168,34 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
     setSelectedPhaseDay(null);
   };
 
+  const handleOpenManagement = (tabIndex: number = 0) => {
+    setModalOpen(true);
+    setActiveTab(tabIndex);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const handleOpenUpdateCampaign = (campaignId: string) => {
+    updateCampaignDialogRef.current?.open(campaignId);
+  };
+
+  const handleAfterSubmit = async () => {
+    if (!id) return;
+    try {
+      const campaigns = await getStaffCampaigns();
+      const selectedCampaign = campaigns.find((c) => c._id === id);
+      setCampaign(selectedCampaign || null);
+    } catch (error) {
+      console.error("Error refreshing campaign:", error);
+    }
+  };
+
   // Map configuration
   const mapContainerStyle = {
     width: "100%",
@@ -131,39 +203,69 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
     borderRadius: "8px",
   };
 
-  const center = campaign.location?.coordinates
+  const center = campaign?.location?.coordinates
     ? {
         lat: campaign.location.coordinates[0],
         lng: campaign.location.coordinates[1],
       }
     : { lat: 10.7769, lng: 106.7009 }; // Default to Ho Chi Minh City if no coordinates
 
-  const mapEmbedUrl = campaign.location?.coordinates
-    ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${center.lng}!3d${center.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(
+  const mapEmbedUrl = campaign?.location?.coordinates
+    ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${
+        center.lng
+      }!3d${
+        center.lat
+      }!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(
         `${center.lat},${center.lng}`
       )}!5e0!3m2!1sen!2sus!4v1634567890123`
     : "";
 
-  // Check if campaign is in-progress or completed
-  const isInProgress = campaign.status === "in-progress";
-  const isCompleted = campaign.status === "completed";
+  const isInProgress = campaign?.status === "in-progress";
+  const isCompleted = campaign?.status === "completed";
+
+  if (loadingCampaign) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          mt: 4,
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <Box sx={{ p: 4, textAlign: "center", minHeight: "100vh" }}>
+        <Typography variant="h6" color="textSecondary">
+          Campaign not found
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/staff")}
+          sx={{ mt: 2 }}
+          className="action-button"
+        >
+          Back to Management
+        </Button>
+      </Box>
+    );
+  }
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xl"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 4,
-          maxHeight: "95vh",
-          background: "linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%)",
-          overflow: "hidden",
-        },
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#f8f9fa",
+        p: { xs: 2, sm: 4 },
+        position: "relative",
       }}
     >
-      <DialogTitle
+      <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
@@ -172,7 +274,8 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
           color: "white",
           px: 3,
           py: 1.5,
-          borderRadius: "16px 16px 0 0",
+          borderRadius: "16px",
+          mb: 4,
         }}
       >
         <Typography
@@ -185,27 +288,28 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
             overflow: "hidden",
             textOverflow: "ellipsis",
             pr: 2,
-            mt: 3,
           }}
         >
           {campaign.name || "No campaign name"}
         </Typography>
-        <IconButton
-          onClick={onClose}
+        <Button
+          variant="contained"
+          onClick={() => navigate("/staff")}
+          startIcon={<ArrowBackIcon />}
           sx={{
+            background: "rgba(255,255,255,0.2)",
             color: "white",
-            p: 0.5,
             "&:hover": {
-              backgroundColor: "rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.3)",
               transform: "scale(1.1)",
             },
             transition: "all 0.3s ease",
           }}
         >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent sx={{ bgcolor: "#f8f9fa", p: 4, mt: 4, height: "100%" }}>
+          Back to Management
+        </Button>
+      </Box>
+      <Box sx={{ p: 4, mt: 4 }}>
         <div className="campaign-grid">
           {/* Column 1: Description and Details */}
           <div className="campaign-column left-column">
@@ -444,13 +548,54 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
               ) : phases.length > 0 ? (
                 <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>
                   {phases.map((phase) => (
-                    <Accordion key={phase._id} sx={{ mb: 2 }}>
+                    <Accordion
+                      key={phase._id}
+                      sx={{
+                        mb: 2,
+                        bgcolor: isPhaseInProgress(phase)
+                          ? "rgba(46, 125, 50, 0.15)"
+                          : "inherit",
+                        border: isPhaseInProgress(phase)
+                          ? "1px solid rgba(46, 125, 50, 0.5)"
+                          : "none",
+                        borderRadius: "8px",
+                      }}
+                    >
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography fontWeight="bold">{phase.name}</Typography>
-                        <Typography sx={{ color: "text.secondary", ml: 2 }}>
-                          {formatDate(phase.startDate)} -{" "}
-                          {formatDate(phase.endDate)}
-                        </Typography>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Typography fontWeight="bold">
+                            {phase.name}
+                          </Typography>
+                          <Typography sx={{ color: "text.secondary", ml: 2 }}>
+                            {formatDate(phase.startDate)} -{" "}
+                            {formatDate(phase.endDate)}
+                          </Typography>
+                          {isPhaseInProgress(phase) && (
+                            <Badge
+                              badgeContent="In Progress"
+                              color="success"
+                              sx={{
+                                "& .MuiBadge-badge": {
+                                  fontSize: "0.75rem",
+                                  height: "20px",
+                                  minWidth: "80px",
+                                  padding: "0 8px",
+                                  borderRadius: "12px",
+                                  backgroundColor: "#2e7d32",
+                                },
+                                ".MuiBadge-anchorOriginTopRight": {
+                                  position: "static",
+                                  transform: "none",
+                                  marginLeft: "8px",
+                                },
+                              }}
+                            >
+                              <Box />
+                            </Badge>
+                          )}
+                        </Box>
                       </AccordionSummary>
                       <AccordionDetails>
                         <Typography variant="body2" paragraph>
@@ -469,13 +614,25 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                                   <Button
                                     variant="contained"
                                     size="small"
-                                    onClick={() => handleOpenCheckInDialog(phase, day)}
+                                    onClick={() =>
+                                      handleOpenCheckInDialog(phase, day)
+                                    }
                                     disabled={isCompleted}
                                     sx={{
                                       textTransform: "none",
                                       fontWeight: "bold",
                                       borderRadius: 3,
                                       opacity: isCompleted ? 0.7 : 1,
+                                      backgroundColor: isPhaseDayInProgress(day)
+                                        ? "#2e7d32"
+                                        : "#667eea",
+                                      "&:hover": {
+                                        backgroundColor: isPhaseDayInProgress(
+                                          day
+                                        )
+                                          ? "#1b5e20"
+                                          : "#5a6fd8",
+                                      },
                                     }}
                                   >
                                     View CheckIn
@@ -483,12 +640,60 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                                 }
                               >
                                 <ListItemText
-                                  primary={formatDate(day.date)}
+                                  primary={
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 1,
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          color: isPhaseDayInProgress(day)
+                                            ? "#2e7d32"
+                                            : "inherit",
+                                          fontWeight: isPhaseDayInProgress(day)
+                                            ? "bold"
+                                            : "normal",
+                                        }}
+                                      >
+                                        {formatDate(day.date)}
+                                      </Typography>
+                                      {isPhaseDayInProgress(day) && (
+                                        <Badge
+                                          badgeContent="Today"
+                                          color="success"
+                                          sx={{
+                                            "& .MuiBadge-badge": {
+                                              fontSize: "0.65rem",
+                                              height: "18px",
+                                              minWidth: "50px",
+                                              padding: "0 6px",
+                                              borderRadius: "10px",
+                                              backgroundColor: "#2e7d32",
+                                            },
+                                            ".MuiBadge-anchorOriginTopRight": {
+                                              position: "static",
+                                              transform: "none",
+                                            },
+                                          }}
+                                        >
+                                          <Box />
+                                        </Badge>
+                                      )}
+                                    </Box>
+                                  }
                                   secondary={
                                     <>
                                       <Typography
                                         component="span"
                                         variant="body2"
+                                        sx={{
+                                          color: isPhaseDayInProgress(day)
+                                            ? "#2e7d32"
+                                            : "text.secondary",
+                                        }}
                                       >
                                         {day.checkinLocation?.address ||
                                           "No address"}
@@ -497,7 +702,11 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                                       <Typography
                                         component="span"
                                         variant="body2"
-                                        color="text.secondary"
+                                        sx={{
+                                          color: isPhaseDayInProgress(day)
+                                            ? "#2e7d32"
+                                            : "text.secondary",
+                                        }}
                                       >
                                         {day.checkinLocation?.coordinates
                                           ? `(${day.checkinLocation.coordinates[0].toFixed(
@@ -574,7 +783,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(0)}
+                  onClick={() => handleOpenManagement(0)}
                   className="action-button"
                   disabled={isCompleted}
                   sx={{
@@ -586,7 +795,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(1)}
+                  onClick={() => handleOpenManagement(1)}
                   className="action-button"
                   disabled={isCompleted}
                   sx={{
@@ -598,7 +807,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(2)}
+                  onClick={() => handleOpenManagement(2)}
                   className="action-button"
                   disabled={isCompleted}
                   sx={{
@@ -610,7 +819,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(3)}
+                  onClick={() => handleOpenManagement(3)}
                   className="action-button"
                   disabled={isCompleted}
                   sx={{
@@ -622,7 +831,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenManagement(4)}
+                  onClick={() => handleOpenManagement(4)}
                   className="action-button"
                   disabled={isCompleted}
                   sx={{
@@ -634,7 +843,7 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={() => onOpenUpdateCampaign(campaign._id)}
+                  onClick={() => handleOpenUpdateCampaign(campaign._id)}
                   className="action-button"
                   disabled={isCompleted}
                   sx={{
@@ -643,8 +852,27 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
                 >
                   Cập nhật chiến dịch
                 </Button>
+                
               </Box>
             </Box>
+
+            {/* Chat Section - Only show when campaign is in-progress */}
+            {campaign?.status === "in-progress" && (
+              <Box className="campaign-card">
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  color="primary"
+                  gutterBottom
+                  sx={{ mb: 3 }}
+                >
+                  Trò chuyện trong chiến dịch
+                </Typography>
+                <Box sx={{ height: "400px", overflow: "hidden" }}>
+                  <CampaignChatModal campaignId={campaign._id} />
+                </Box>
+              </Box>
+            )}
 
             {/* Location Map */}
             <Box className="campaign-card">
@@ -679,8 +907,89 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
             </Box>
           </div>
         </div>
-      </DialogContent>
-      {selectedPhase && selectedPhaseDay && (
+      </Box>
+
+      {/* Management Modal */}
+      {campaign && (
+        <Dialog
+          open={modalOpen}
+          onClose={handleCloseModal}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle sx={{ textAlign: "center" }}>
+            Manage "{campaign.name}" - "
+            {
+              {
+                0: "Phases",
+                1: "Tasks",
+                2: "CheckIn",
+                3: "Departments",
+                4: "Volunteers",
+              }[activeTab]
+            }
+            "
+          </DialogTitle>
+          <DialogContent>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              aria-label="campaign management tabs"
+            >
+              <Tab label="Phases" />
+              <Tab label="Tasks" />
+              <Tab label="CheckIn" />
+              <Tab label="Departments" />
+              <Tab label="Volunteers" />
+            </Tabs>
+            <TabPanel value={activeTab} index={0}>
+              <CreatePhaseModal
+                campaignId={campaign._id}
+                open={activeTab === 0}
+                onClose={handleCloseModal}
+                selectedCampaign={campaign}
+              />
+            </TabPanel>
+            <TabPanel value={activeTab} index={1}>
+              <ManageTask campaignId={campaign._id} />
+            </TabPanel>
+            <TabPanel value={activeTab} index={2}>
+              <CheckInDialog
+                open={activeTab === 2}
+                onClose={handleCloseModal}
+                campaignId={campaign._id}
+                phase={selectedPhase}
+                phaseDay={selectedPhaseDay}
+                onPhaseSelect={setSelectedPhase}
+                onPhaseDaySelect={setSelectedPhaseDay}
+                selectedCampaign={{ name: campaign.name || "Campaign" }}
+              />
+            </TabPanel>
+            <TabPanel value={activeTab} index={3}>
+              <DepartmentManager campaignId={campaign._id} />
+            </TabPanel>
+            <TabPanel value={activeTab} index={4}>
+              <VolunteerRequestsModal
+                open={activeTab === 4}
+                onClose={handleCloseModal}
+                campaignId={campaign._id}
+                selectedCampaign={{
+                  name: campaign.name || "Campaign",
+                }}
+                onTabChange={(tabIndex) => {
+                  setActiveTab(tabIndex);
+                }}
+              />
+            </TabPanel>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseModal}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* CheckIn Dialog */}
+      {campaign && selectedPhase && selectedPhaseDay && (
         <CheckInDialog
           open={checkInDialogOpen}
           onClose={handleCloseCheckInDialog}
@@ -692,7 +1001,15 @@ const OverViewCampaign: React.FC<OverViewCampaignProps> = ({
           selectedCampaign={{ name: campaign.name || "Campaign" }}
         />
       )}
-    </Dialog>
+
+      {/* Update Campaign Dialog */}
+      {campaign && (
+        <UpdateCampaignDialog
+          ref={updateCampaignDialogRef}
+          afterSubmit={handleAfterSubmit}
+        />
+      )}
+    </Box>
   );
 };
 

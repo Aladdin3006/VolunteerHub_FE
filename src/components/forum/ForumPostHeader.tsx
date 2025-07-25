@@ -13,6 +13,7 @@ import {
   Bookmark,
   CloseOutlined,
   Delete,
+  Edit,
   MoreHorizOutlined,
   OutlinedFlagOutlined,
   VisibilityOffOutlined,
@@ -28,11 +29,12 @@ interface IProps extends StackProps {
   onSave?: () => void;
   onReport?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
 export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
   (props, ref) => {
-    const { post, onHide, onSave, onReport, onDelete, ...rest } = props;
+    const { post, onHide, onSave, onReport, onDelete, onEdit, ...rest } = props;
     const { createdBy } = post;
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -44,7 +46,9 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
       setAnchorEl(null);
     };
 
-    const actionVisible = Boolean(onSave || onReport || onHide || onDelete);
+    const actionVisible = Boolean(
+      onSave || onReport || onHide || onDelete || onEdit
+    );
 
     return (
       <Stack ref={ref} direction={"row"} gap={1} {...rest}>
@@ -138,6 +142,17 @@ export const ForumPostHeader = forwardRef<HTMLDivElement, IProps>(
                   sx={{ gap: 2 }}
                 >
                   <Delete color="error" /> Xóa bài viết
+                </MenuItem>
+              )}
+              {onEdit && (
+                <MenuItem
+                  onClick={() => {
+                    onEdit();
+                    handleClose();
+                  }}
+                  sx={{ gap: 2 }}
+                >
+                  <Edit color="secondary" /> Chỉnh sửa
                 </MenuItem>
               )}
               {onSave && (

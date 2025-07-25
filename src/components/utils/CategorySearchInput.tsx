@@ -66,6 +66,7 @@ const CategorySearchInput: React.FC<IProps> = ({
       options={options}
       loading={loading}
       value={value || null}
+      inputValue={inputValue}
       onChange={(_, newValue) => {
         setInputValue("");
         onChange(newValue);

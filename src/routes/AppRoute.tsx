@@ -31,6 +31,8 @@ import ForumPage from "../pages/forum/ForumPage";
 import ManagerCampaignStaff from "../pages/staff/ManagerCampaignStaff";
 import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
 import TaskListPage from "../pages/campaignVolunteer/TaskListPage";
+import OverViewCampaign from "@/components/staff/OverViewCampaign";
+import { UpdateCampaignDialog } from "@/components/staff/UpdateCampaignDialog";
 
 const AppRoutes = () => (
   <Routes>
@@ -257,6 +259,30 @@ const AppRoutes = () => (
                 </LayoutWrapper>
               }
             />
+            <Route
+                path="campaigns/:id"
+                element={
+                  <LayoutWrapper requireAuth={true} requiredRole="organization">
+                    <OverViewCampaign />
+                  </LayoutWrapper>
+                }
+              />
+              <Route
+                path="campaigns/:id/manage"
+                element={
+                  <LayoutWrapper requireAuth={true} requiredRole="organization">
+                    <ManagerCampaignStaff />
+                  </LayoutWrapper>
+                }
+              />
+              <Route
+                path="campaigns/:id/update"
+                element={
+                  <LayoutWrapper requireAuth={true} requiredRole="organization">
+                    <UpdateCampaignDialog />
+                  </LayoutWrapper>
+                }
+              />
             <Route
               path="donations/new"
               element={

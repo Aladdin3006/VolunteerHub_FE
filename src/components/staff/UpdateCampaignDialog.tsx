@@ -12,10 +12,7 @@ import {
   Skeleton,
 } from "@mui/material";
 import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
-import {
-  CampaignForm,
-  ICampaignFormData,
-} from "../campaign/CampaignForm";
+import { CampaignForm, ICampaignFormData } from "../campaign/CampaignForm";
 import { Close } from "@mui/icons-material";
 import useLoaderState from "../../pages/forum/useLoaderState";
 import ErrorMessage from "../utils/ErrorMessage";
@@ -56,14 +53,13 @@ export const UpdateCampaignDialog = forwardRef<
         })),
         categories: data.categories,
         campaignImg: {
-          url: data.campaignImg,
+          url: data.image,
           type: "image",
         },
         name: data.name,
         endDate: new Date(data.endDate),
         location: data.location,
         startDate: new Date(data.startDate),
-        phases: data.phases,
       });
       setState("success");
     } catch (error) {
