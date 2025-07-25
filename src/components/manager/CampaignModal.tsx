@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,7 +9,6 @@ import {
   Typography,
   Chip,
   Avatar,
-  Divider,
   useTheme,
   Paper,
 } from "@mui/material";
@@ -23,6 +22,11 @@ import {
   CheckCircle,
   Description,
 } from "@mui/icons-material";
+import ImageGallery from "@/components/image/ImageGallery";
+import { Certificate, certificateService } from "@/apis/certificate";
+import Slider, { Settings } from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 interface Category {
   _id: string;
@@ -59,6 +63,31 @@ const CampaignModal: React.FC<{
 }> = ({ open, onClose, campaign, renderActionButtons, formatDate }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loadingCertificates, setLoadingCertificates] = useState(false);
+
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      if (campaign && campaign.status === "completed") {
+        setLoadingCertificates(true);
+        try {
+          const certs = await certificateService.getCertificatesByCampaign(
+            campaign._id
+          );
+          setCertificates(certs);
+        } catch (error) {
+          console.error("Failed to fetch certificates:", error);
+          setCertificates([]);
+        } finally {
+          setLoadingCertificates(false);
+        }
+      } else {
+        setCertificates([]);
+      }
+    };
+
+    fetchCertificates();
+  }, [campaign]);
 
   if (!campaign) return null;
 
@@ -180,6 +209,7 @@ const CampaignModal: React.FC<{
           </Box>
         )}
 
+        {/* Gallery Section */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="subtitle1"
@@ -236,6 +266,7 @@ const CampaignModal: React.FC<{
           </Box>
         </Box>
 
+        {/* Description Section */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="subtitle1"
@@ -280,6 +311,7 @@ const CampaignModal: React.FC<{
           </Paper>
         </Box>
 
+        {/* Time Section */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="subtitle1"
@@ -318,6 +350,7 @@ const CampaignModal: React.FC<{
           </Paper>
         </Box>
 
+        {/* Location Section */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="subtitle1"
@@ -360,17 +393,16 @@ const CampaignModal: React.FC<{
                     ></iframe>
                   </Box>
                 ) : (
-                  <Box className="no-data-container">
-                    <Typography variant="body1" color="text.secondary">
-                      No location coordinates available
-                    </Typography>
-                  </Box>
+                  <Typography variant="body1" color="text.secondary">
+                    No location coordinates available
+                  </Typography>
                 )}
               </Box>
             </Box>
           </Paper>
         </Box>
 
+        {/* Categories Section */}
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="subtitle1"
@@ -401,6 +433,117 @@ const CampaignModal: React.FC<{
             ))}
           </Box>
         </Box>
+
+        {/* Certificates Section */}
+        {campaign.status === "completed" && (
+          <Box sx={{ mb: 4 }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight="bold"
+              gutterBottom
+              sx={{ display: "flex", alignItems: "center" }}
+            >
+              <ImageIcon sx={{ mr: 1, color: theme.palette.primary.main }} />{" "}
+              Chứng chỉ
+            </Typography>
+            <Paper
+              elevation={1}
+              sx={{
+                p: 3,
+                bgcolor: theme.palette.grey[50],
+                borderRadius: 2,
+                boxShadow: theme.shadows[2],
+              }}
+            >
+              {loadingCertificates ? (
+                <Typography variant="body1" color="text.secondary">
+                  Đang tải chứng chỉ...
+                </Typography>
+              ) : certificates.length > 0 ? (
+                <Box sx={{ maxWidth: "100%", margin: "0 auto" }}>
+                  <Slider
+                    dots={certificates.length > 1}
+                    infinite={certificates.length > 1}
+                    speed={500}
+                    slidesToShow={Math.min(2, certificates.length)} // Reduced to show larger certificates
+                    slidesToScroll={1}
+                    centerMode={certificates.length > 1}
+                    centerPadding="30px"
+                    draggable={true} // Enable dragging
+                    swipeToSlide={true} // Allow swipe/drag to slide
+                    touchThreshold={10}
+                    responsive={[
+                      {
+                        breakpoint: 1024,
+                        settings: {
+                          slidesToShow: Math.min(1, certificates.length),
+                          centerMode: certificates.length > 1,
+                          centerPadding: "20px",
+                        },
+                      },
+                      {
+                        breakpoint: 600,
+                        settings: {
+                          slidesToShow: 1,
+                          centerMode: false,
+                          centerPadding: "0px",
+                        },
+                      },
+                    ]}
+                  >
+                    {certificates.map((cert, index) => (
+                      <Box
+                        key={cert._id}
+                        sx={{
+                          px: 1,
+                          textAlign: "center",
+                          minWidth: "400px", // Increased certificate width
+                        }}
+                      >
+                        <Paper
+                          elevation={3}
+                          sx={{
+                            p: 2,
+                            height: "350px", // Increased height to accommodate larger size
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "100%",
+                            maxWidth: "380px", // Set max width for each certificate
+                            margin: "0 auto",
+                          }}
+                        >
+                          <Typography variant="subtitle2" gutterBottom>
+                            Chứng chỉ #{index + 1}
+                          </Typography>
+                          <Box
+                            component="iframe"
+                            src={cert.fileUrl}
+                            sx={{
+                              width: "100%",
+                              height: "250px", // Increased iframe height
+                              border: "none",
+                              borderRadius: "4px",
+                            }}
+                            title={`Certificate ${cert.verifyCode}`}
+                          />
+                          <Typography variant="caption" sx={{ mt: 1 }}>
+                            Mã xác thực: {cert.verifyCode}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    ))}
+                  </Slider>
+                </Box>
+              ) : (
+                <Typography variant="body1" color="text.secondary">
+                  Không chứng chỉ nào được tạo
+                </Typography>
+              )}
+            </Paper>
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions

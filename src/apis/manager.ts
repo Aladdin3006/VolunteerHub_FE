@@ -110,10 +110,14 @@ export const managerCampaignService = {
   },
 
   // End campaign
-  endCampaign: async (id: string): Promise<Campaign> => {
+  endCampaign: async (
+    id: string,
+    options: { certificate: string }
+  ): Promise<Campaign> => {
     const response = await fetch(`${API_BASE}/campaigns/${id}/end`, {
       method: "PUT",
       headers: getAuthHeaders(),
+      body: JSON.stringify(options),
     });
 
     if (!response.ok) {

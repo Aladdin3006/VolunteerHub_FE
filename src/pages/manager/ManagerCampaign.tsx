@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -14,6 +13,13 @@ import {
   Stack,
   Badge,
   Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControlLabel,
+  Checkbox,
+  Alert,
 } from "@mui/material";
 import {
   LocationOn,
@@ -72,6 +78,12 @@ const ManagerCampaign: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [generateCertificate, setGenerateCertificate] = useState(true);
+  const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(
+    null
+  );
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
   });
@@ -156,13 +168,43 @@ const ManagerCampaign: React.FC = () => {
     }
   };
 
-  const handleAction = async (action: Function, id: string) => {
+  const handleAction = async (
+    action: Function,
+    id: string,
+    generateCert?: boolean
+  ) => {
     try {
-      await action(id);
+      const response = await action(id, generateCert);
       await fetchCampaigns();
+      setAlertMessage(response.message);
+      setTimeout(() => setAlertMessage(null), 5000); // Hide alert after 5 seconds
     } catch (error) {
       console.error("Action failed:", error);
+      setAlertMessage("Action failed. Please try again.");
+      setTimeout(() => setAlertMessage(null), 5000);
     }
+  };
+
+  const handleEndCampaign = (campaignId: string) => {
+    setCurrentCampaignId(campaignId);
+    setGenerateCertificate(true); // Default to true
+    setOpenConfirmDialog(true);
+  };
+
+  const confirmEndCampaign = async () => {
+    if (currentCampaignId) {
+      const campaign = allCampaigns.find((c) => c._id === currentCampaignId);
+      await handleAction(
+        (id: string, generateCert: boolean) =>
+          managerCampaignService.endCampaign(id, {
+            certificate: generateCert.toString(),
+          }),
+        currentCampaignId,
+        generateCertificate
+      );
+    }
+    setOpenConfirmDialog(false);
+    setCurrentCampaignId(null);
   };
 
   const formatDate = (date: Date | string) => {
@@ -268,7 +310,7 @@ const ManagerCampaign: React.FC = () => {
             startIcon={<StopCircle />}
             onClick={(e) => {
               e.stopPropagation();
-              handleAction(managerCampaignService.endCampaign, campaign._id);
+              handleEndCampaign(campaign._id);
             }}
           >
             End Campaign
@@ -323,6 +365,15 @@ const ManagerCampaign: React.FC = () => {
         backgroundColor: "#f5f5f5",
       }}
     >
+      {alertMessage && (
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          onClose={() => setAlertMessage(null)}
+        >
+          {alertMessage}
+        </Alert>
+      )}
       {/* Header and Filter */}
       <Paper
         sx={{
@@ -678,6 +729,32 @@ const ManagerCampaign: React.FC = () => {
           ))
         )}
       </Grid>
+
+      {/* Confirmation Dialog for Ending Campaign */}
+      <Dialog
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+      >
+        <DialogTitle>Confirm End Campaign</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to end this campaign?</Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={generateCertificate}
+                onChange={(e) => setGenerateCertificate(e.target.checked)}
+              />
+            }
+            label="Generate certificates for participants"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmDialog(false)}>Cancel</Button>
+          <Button onClick={confirmEndCampaign} color="secondary">
+            End Campaign
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Campaign Detail Dialog */}
       <CampaignModal
