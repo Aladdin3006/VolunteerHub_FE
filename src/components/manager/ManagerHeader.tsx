@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import authService from "../../services/Authentication.service";
 import { Avatar, Box, Button, Typography } from "@mui/material";
 import NotificationBell from "../Notification/NotificationBell";
+import StormTrigger from "../storm/admin_storm/StormTriggerAndModal";
 
 const ManagerHeader: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -110,6 +111,8 @@ const ManagerHeader: React.FC = () => {
             </Box>
           )}
         </Box>
+          <StormTrigger/>
+
       </Box>
     </Box>
   );

@@ -22,6 +22,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 interface Campaign {
+  location: any;
   id: string;
   name: string;
   description: string;
