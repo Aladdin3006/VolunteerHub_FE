@@ -12,17 +12,17 @@ import {
   Chip,
   Card,
   CardContent,
-  Fab,
+  IconButton,
 } from '@mui/material';
-import { ExpandMore, ExpandLess, Chat } from '@mui/icons-material';
+import { ExpandMore, ExpandLess, Minimize, Maximize } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header/Header';
-import { fetchPhasesByCampaignId, fetchTasksByCampaignId, submitTaskApi } from '../../apis/phase';
+import { fetchPhasesByCampaignId, submitTaskApi } from '../../apis/phase';
 import TaskActionModal from './TaskActionModal';
 import { getCampaignVolunteerDetail } from '../../apis/campaign';
 import CampaignChatModal from '../../components/chat/CampaignChat';
 import { reportIssueApi } from '../../apis/issue';
-import {FaceCheckinModal} from './FaceCheckinModal';
+import FaceCheckinModal from './FaceCheckinModal';
 
 interface Task {
   _id: string;
@@ -53,6 +53,10 @@ interface PhaseDay {
   _id: string;
   date: string;
   tasks: Task[];
+  checkinLocation: {
+    coordinates: [number, number];
+    address: string;
+  };
 }
 
 interface Phase {
@@ -71,17 +75,31 @@ const TaskListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'complete' | 'report'>('complete');
+  const [modalMode, setModalMode] = useState<'complete' | 'search'>('complete');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [campaignName, setCampaignName] = useState<string>('');
   const [campaignImageUrl, setCampaignImageUrl] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(false); // Thêm trạng thái cho modal chat
-  const [chatOpen1, setChatOpen1] = useState(false);
+  const [checkedInPhaseDays, setCheckedInPhaseDays] = useState<string[]>([]);
   const [checkinModalOpen, setCheckinModalOpen] = useState(false);
-  const [selectedPhaseDayId, setSelectedPhaseDayId] = useState<string | null>(null);
+  const [selectedPhaseDayId, setPhaseDayId] = useState<string | null>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+  const [selectedCheckinLocation, setSelectedCheckinLocation] = useState<{ coordinates: [number, number] } | null>(null);
+  const [isChatMinimized, setIsChatMinimized] = useState(false);
 
+  useEffect(() => {
+    const saved = localStorage.getItem('checkedInPhaseDays');
+    if (saved) {
+      try {
+        setCheckedInPhaseDays(JSON.parse(saved));
+      } catch (err) {
+        console.error('Error parsing localStorage:', err);
+      }
+    }
+  }, []);
 
+  useEffect(() => {
+    localStorage.setItem('checkedInPhaseDays', JSON.stringify(checkedInPhaseDays));
+  }, [checkedInPhaseDays]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -106,19 +124,39 @@ const TaskListPage: React.FC = () => {
     }
   };
 
-  const openModalWithTaskId = (taskId: string, mode: 'complete' | 'report') => {
+  const openModalWithTaskId = (taskId: string, mode: 'complete' | 'search') => {
     setSelectedTaskId(taskId);
     setModalMode(mode);
-    setTimeout(() => {
-      console.log('Task đã được chọn:', taskId);
-      setModalOpen(true);
-    }, 3);
+    setModalOpen(true);
   };
 
-  const handleCheckIn = (phaseId: string, phaseDayId: string) => {
+  const handleCheckIn = (
+    phaseId: string,
+    phaseDayId: string,
+    checkinLocation: { coordinates: [number, number]; address: string }
+  ) => {
+    console.log("👉 Handle Check-In - phaseDayId:", phaseDayId);
     setSelectedPhaseId(phaseId);
-    setSelectedPhaseDayId(phaseDayId);
+    setPhaseDayId(phaseDayId);
+    setSelectedCheckinLocation(checkinLocation);
     setCheckinModalOpen(true);
+  };
+
+  const handleCheckinSuccess = (phaseDayId: string) => {
+    const idStr = String(phaseDayId);
+    console.log("✅ onCheckinSuccess called with phaseDayId:", idStr);
+
+    setCheckedInPhaseDays((prev) => {
+      if (prev.includes(idStr)) {
+        console.log("📝 phaseDayId already in checkedInPhaseDays:", idStr);
+        return prev;
+      }
+      const updated = [...prev, idStr];
+      console.log("📝 Updated checkedInPhaseDays:", updated);
+      return updated;
+    });
+
+    setCheckinModalOpen(false);
   };
 
   const handleSubmitTaskAction = async (taskId: string, content: string, images: File[]) => {
@@ -135,7 +173,7 @@ const TaskListPage: React.FC = () => {
       if (modalMode === 'complete') {
         await submitTaskApi(taskId, content, images, token);
         alert('Gửi hoàn thành nhiệm vụ thành công');
-      } else if (modalMode === 'report') {
+      } else if (modalMode === 'search') {
         const [title, ...descParts] = content.trim().split('\n');
         const description = descParts.join('\n') || 'Không có mô tả chi tiết';
         await reportIssueApi(title || 'Không có tiêu đề', description, taskId, token);
@@ -148,7 +186,6 @@ const TaskListPage: React.FC = () => {
       setModalOpen(false);
     }
   };
-
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -246,7 +283,7 @@ const TaskListPage: React.FC = () => {
                     <ListItem
                       button
                       onClick={() =>
-                        setExpandedPhaseDay(day._id === expandedPhaseDay ? null : day._id)
+                        setExpandedPhaseDay(String(day._id) === String(expandedPhaseDay) ? null : String(day._id))
                       }
                       sx={{
                         bgcolor: expandedPhaseDay === day._id ? 'secondary.light' : 'grey.50',
@@ -263,15 +300,30 @@ const TaskListPage: React.FC = () => {
                           }
                         />
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            color="info"
-                            onClick={() => handleCheckIn(phase._id, day._id)}
-                          >
-                            Check-in
-                          </Button>
-                          {expandedPhaseDay === day._id ? <ExpandLess /> : <ExpandMore />}
+                          {(() => {
+                            const isCheckedIn = checkedInPhaseDays.includes(String(day._id));
+                            console.log("📍 Checking check-in status:", {
+                              phaseDayId: day._id,
+                              checkedInList: checkedInPhaseDays,
+                              isCheckedIn,
+                            });
+                            const toggleIcon = expandedPhaseDay === day._id ? <ExpandLess /> : <ExpandMore />;
+
+                            return (
+                              <>
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  color={isCheckedIn ? "success" : "info"}
+                                  disabled={isCheckedIn}
+                                  onClick={() => handleCheckIn(phase._id, day._id, day.checkinLocation)}
+                                >
+                                  {isCheckedIn ? "✅ Đã check-in" : "Check-in"}
+                                </Button>
+                                {toggleIcon}
+                              </>
+                            );
+                          })()}
                         </Box>
                       </Box>
                     </ListItem>
@@ -324,7 +376,7 @@ const TaskListPage: React.FC = () => {
                                       variant="outlined"
                                       size="small"
                                       color="error"
-                                      onClick={() => openModalWithTaskId(task._id, 'report')}
+                                      onClick={() => openModalWithTaskId(task._id, 'search')}
                                     >
                                       Báo cáo
                                     </Button>
@@ -345,65 +397,51 @@ const TaskListPage: React.FC = () => {
         ))}
       </List>
 
-      {/* Nút chat nổi (FAB) */}
-      <Fab
-        color="primary"
-        aria-label="chat"
+      <Box
         sx={{
           position: 'fixed',
-          bottom: 16,
+          bottom: 76,
           right: 16,
+          width: { xs: '90%', sm: 360 },
+          height: isChatMinimized ? 48 : 400,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 6,
           zIndex: 1200,
-          '&:hover': { transform: 'scale(1.1)', transition: 'transform 0.2s' },
-        }}
-        onClick={() => setChatOpen(true)}
-      >
-        <Chat />
-      </Fab>
-
-      <Fab
-        color="secondary"
-        aria-label="open-chat"
-        onClick={() => setChatOpen1(true)}
-        sx={{
-          position: 'fixed',
-          bottom: 100,
-          right: 26,
-          zIndex: 1300,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          transition: 'height 0.3s ease',
         }}
       >
-        <Chat />
-      </Fab>
-
-      {chatOpen1 && (
         <Box
           sx={{
-            position: 'fixed',
-            bottom: 90, // cách mép dưới một chút để không đè nút FAB
-            right: 25,
-            width: 360,
-            height: 480,
-            zIndex: 1400,
-            boxShadow: 6,
-            borderRadius: 2,
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            border: '2px solid #1976d2'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            bgcolor: 'primary.main',
+            color: 'white',
+            p: 1,
+            cursor: 'move',
           }}
         >
-          {/* Nút đóng ở góc trong modal */}
-          <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1500 }}>
-            <Button size="small" onClick={() => setChatOpen1(false)}>
-              Đóng
-            </Button>
-          </Box>
-
-          <CampaignChatModal campaignId={campaignId || ''} />
+          <Typography variant="subtitle1" fontWeight="bold">
+            Chat chiến dịch: {campaignName}
+          </Typography>
+          <IconButton
+            size="small"
+            color="inherit"
+            onClick={() => setIsChatMinimized(!isChatMinimized)}
+          >
+            {isChatMinimized ? <Maximize /> : <Minimize />}
+          </IconButton>
         </Box>
-      )}
-
-
-
+        {!isChatMinimized && (
+          <Box sx={{ flex: 1, overflowY: 'auto', p: 1 }}>
+            <CampaignChatModal campaignId={campaignId || ''} />
+          </Box>
+        )}
+      </Box>
 
       <TaskActionModal
         open={modalOpen}
@@ -413,16 +451,24 @@ const TaskListPage: React.FC = () => {
         onSubmit={handleSubmitTaskAction}
       />
 
-      {checkinModalOpen && selectedPhaseId && selectedPhaseDayId && (
-        <FaceCheckinModal
-          open={checkinModalOpen}
-          onClose={() => setCheckinModalOpen(false)}
-          campaignId={campaignId || ""}
-          phaseId={selectedPhaseId}
-          phaseDayId={selectedPhaseDayId}
-        />
+      {checkinModalOpen && selectedPhaseId && selectedPhaseDayId && selectedCheckinLocation && (
+        <>
+          {console.log("🔍 Sending to Modal:", {
+            selectedPhaseDayId,
+            selectedPhaseId,
+            selectedCheckinLocation,
+          })}
+          <FaceCheckinModal
+            open={checkinModalOpen}
+            onClose={() => setCheckinModalOpen(false)}
+            campaignId={campaignId || ""}
+            phaseId={selectedPhaseId}
+            phaseDayId={selectedPhaseDayId}
+            checkinLocation={selectedCheckinLocation}
+            onCheckinSuccess={handleCheckinSuccess}
+          />
+        </>
       )}
-
     </Container>
   );
 };
