@@ -104,7 +104,7 @@ const OverViewCampaign: React.FC = () => {
   };
 
   const isPhaseInProgress = (phase: Phase) => {
-    return phase.status === "in-progress";
+    return campaign?.status !== "completed" && phase.status === "in-progress";
   };
 
   const isPhaseDayInProgress = (day: PhaseDay) => {
@@ -852,7 +852,6 @@ const OverViewCampaign: React.FC = () => {
                 >
                   Cập nhật chiến dịch
                 </Button>
-                
               </Box>
             </Box>
 

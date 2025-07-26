@@ -11,8 +11,14 @@ import {
   IconButton,
   CircularProgress,
   Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useParams, useNavigate } from "react-router-dom";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ShareIcon from "@mui/icons-material/Share";
@@ -30,9 +36,9 @@ import {
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 
-
 const CampaignVolunteerDetail: React.FC = () => {
   const { campaignId } = useParams();
+  const navigate = useNavigate();
 
   /* -------------------- state -------------------- */
   const [campaign, setCampaign] = useState<CampaignVolunteer | null>(null);
@@ -40,6 +46,29 @@ const CampaignVolunteerDetail: React.FC = () => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinMessage, setJoinMessage] = useState<string | null>(null);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const mapContainerStyle = {
+    width: "100%",
+    height: "300px",
+    borderRadius: "8px",
+  };
+
+  const center = campaign?.location?.coordinates
+    ? {
+        lat: campaign.location.coordinates[0],
+        lng: campaign.location.coordinates[1],
+      }
+    : { lat: 10.7769, lng: 106.7009 }; // Default to Ho Chi Minh City if no coordinates
+
+  const mapEmbedUrl = campaign?.location?.coordinates
+    ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${
+        center.lng
+      }!3d${
+        center.lat
+      }!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(
+        `${center.lat},${center.lng}`
+      )}!5e0!3m2!1sen!2sus!4v1634567890123`
+    : "";
 
   /* -------------------- user -------------------- */
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -63,11 +92,11 @@ const CampaignVolunteerDetail: React.FC = () => {
   const myVolunteer = campaign?.volunteers?.find(
     (v) => v.user?._id === currentUserId
   );
-  
+
   /* -------------------- join handler -------------------- */
   const handleJoin = async () => {
     if (!isLoggedIn) {
-      setJoinMessage("Bạn cần đăng nhập để tham gia chiến dịch!");
+      setLoginDialogOpen(true);
       return;
     }
     try {
@@ -106,13 +135,25 @@ const CampaignVolunteerDetail: React.FC = () => {
       </Box>
     );
 
+  /* -------------------- dialog handlers -------------------- */
+  const handleCloseLoginDialog = () => {
+    setLoginDialogOpen(false);
+  };
 
+  const handleNavigateToLogin = () => {
+    navigate("/login");
+    setLoginDialogOpen(false);
+  };
+
+  const handleNavigateToRegister = () => {
+    navigate("/register");
+    setLoginDialogOpen(false);
+  };
 
   /* ============================================================
      =========== 2. MÀN HÌNH CHI TIẾT CHIẾN DỊCH GỐC ============
      ============================================================ */
   const { name, description, startDate, endDate, image, location } = campaign;
-  
 
   /* ------------ nhãn & disable button tham gia ------------ */
   let joinLabel = "Gửi yêu cầu tham gia";
@@ -155,12 +196,20 @@ const CampaignVolunteerDetail: React.FC = () => {
       >
         {/* ----- nội dung bên trái ----- */}
         <Box flex={1}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            gutterBottom
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            <IconButton
+              onClick={() => navigate("/campaigns")}
+              sx={{ mr: 1, color: "inherit" }}
+              aria-label="back to campaigns"
+            >
+              <ArrowBackIcon />
+            </IconButton>
             {name}
-          </Typography>
-
-          <Typography variant="subtitle1" color="text.secondary" mb={2}>
-            📍 {location?.address || "Không rõ địa điểm"}
           </Typography>
 
           <Typography
@@ -175,6 +224,29 @@ const CampaignVolunteerDetail: React.FC = () => {
               🕓 Từ: {dayjs(startDate).format("DD/MM/YYYY")} đến{" "}
               {endDate ? dayjs(endDate).format("DD/MM/YYYY") : "?"}
             </Typography>
+          )}
+
+          <Typography variant="subtitle1" color="text.secondary" mt={2}>
+            📍 {location?.address || "Không rõ địa điểm"}
+          </Typography>
+          {campaign.location?.coordinates ? (
+            <Box sx={mapContainerStyle}>
+              <iframe
+                src={mapEmbedUrl}
+                width="100%"
+                height="100%"
+                style={{ border: 0, borderRadius: "8px" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+            </Box>
+          ) : (
+            <Box className="no-data-container">
+              <Typography variant="body1" color="text.secondary">
+                No location coordinates available
+              </Typography>
+            </Box>
           )}
         </Box>
 
@@ -246,7 +318,36 @@ const CampaignVolunteerDetail: React.FC = () => {
         </Box>
       </Box>
 
-      
+      {/* ---------- login dialog ---------- */}
+      <Dialog open={loginDialogOpen} onClose={handleCloseLoginDialog}>
+        <DialogTitle>Yêu cầu đăng nhập</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn cần đăng nhập để tham gia chiến dịch này.
+          </DialogContentText>
+          <DialogContentText sx={{ mt: 2, fontWeight: "bold" }}>
+            Bạn đã có tài khoản chưa?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleNavigateToRegister}
+            color="primary"
+            variant="outlined"
+          >
+            Chưa, tôi muốn đăng ký
+          </Button>
+          <Button
+            onClick={handleNavigateToLogin}
+            color="primary"
+            variant="contained"
+            autoFocus
+          >
+            Có, đăng nhập ngay
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* ---------- snackbar ---------- */}
       <Snackbar
         open={!!joinMessage}

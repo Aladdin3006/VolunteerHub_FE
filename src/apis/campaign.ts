@@ -90,11 +90,11 @@ export interface CampaignVolunteer {
     }[];
   }[];
   status?: "upcoming" | "in-progress" | "completed";
+  acceptStatus?: ECampaignAcceptStatus;
 
   /** 👇 mảng tình nguyện viên */
   volunteers?: VolunteerRecord[];
 }
-
 
 export interface Category {
   _id: string;

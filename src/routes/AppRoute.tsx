@@ -2,8 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/home/Home";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
-import CampaignHome from "../pages/campaignDonation/CampaignHome";
-import CampaignDetail from "../pages/campaignVolunteer/CampaignDetail";
+import CampaignHome from "../pages/campaignVolunteer/CampaignHome";
+import CampaignDetail from "../pages/campaignDonation/DonationDetail";
 import AboutUs from "../pages/about-us/aboutus";
 import DonatePage from "../pages/about-us/DonatePage";
 import ForgotPW from "../pages/login/ForgotPW";
@@ -34,6 +34,8 @@ import OverViewCampaign from "@/components/staff/OverViewCampaign";
 import { UpdateCampaignDialog } from "@/components/staff/UpdateCampaignDialog";
 
 import ReliefPointManager from "@/pages/manager/reliefPointManager/ReliefPointManager";
+import DonationHome from "@/pages/campaignDonation/DonationHome";
+import DonationDetail from "../pages/campaignDonation/DonationDetail";
 
 const AppRoutes = () => (
   <Routes>
@@ -96,10 +98,18 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/campaigns/:campaignId"
+      path="/donations/:campaignId"
       element={
         <LayoutWrapper>
-          <CampaignDetail />
+          <DonationDetail />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/donations"
+      element={
+        <LayoutWrapper>
+          <DonationHome />
         </LayoutWrapper>
       }
     />
@@ -120,7 +130,7 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/volunteer/:campaignId"
+      path="/campaigns/:campaignId"
       element={
         <LayoutWrapper>
           <CampaignVolunteer />
@@ -411,7 +421,7 @@ const AppRoutes = () => (
               path="storms"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="manager">
-                 <ReliefPointManager/>
+                  <ReliefPointManager />
                 </LayoutWrapper>
               }
             />

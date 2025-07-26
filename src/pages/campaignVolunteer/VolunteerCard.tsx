@@ -19,7 +19,7 @@ interface Props {
 const VolunteerCard: React.FC<Props> = ({ campaign }) => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
- 
+
   // Tìm volunteer hiện tại của user trong danh sách campaign.volunteers
 
   return (
@@ -35,7 +35,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
     >
       <CardActionArea
         component="div"
-        onClick={() => navigate(`/volunteer/${campaign._id}`)}
+        onClick={() => navigate(`/campaigns/${campaign._id}`)}
       >
         <CardMedia
           component="img"
@@ -63,7 +63,6 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
           </Stack>
 
           <Stack direction="row" spacing={1}>
-          
             <Button
               variant="contained"
               size="small"
