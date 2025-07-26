@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Category } from "./campaign";
+import { log } from "console";
 
 const API_BASE = "http://localhost:4000";
 
@@ -453,9 +454,7 @@ export const startPhase = async (phaseId: string): Promise<Phase> => {
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Error starting phase:", error.response?.data);
-      throw new Error(
-        error.response?.data?.message || "Failed to start phase"
-      );
+      throw new Error(error.response?.data?.message || "Failed to start phase");
     } else {
       console.error("Error starting phase:", error);
       throw new Error("Failed to start phase");
@@ -606,16 +605,20 @@ export const getDepartmentsByCampaignId = async (
 };
 
 export const getDepartmentsByVolunteerId = async (
-  volunteerId: string
+  volunteerId: string,
+  campaignId: string
 ): Promise<Department[]> => {
   try {
-    // Validate volunteerId format
+    // Validate volunteerId and campaignId format
     if (!volunteerId || !volunteerId.match(/^[0-9a-fA-F]{24}$/)) {
       throw new Error(`Invalid volunteer ID format: ${volunteerId}`);
     }
+    if (!campaignId || !campaignId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid campaign ID format: ${campaignId}`);
+    }
 
     const response = await axios.get(
-      `${API_BASE}/campaigns/departments/volunteer/${volunteerId}`,
+      `${API_BASE}/campaigns/${campaignId}/departments/volunteer/${volunteerId}`,
       {
         headers: getAuthHeaders(),
       }
@@ -623,6 +626,7 @@ export const getDepartmentsByVolunteerId = async (
 
     // Handle both response.data and response.data.data cases
     const departmentsData = response.data.data || response.data || [];
+    console.log("API: Fetched departments by volunteer:", departmentsData);
 
     return departmentsData.map((dept: any) => ({
       _id: dept._id,
@@ -762,9 +766,12 @@ export const getTasksByPhaseDayId = async (
   phaseDayId: string
 ): Promise<Task[]> => {
   try {
-    const response = await axios.get(`${API_BASE}/phase/${phaseDayId}/tasks`, {
-      headers: getAuthHeaders(),
-    });
+    const response = await axios.get(
+      `${API_BASE}/task/phaseDay/${phaseDayId}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
 
     // Log the response for debugging
     console.log("Tasks response:", response.data);
@@ -784,11 +791,12 @@ export const getTasksByPhaseDayId = async (
       phaseDayId: task.phaseDayId || phaseDayId,
       title: task.title || task.name || "Untitled Task",
       description: task.description || "",
-      assignedUsers: task.assignedUsers?.map((au: any) => ({
-        userId: au.userId?._id || au.userId || au._id,
-        submission: au.submission,
-        review: au.review
-      })) || [],
+      assignedUsers:
+        task.assignedUsers?.map((au: any) => ({
+          userId: au.userId?._id || au.userId || au._id,
+          submission: au.submission,
+          review: au.review,
+        })) || [],
       campaignId: task.campaignId,
       updatedAt: task.updatedAt ? new Date(task.updatedAt) : new Date(),
     }));
@@ -827,7 +835,7 @@ export const createTask = async (
     };
 
     const response = await axios.post(
-      `${API_BASE}/phase/${phaseDayId}/tasks`,
+      `${API_BASE}/task/create/${phaseDayId}`,
       backendPayload,
       { headers: getAuthHeaders() }
     );
@@ -878,7 +886,7 @@ export const updateTask = async (
     };
 
     const response = await axios.patch(
-      `${API_BASE}/phase/tasks/${taskId}`,
+      `${API_BASE}/task/update/${taskId}`,
       backendPayload,
       { headers: getAuthHeaders() }
     );
@@ -922,12 +930,12 @@ export const reviewTask = async (
     const reviewedBy = user._id;
 
     const response = await axios.post(
-      `${API_BASE}/phase/tasks/${taskId}/review/${userId}`,
-      { 
+      `${API_BASE}/task/${taskId}/review/${userId}`,
+      {
         status,
         evaluation,
         staffComment,
-        reviewedBy  // Include the reviewer's ID
+        reviewedBy, // Include the reviewer's ID
       },
       { headers: getAuthHeaders() }
     );
@@ -938,11 +946,12 @@ export const reviewTask = async (
       phaseDayId: updatedTaskData.phaseDayId,
       title: updatedTaskData.title || updatedTaskData.name,
       description: updatedTaskData.description,
-      assignedUsers: updatedTaskData.assignedUsers?.map((u: any) => ({
-        userId: u.userId || u._id,
-        submission: u.submission,
-        review: u.review,
-      })) || [],
+      assignedUsers:
+        updatedTaskData.assignedUsers?.map((u: any) => ({
+          userId: u.userId || u._id,
+          submission: u.submission,
+          review: u.review,
+        })) || [],
       campaignId: updatedTaskData.campaignId,
       updatedAt: updatedTaskData.updatedAt
         ? new Date(updatedTaskData.updatedAt)
@@ -952,9 +961,7 @@ export const reviewTask = async (
     console.error("Error reviewing task:", error);
     if (axios.isAxiosError(error)) {
       console.error("Error details:", error.response?.data);
-      throw new Error(
-        error.response?.data?.message || "Failed to review task"
-      );
+      throw new Error(error.response?.data?.message || "Failed to review task");
     }
     throw new Error("Failed to review task");
   }

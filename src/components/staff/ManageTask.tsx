@@ -102,7 +102,8 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           await Promise.all(
             volunteersData.map(async (volunteer) => {
               const deptData = await getDepartmentsByVolunteerId(
-                volunteer.user._id
+                volunteer.user._id,
+                campaignId
               );
               departmentsMap[volunteer.user._id] = deptData;
             })
