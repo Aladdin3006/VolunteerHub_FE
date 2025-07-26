@@ -135,7 +135,6 @@ const TaskListPage: React.FC = () => {
     phaseDayId: string,
     checkinLocation: { coordinates: [number, number]; address: string }
   ) => {
-    console.log("👉 Handle Check-In - phaseDayId:", phaseDayId);
     setSelectedPhaseId(phaseId);
     setPhaseDayId(phaseDayId);
     setSelectedCheckinLocation(checkinLocation);
@@ -144,18 +143,14 @@ const TaskListPage: React.FC = () => {
 
   const handleCheckinSuccess = (phaseDayId: string) => {
     const idStr = String(phaseDayId);
-    console.log("✅ onCheckinSuccess called with phaseDayId:", idStr);
-
     setCheckedInPhaseDays((prev) => {
       if (prev.includes(idStr)) {
-        console.log("📝 phaseDayId already in checkedInPhaseDays:", idStr);
         return prev;
       }
       const updated = [...prev, idStr];
       console.log("📝 Updated checkedInPhaseDays:", updated);
       return updated;
     });
-
     setCheckinModalOpen(false);
   };
 
@@ -180,7 +175,7 @@ const TaskListPage: React.FC = () => {
         alert('Gửi báo cáo sự cố thành công');
       }
     } catch (err) {
-      alert('Thất bại khi gửi');
+      alert('Bạn đã nộp submission cho task này');
       console.error(err);
     } finally {
       setModalOpen(false);
@@ -286,7 +281,9 @@ const TaskListPage: React.FC = () => {
                         setExpandedPhaseDay(String(day._id) === String(expandedPhaseDay) ? null : String(day._id))
                       }
                       sx={{
-                        bgcolor: expandedPhaseDay === day._id ? 'secondary.light' : 'grey.50',
+                        bgcolor: '#ffffff',
+                        border: '1px solid',
+                        borderColor: 'grey.200',
                         borderRadius: 1,
                         mb: 1,
                       }}
@@ -302,11 +299,6 @@ const TaskListPage: React.FC = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {(() => {
                             const isCheckedIn = checkedInPhaseDays.includes(String(day._id));
-                            console.log("📍 Checking check-in status:", {
-                              phaseDayId: day._id,
-                              checkedInList: checkedInPhaseDays,
-                              isCheckedIn,
-                            });
                             const toggleIcon = expandedPhaseDay === day._id ? <ExpandLess /> : <ExpandMore />;
 
                             return (
@@ -358,7 +350,7 @@ const TaskListPage: React.FC = () => {
                                 </Box>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                   <Chip
-                                    label={task.submission?.status || 'chưa nộp'}
+                                    label={task.submission?.status || 'Đã nộp'}
                                     color={getStatusColor(task.submission?.status || 'chưa nộp')}
                                     size="small"
                                     sx={{ alignSelf: 'flex-end' }}
