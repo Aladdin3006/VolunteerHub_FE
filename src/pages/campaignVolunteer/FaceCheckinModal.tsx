@@ -10,7 +10,6 @@ import {
   CircularProgress,
 } from "@mui/material";
 import axios from "axios";
-import { getCampaignVolunteerDetail } from "@/apis/campaign";
 
 interface Props {
   open: boolean;
@@ -18,10 +17,14 @@ interface Props {
   campaignId: string;
   phaseId: string;
   phaseDayId: string;
-  
+  checkinLocation: {
+    coordinates: [number, number]; // [lng, lat]
+    address: string;
+  };
+  onCheckinSuccess?: (phaseDayId: string) => void;
 }
 
-// ✅ Hàm tính khoảng cách Haversine
+// Hàm tính khoảng cách Haversine
 const haversineDistance = (
   lat1: number,
   lon1: number,
@@ -48,59 +51,67 @@ export const FaceCheckinModal: React.FC<Props> = ({
   campaignId,
   phaseId,
   phaseDayId,
+  checkinLocation,
+  onCheckinSuccess,
 }) => {
   const webcamRef = useRef<Webcam>(null);
   const [distanceToCheckpoint, setDistanceToCheckpoint] = useState<number | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [isWithinRange, setIsWithinRange] = useState(false);
+  const [loadingCheckin, setLoadingCheckin] = useState(false);
 
   useEffect(() => {
-    const fetchLocationAndCompare = async () => {
+    if (!open || !checkinLocation?.coordinates) {
+      setLoadingLocation(false);
+      return;
+    }
+
+    const [targetLng, targetLat] = checkinLocation.coordinates;
+
+    const fetchLocationAndCompare = () => {
       setLoadingLocation(true);
-      try {
-        const campaign = await getCampaignVolunteerDetail(campaignId);
-        const [lng, lat] = campaign.location.coordinates; // MongoDB trả về [lng, lat]
 
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const userLat = pos.coords.latitude;
-            const userLng = pos.coords.longitude;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const userLat = pos.coords.latitude;
+          const userLng = pos.coords.longitude;
 
-            console.log("📍 Tọa độ người dùng:", userLat, userLng);
-            console.log("🎯 Tọa độ điểm check-in:", lat, lng);
+          const distance = haversineDistance(userLat, userLng, targetLat, targetLng);
 
-            // ✅ Sửa đúng thứ tự tham số truyền vào
-            const distance = haversineDistance(userLat, userLng, lat, lng);
-
-            setDistanceToCheckpoint(distance);
-            setIsWithinRange(distance <= 100);
-            setLoadingLocation(false);
-          },
-          (err) => {
-            console.error("❌ Không lấy được vị trí:", err);
-            setLoadingLocation(false);
-          }
-        );
-      } catch (err) {
-        console.error("❌ Lỗi lấy campaign:", err);
-        setLoadingLocation(false);
-      }
+          console.log("📍 Calculated distance:", distance.toFixed(2), "meters");
+          setDistanceToCheckpoint(distance);
+          setIsWithinRange(distance <= 150);
+          setLoadingLocation(false);
+        },
+        (err) => {
+          console.error("❌ Failed to get location:", err);
+          setLoadingLocation(false);
+          alert("Không thể lấy vị trí, vui lòng kiểm tra quyền truy cập vị trí.");
+        }
+      );
     };
 
-    if (open) fetchLocationAndCompare();
-  }, [open, campaignId]);
+    fetchLocationAndCompare();
+  }, [open, checkinLocation?.coordinates]);
 
   const handleCapture = async () => {
     const imageSrc = webcamRef.current?.getScreenshot();
-    const user = localStorage.getItem("user");
-    const userId = user ? JSON.parse(user).id : null;
+    const userString = localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+    const userId = user?.id;
+    const token = user?.token;
 
-    if (!imageSrc || !userId) {
-      alert("❌ Không thể lấy ảnh hoặc user");
+    if (!imageSrc || !userId || !token) {
+      alert("❌ Thiếu ảnh, thông tin người dùng hoặc token");
       return;
     }
 
     const base64Image = imageSrc.split(",")[1];
+
+    if (!base64Image || base64Image.length < 10000) {
+      alert("❌ Ảnh chụp quá mờ hoặc không hợp lệ, vui lòng thử lại!");
+      return;
+    }
 
     const payload = {
       image: base64Image,
@@ -111,13 +122,26 @@ export const FaceCheckinModal: React.FC<Props> = ({
       method: "face",
     };
 
+    setLoadingCheckin(true);
+
     try {
-      const res = await axios.post("http://localhost:8000/checkin", payload);
+      console.log("🚀 Sending check-in data:", { ...payload, image: "[base64 data]" });
+      const res = await axios.post("http://localhost:8000/checkin", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       alert(res.data.status || "✅ Check-in thành công!");
+
+      if (typeof onCheckinSuccess === "function") {
+        console.log("✔️ Calling onCheckinSuccess with phaseDayId:", phaseDayId);
+        onCheckinSuccess(phaseDayId);
+      }
       onClose();
-    } catch (err) {
-      console.error("❌ Lỗi khi gửi check-in:", err);
-      alert("❌ Lỗi khi check-in bằng khuôn mặt");
+    } catch (err: any) {
+      console.error("❌ Error during check-in:", err);
+      const msg = err?.response?.data?.detail || "❌ Lỗi khi check-in bằng khuôn mặt";
+      alert(msg);
+    } finally {
+      setLoadingCheckin(false);
     }
   };
 
@@ -143,8 +167,7 @@ export const FaceCheckinModal: React.FC<Props> = ({
             </Typography>
             {!isWithinRange && (
               <Typography color="error" fontStyle="italic" mb={2}>
-                ⚠️ Bạn đang ở quá xa điểm check-in. Vui lòng di chuyển gần hơn (≤
-                100m).
+                ⚠️ Bạn đang ở quá xa điểm check-in. Vui lòng di chuyển gần hơn (≤ 150m).
               </Typography>
             )}
           </>
@@ -156,7 +179,8 @@ export const FaceCheckinModal: React.FC<Props> = ({
           onClick={handleCapture}
           variant="contained"
           color="primary"
-          disabled={!isWithinRange || loadingLocation}
+          disabled={!isWithinRange || loadingLocation || loadingCheckin}
+          startIcon={loadingCheckin ? <CircularProgress size={20} /> : null}
         >
           Check-in
         </Button>
