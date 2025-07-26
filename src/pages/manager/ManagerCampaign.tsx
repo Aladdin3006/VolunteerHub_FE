@@ -20,6 +20,7 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import {
   LocationOn,
@@ -35,6 +36,7 @@ import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import { managerCampaignService } from "../../apis/manager";
 import { Category } from "../../apis/campaign";
 import CampaignModal from "../../components/manager/CampaignModal";
+import { useNavigate } from "react-router-dom";
 
 // Map settings
 const mapContainerStyle = {
@@ -70,6 +72,9 @@ const ManagerCampaign: React.FC = () => {
     | "in-progress"
     | "completed"
   >("all");
+  const [activeLink, setActiveLink] = useState<"ongoing" | "finished">(
+    "ongoing"
+  );
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
@@ -78,6 +83,7 @@ const ManagerCampaign: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openStartDialog, setOpenStartDialog] = useState(false);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [generateCertificate, setGenerateCertificate] = useState(true);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(
@@ -87,6 +93,9 @@ const ManagerCampaign: React.FC = () => {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
   });
+  const [isStartingCampaign, setIsStartingCampaign] = useState(false);
+  const [isEndingCampaign, setIsEndingCampaign] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAllCampaigns = async () => {
@@ -174,26 +183,36 @@ const ManagerCampaign: React.FC = () => {
     generateCert?: boolean
   ) => {
     try {
+      // Set loading state before the async call
+      if (action === managerCampaignService.startCampaign) {
+        setIsStartingCampaign(true);
+      } else if (action === managerCampaignService.endCampaign) {
+        setIsEndingCampaign(true);
+      }
+
       const response = await action(id, generateCert);
       await fetchCampaigns();
       setAlertMessage(response.message);
-      setTimeout(() => setAlertMessage(null), 5000); // Hide alert after 5 seconds
+      setTimeout(() => setAlertMessage(null), 5000);
     } catch (error) {
       console.error("Action failed:", error);
       setAlertMessage("Action failed. Please try again.");
       setTimeout(() => setAlertMessage(null), 5000);
+    } finally {
+      // Reset loading states
+      setIsStartingCampaign(false);
+      setIsEndingCampaign(false);
     }
   };
 
   const handleEndCampaign = (campaignId: string) => {
     setCurrentCampaignId(campaignId);
-    setGenerateCertificate(true); // Default to true
+    setGenerateCertificate(true);
     setOpenConfirmDialog(true);
   };
 
   const confirmEndCampaign = async () => {
     if (currentCampaignId) {
-      const campaign = allCampaigns.find((c) => c._id === currentCampaignId);
       await handleAction(
         (id: string, generateCert: boolean) =>
           managerCampaignService.endCampaign(id, {
@@ -225,7 +244,7 @@ const ManagerCampaign: React.FC = () => {
       case "rejected":
         return "error";
       case "in-progress":
-        return "info";
+        return "success";
       case "completed":
         return "primary";
       default:
@@ -246,6 +265,17 @@ const ManagerCampaign: React.FC = () => {
     return address.length > maxLength
       ? `${address.substring(0, maxLength)}...`
       : address;
+  };
+
+  const confirmStartCampaign = async () => {
+    if (currentCampaignId) {
+      await handleAction(
+        managerCampaignService.startCampaign,
+        currentCampaignId
+      );
+    }
+    setOpenStartDialog(false);
+    setCurrentCampaignId(null);
   };
 
   const renderActionButtons = (campaign: Campaign) => {
@@ -293,7 +323,8 @@ const ManagerCampaign: React.FC = () => {
             startIcon={<PlayCircle />}
             onClick={(e) => {
               e.stopPropagation();
-              handleAction(managerCampaignService.startCampaign, campaign._id);
+              setCurrentCampaignId(campaign._id);
+              setOpenStartDialog(true);
             }}
           >
             Start Campaign
@@ -356,11 +387,112 @@ const ManagerCampaign: React.FC = () => {
     );
   }
 
+  // Dialog for Starting Campaign
+  const renderStartDialog = () => (
+    <Dialog open={openStartDialog} onClose={() => setOpenStartDialog(false)}>
+      <DialogTitle fontWeight="bold">Xác nhận bắt đầu chiến dịch</DialogTitle>
+      <DialogContent>
+        <Typography>
+          Bạn có chắc chắn muốn bắt đầu chiến dịch này không?
+        </Typography>
+        {isStartingCampaign && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              mt: 2,
+            }}
+          >
+            <CircularProgress size={30} thickness={5} color="primary" />
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={() => setOpenStartDialog(false)}
+          disabled={isStartingCampaign}
+        >
+          Hủy
+        </Button>
+        <Button
+          onClick={confirmStartCampaign}
+          color="secondary"
+          disabled={isStartingCampaign}
+          startIcon={
+            isStartingCampaign ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : null
+          }
+        >
+          {isStartingCampaign ? "Đang xử lý..." : "Bắt đầu chiến dịch"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // Dialog for Ending Campaign
+  const renderEndDialog = () => (
+    <Dialog
+      open={openConfirmDialog}
+      onClose={() => setOpenConfirmDialog(false)}
+    >
+      <DialogTitle fontWeight="bold">Xác nhận kết thúc chiến dịch</DialogTitle>
+      <DialogContent>
+        <Typography>
+          Bạn có chắc chắn muốn tạo chứng chỉ tham gia chiến dịch cho các tình
+          nguyện viên không?
+        </Typography>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={generateCertificate}
+              onChange={(e) => setGenerateCertificate(e.target.checked)}
+              disabled={isEndingCampaign}
+            />
+          }
+          label="Tạo chứng chỉ (Chỉ áp dụng cho chiến dịch đã kết thúc)"
+        />
+        {isEndingCampaign && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              mt: 2,
+            }}
+          >
+            <CircularProgress size={30} thickness={5} color="primary" />
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={() => setOpenConfirmDialog(false)}
+          disabled={isEndingCampaign}
+        >
+          Hủy
+        </Button>
+        <Button
+          onClick={confirmEndCampaign}
+          color="secondary"
+          disabled={isEndingCampaign}
+          startIcon={
+            isEndingCampaign ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : null
+          }
+        >
+          {isEndingCampaign ? "Đang xử lý..." : "Kết thúc chiến dịch"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   return (
     <Box
       sx={{
         justifyContent: "center",
-        padding: "30px",
         minHeight: "100vh",
         backgroundColor: "#f5f5f5",
       }}
@@ -374,6 +506,25 @@ const ManagerCampaign: React.FC = () => {
           {alertMessage}
         </Alert>
       )}
+      <div className="tab-list-container">
+        <ul className="tab-list">
+          <li
+            className={activeLink === "ongoing" ? "active" : ""}
+            onClick={() => setActiveLink("ongoing")}
+          >
+            Quản lý Chiến dịch
+          </li>
+          <li
+            className={activeLink === "finished" ? "active" : ""}
+            onClick={() => {
+              setActiveLink("finished");
+              navigate("/manager/storms");
+            }}
+          >
+            Quản lý bão
+          </li>
+        </ul>
+      </div>
       {/* Header and Filter */}
       <Paper
         sx={{
@@ -386,10 +537,9 @@ const ManagerCampaign: React.FC = () => {
           gap: 2,
         }}
       >
-        <Typography variant="h4" component="h1" fontWeight="bold">
-          Campaign Management
+        <Typography sx={{ fontWeight: "bold", fontSize: "1.4rem" }}>
+          Chọn chiến dịch theo trạng thái:{" "}
         </Typography>
-
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -555,7 +705,7 @@ const ManagerCampaign: React.FC = () => {
                   borderRadius: 2,
                   overflow: "hidden",
                   position: "relative",
-                  width: "100%", // Ensure card takes full width of its container
+                  width: "100%",
                 }}
                 onClick={() => openCampaignDetail(campaign)}
               >
@@ -730,31 +880,9 @@ const ManagerCampaign: React.FC = () => {
         )}
       </Grid>
 
-      {/* Confirmation Dialog for Ending Campaign */}
-      <Dialog
-        open={openConfirmDialog}
-        onClose={() => setOpenConfirmDialog(false)}
-      >
-        <DialogTitle>Confirm End Campaign</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to end this campaign?</Typography>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={generateCertificate}
-                onChange={(e) => setGenerateCertificate(e.target.checked)}
-              />
-            }
-            label="Generate certificates for participants"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenConfirmDialog(false)}>Cancel</Button>
-          <Button onClick={confirmEndCampaign} color="secondary">
-            End Campaign
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Render Dialogs */}
+      {renderStartDialog()}
+      {renderEndDialog()}
 
       {/* Campaign Detail Dialog */}
       <CampaignModal

@@ -20,6 +20,10 @@ const ManagerHeader: React.FC = () => {
     setIsDropdownOpen((prev) => !prev);
   };
 
+  const handleLogoClick = () => {
+    navigate("/manager/campaigns");
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -52,12 +56,19 @@ const ManagerHeader: React.FC = () => {
             height: 40,
             mr: 1.5,
             bgcolor: "rgba(255, 255, 255, 0.2)",
+            cursor: "pointer", // Add cursor pointer to indicate it's clickable
           }}
+          onClick={handleLogoClick} // Add onClick handler
         >
           CN
         </Avatar>
       </Box>
-      <Typography variant="h6" fontWeight={700} sx={{ flexGrow: 1 }}>
+      <Typography
+        variant="h6"
+        fontWeight={700}
+        sx={{ flexGrow: 1 }}
+        onClick={handleLogoClick}
+      >
         Manager Portal
       </Typography>
       <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -111,8 +122,7 @@ const ManagerHeader: React.FC = () => {
             </Box>
           )}
         </Box>
-          <StormTrigger/>
-
+        <StormTrigger />
       </Box>
     </Box>
   );
