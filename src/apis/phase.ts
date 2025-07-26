@@ -3,7 +3,7 @@ import axios from 'axios';
 
 
 export const fetchPhasesByCampaignId = async (campaignId: string, token: string) => {
-  const response = await axios.get(`http://localhost:4000/phase/${campaignId}/tasks`, {
+  const response = await axios.get(`http://localhost:4000/task/${campaignId}/campaign`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -12,14 +12,14 @@ export const fetchPhasesByCampaignId = async (campaignId: string, token: string)
 };
 
 
-export const fetchTasksByCampaignId = async (campaignId: string, token: string) => {
-  const response = await axios.get(`http://localhost:4000/phase/${campaignId}/task/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
+// export const fetchTasksByCampaignId = async (campaignId: string, token: string) => {
+//   const response = await axios.get(`http://localhost:4000/phase/${campaignId}/task/me`, {
+//     headers: {
+//       Authorization: `Bearer ${token}`,
+//     },
+//   });
+//   return response.data;
+// };
 
 
 export const submitTaskApi = async (taskId: string, content: string, images: File[], token: string) => {
@@ -28,7 +28,7 @@ export const submitTaskApi = async (taskId: string, content: string, images: Fil
   images.forEach((file) => formData.append('images', file)); // key 'images' phải giống backend xử lý
 
   const response = await axios.post(
-    `http://localhost:4000/phase/tasks/${taskId}/submit`,
+    `http://localhost:4000/task/${taskId}/submit`,
     formData,
     {
       headers: {
