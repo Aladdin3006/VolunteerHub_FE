@@ -1,4 +1,3 @@
-// TaskActionModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -9,6 +8,7 @@ import {
   TextField,
   Box,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 
 interface TaskActionModalProps {
@@ -46,27 +46,23 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
   };
 
   const handleSubmit = async () => {
-  if (isSubmitting) return; // ✅ Chặn gửi nhiều lần
-  if (!taskId) {
-    alert('Không tìm thấy taskId');
-    return;
-  }
+    if (isSubmitting) return; // Chặn gửi nhiều lần
+    if (!taskId) {
+      alert('Không tìm thấy taskId');
+      return;
+    }
 
-  setIsSubmitting(true);
-
-  try {
-    const finalContent =
-      mode === 'report' ? `${title}\n${content}` : content;
-
-    await onSubmit(taskId, finalContent, images); // Gửi dữ liệu
-    onClose(); // Đóng modal sau khi gửi thành công
-  } catch (err) {
-    console.error('Lỗi khi gửi:', err);
-  } finally {
-    setIsSubmitting(false); // Cho phép gửi lại sau khi xử lý xong
-  }
-};
-
+    setIsSubmitting(true);
+    try {
+      const finalContent = mode === 'report' ? `${title}\n${content}` : content;
+      await onSubmit(taskId, finalContent, images); // Gửi dữ liệu
+      onClose(); // Đóng modal sau khi gửi thành công
+    } catch (err) {
+      console.error('Lỗi khi gửi:', err);
+    } finally {
+      setIsSubmitting(false); // Cho phép gửi lại sau khi xử lý xong
+    }
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth>
@@ -86,9 +82,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
 
         <TextField
           fullWidth
-          label={
-            mode === 'complete' ? 'Nội dung hoàn thành' : 'Mô tả chi tiết'
-          }
+          label={mode === 'complete' ? 'Nội dung hoàn thành' : 'Mô tả chi tiết'}
           multiline
           rows={4}
           value={content}
@@ -111,8 +105,15 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
+        <Button onClick={onClose} disabled={isSubmitting}>
+          Hủy
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !content.trim() || (mode === 'report' && !title.trim())}
+          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+        >
           {mode === 'complete' ? 'Gửi hoàn thành' : 'Gửi báo cáo'}
         </Button>
       </DialogActions>
