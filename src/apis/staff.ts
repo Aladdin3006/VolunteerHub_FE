@@ -127,28 +127,34 @@ const getAuthHeaders = () => {
 
 export interface Task {
   _id: string;
+  phaseDayId: string;
   title: string;
   description: string;
+  leaderId: string;
   assignedUsers: {
     userId: string;
-    checkinTime?: Date;
-    checkoutTime?: Date;
     submission?: {
-      content: string;
+      content?: string;
       images: string[];
-      submittedAt: Date;
-      submittedBy: string;
-    };
-    review?: {
-      status: "pending" | "approved" | "rejected";
-      evaluation?: "excellent" | "good" | "average" | "poor";
-      staffComment?: string;
-      reviewedBy?: string;
-      reviewedAt?: Date;
+      submittedAt?: Date;
+      submittedBy?: string;
     };
   }[];
-  phaseDayId: string;
-  campaignId?: string;
+  peerReviews?: {
+    reviewer: string;
+    reviewee: string;
+    score: number;
+    comment: string;
+    reviewedAt: Date;
+  }[];
+  staffReview?: {
+    evaluatedBy: string;
+    finalScore: number;
+    overallComment: string;
+    reviewedAt: Date;
+  };
+  status: "in_progress" | "submitted" | "completed";
+  campaignId: string;
   updatedAt: Date;
 }
 
@@ -499,17 +505,6 @@ export const deletePhaseDay = async (phaseDayId: string): Promise<void> => {
   }
 };
 
-export const deleteTask = async (taskId: string): Promise<void> => {
-  try {
-    await axios.delete(`${API_BASE}/phase/tasks/${taskId}`, {
-      headers: getAuthHeaders(),
-    });
-  } catch (error) {
-    console.error("Error deleting task:", error);
-    throw new Error("Failed to delete task");
-  }
-};
-
 // volunteer
 export const acceptVolunteer = async (
   campaignId: string,
@@ -773,17 +768,12 @@ export const getTasksByPhaseDayId = async (
       }
     );
 
-    // Log the response for debugging
-    console.log("Tasks response:", response.data);
-
-    // Handle different response structures
     const tasksData = response.data.data || response.data;
 
     if (!tasksData) {
       return [];
     }
 
-    // Ensure tasksData is an array
     const tasksArray = Array.isArray(tasksData) ? tasksData : [tasksData];
 
     return tasksArray.map((task: any) => ({
@@ -791,12 +781,31 @@ export const getTasksByPhaseDayId = async (
       phaseDayId: task.phaseDayId || phaseDayId,
       title: task.title || task.name || "Untitled Task",
       description: task.description || "",
+      leaderId: task.leaderId,
       assignedUsers:
         task.assignedUsers?.map((au: any) => ({
           userId: au.userId?._id || au.userId || au._id,
           submission: au.submission,
-          review: au.review,
         })) || [],
+      peerReviews:
+        task.peerReviews?.map((pr: any) => ({
+          reviewer: pr.reviewer,
+          reviewee: pr.reviewee,
+          score: pr.score,
+          comment: pr.comment,
+          reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
+        })) || [],
+      staffReview: task.staffReview
+        ? {
+            evaluatedBy: task.staffReview.evaluatedBy,
+            finalScore: task.staffReview.finalScore,
+            overallComment: task.staffReview.overallComment,
+            reviewedAt: task.staffReview.reviewedAt
+              ? new Date(task.staffReview.reviewedAt)
+              : new Date(),
+          }
+        : undefined,
+      status: task.status || "in_progress",
       campaignId: task.campaignId,
       updatedAt: task.updatedAt ? new Date(task.updatedAt) : new Date(),
     }));
@@ -811,6 +820,7 @@ export const createTask = async (
   payload: {
     title: string;
     description: string;
+    leaderId: string;
     assignedUsers?: string[];
     phaseDayDate?: Date;
   }
@@ -819,7 +829,6 @@ export const createTask = async (
     const phaseDayDate = payload.phaseDayDate
       ? new Date(payload.phaseDayDate)
       : new Date();
-
     const checkinTime = new Date(phaseDayDate);
     checkinTime.setHours(7, 0, 0, 0);
     const checkoutTime = new Date(phaseDayDate);
@@ -843,7 +852,21 @@ export const createTask = async (
     const taskData = response.data.data;
     return {
       ...taskData,
-      assignedUsers: taskData.assignedUsers?.map((u: any) => u.userId) || [],
+      leaderId: taskData.leaderId,
+      assignedUsers:
+        taskData.assignedUsers?.map((u: any) => ({
+          userId: u.userId,
+          submission: u.submission,
+        })) || [],
+      peerReviews:
+        taskData.peerReviews?.map((pr: any) => ({
+          reviewer: pr.reviewer,
+          reviewee: pr.reviewee,
+          score: pr.score,
+          comment: pr.comment,
+          reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
+        })) || [],
+      status: taskData.status || "in_progress",
     };
   } catch (error) {
     console.error("Error creating task:", error);
@@ -856,6 +879,7 @@ export const updateTask = async (
   payload: {
     title?: string;
     description?: string;
+    leaderId?: string;
     assignedUsers?: string[];
     phaseDayDate?: Date;
   }
@@ -868,7 +892,6 @@ export const updateTask = async (
     const phaseDayDate = payload.phaseDayDate
       ? new Date(payload.phaseDayDate)
       : new Date();
-
     const checkinTime = new Date(phaseDayDate);
     checkinTime.setHours(7, 0, 0, 0);
     const checkoutTime = new Date(phaseDayDate);
@@ -897,8 +920,21 @@ export const updateTask = async (
       phaseDayId: updatedTaskData.phaseDayId,
       title: updatedTaskData.title || updatedTaskData.name,
       description: updatedTaskData.description,
+      leaderId: updatedTaskData.leaderId,
       assignedUsers:
-        updatedTaskData.assignedUsers?.map((u: any) => u.userId || u._id) || [],
+        updatedTaskData.assignedUsers?.map((u: any) => ({
+          userId: u.userId || u._id,
+          submission: u.submission,
+        })) || [],
+      peerReviews:
+        updatedTaskData.peerReviews?.map((pr: any) => ({
+          reviewer: pr.reviewer,
+          reviewee: pr.reviewee,
+          score: pr.score,
+          comment: pr.comment,
+          reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
+        })) || [],
+      status: updatedTaskData.status || "in_progress",
       campaignId: updatedTaskData.campaignId,
       updatedAt: updatedTaskData.updatedAt
         ? new Date(updatedTaskData.updatedAt)
@@ -910,32 +946,82 @@ export const updateTask = async (
   }
 };
 
-export const reviewTask = async (
+export const deleteTask = async (taskId: string): Promise<void> => {
+  try {
+    if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid task ID: ${taskId}`);
+    }
+    await axios.delete(`${API_BASE}/task/delete/${taskId}`, {
+      headers: getAuthHeaders(),
+    });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    throw new Error("Failed to delete task");
+  }
+};
+
+export const assignTaskToUsers = async (
   taskId: string,
-  userId: string,
-  status: string,
-  evaluation: string,
-  staffComment: string
+  userIds: string[]
 ): Promise<Task> => {
   try {
     if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
       throw new Error(`Invalid task ID: ${taskId}`);
     }
-    if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
-      throw new Error(`Invalid user ID: ${userId}`);
+    const response = await axios.post(
+      `${API_BASE}/task/${taskId}/assign`,
+      { userIds },
+      { headers: getAuthHeaders() }
+    );
+
+    const taskData = response.data.data || response.data;
+    return {
+      ...taskData,
+      leaderId: taskData.leaderId,
+      assignedUsers:
+        taskData.assignedUsers?.map((u: any) => ({
+          userId: u.userId,
+          submission: u.submission,
+        })) || [],
+      peerReviews:
+        taskData.peerReviews?.map((pr: any) => ({
+          reviewer: pr.reviewer,
+          reviewee: pr.reviewee,
+          score: pr.score,
+          comment: pr.comment,
+          reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
+        })) || [],
+      status: taskData.status || "in_progress",
+    };
+  } catch (error) {
+    console.error("Error assigning task:", error);
+    throw new Error("Failed to assign task");
+  }
+};
+
+export const reviewPeerTask = async (
+  taskId: string,
+  reviewerId: string,
+  revieweeId: string,
+  score: number,
+  comment: string
+): Promise<Task> => {
+  try {
+    if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid task ID: ${taskId}`);
+    }
+    if (!reviewerId || !reviewerId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid reviewer ID: ${reviewerId}`);
+    }
+    if (!revieweeId || !revieweeId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid reviewee ID: ${revieweeId}`);
     }
 
-    // Get current user ID from localStorage
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const reviewedBy = user._id;
-
     const response = await axios.post(
-      `${API_BASE}/task/${taskId}/review/${userId}`,
+      `${API_BASE}/task/${taskId}/peer-review/${revieweeId}`,
       {
-        status,
-        evaluation,
-        staffComment,
-        reviewedBy, // Include the reviewer's ID
+        score,
+        comment,
       },
       { headers: getAuthHeaders() }
     );
@@ -946,12 +1032,21 @@ export const reviewTask = async (
       phaseDayId: updatedTaskData.phaseDayId,
       title: updatedTaskData.title || updatedTaskData.name,
       description: updatedTaskData.description,
+      leaderId: updatedTaskData.leaderId,
       assignedUsers:
         updatedTaskData.assignedUsers?.map((u: any) => ({
           userId: u.userId || u._id,
           submission: u.submission,
-          review: u.review,
         })) || [],
+      peerReviews:
+        updatedTaskData.peerReviews?.map((pr: any) => ({
+          reviewer: pr.reviewer,
+          reviewee: pr.reviewee,
+          score: pr.score,
+          comment: pr.comment,
+          reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
+        })) || [],
+      status: updatedTaskData.status || "in_progress",
       campaignId: updatedTaskData.campaignId,
       updatedAt: updatedTaskData.updatedAt
         ? new Date(updatedTaskData.updatedAt)
@@ -959,10 +1054,6 @@ export const reviewTask = async (
     };
   } catch (error) {
     console.error("Error reviewing task:", error);
-    if (axios.isAxiosError(error)) {
-      console.error("Error details:", error.response?.data);
-      throw new Error(error.response?.data?.message || "Failed to review task");
-    }
     throw new Error("Failed to review task");
   }
 };

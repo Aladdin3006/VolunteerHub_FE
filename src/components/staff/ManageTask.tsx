@@ -20,7 +20,14 @@ import {
   TableRow,
   TableContainer,
 } from "@mui/material";
-import { ArrowBack, Add, Assignment, RateReview } from "@mui/icons-material";
+import {
+  ArrowBack,
+  Add,
+  Assignment,
+  RateReview,
+  Edit,
+  Delete,
+} from "@mui/icons-material";
 import {
   Volunteer,
   getCampaignVolunteers,
@@ -28,12 +35,14 @@ import {
   getTasksByPhaseDayId,
   createTask,
   updateTask,
+  deleteTask,
+  assignTaskToUsers,
   Phase,
   getPhasesByCampaignId,
   PhaseDay,
   Department,
   getDepartmentsByVolunteerId,
-  reviewTask,
+  reviewPeerTask,
 } from "../../apis/staff";
 import TaskCRUDModal from "./TaskCRUDModal";
 
@@ -122,6 +131,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const handleCreateTask = async (taskData: {
     title: string;
     description: string;
+    leaderId: string;
     assignedUsers: string[];
   }) => {
     if (!selectedPhaseDay) {
@@ -135,6 +145,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       const newTask = await createTask(selectedPhaseDay._id, {
         title: taskData.title,
         description: taskData.description,
+        leaderId: taskData.leaderId,
         assignedUsers: taskData.assignedUsers || [],
         phaseDayDate: selectedPhaseDay.date,
       });
@@ -153,20 +164,61 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   };
 
-  const handleAssignTask = async (taskId: string, assignedUsers: string[]) => {
-    if (!taskId.match(/^[0-9a-fA-F]{24}$/)) {
-      setSnackbarMessage("Invalid task ID format");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-      return;
+  const handleUpdateTask = async (
+    taskId: string,
+    taskData: {
+      title: string;
+      description: string;
+      leaderId: string;
+      assignedUsers: string[];
     }
-
+  ) => {
     try {
       const updatedTask = await updateTask(taskId, {
-        assignedUsers: assignedUsers || [],
+        title: taskData.title,
+        description: taskData.description,
+        leaderId: taskData.leaderId,
+        assignedUsers: taskData.assignedUsers,
         phaseDayDate: selectedPhaseDay?.date,
       });
 
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
+      );
+      setTasks(updatedTasks);
+      setTaskModalOpen(false);
+      setSnackbarMessage("Task updated successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      setSnackbarMessage("Failed to update task");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
+      );
+      setTasks(updatedTasks);
+      setSnackbarMessage("Task deleted successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      setSnackbarMessage("Failed to delete task");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleAssignTask = async (taskId: string, assignedUsers: string[]) => {
+    try {
+      await assignTaskToUsers(taskId, assignedUsers);
       const updatedTasks = await getTasksByPhaseDayId(
         selectedPhaseDay?._id || ""
       );
@@ -183,56 +235,19 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   };
 
-  const handleReviewTask = async (
+  const handlePeerReviewTask = async (
     taskId: string,
-    userId: string,
-    status: string,
-    evaluation: string,
-    staffComment: string
+    reviewerId: string,
+    revieweeId: string,
+    score: number,
+    comment: string
   ) => {
     try {
-      const updatedTask = await reviewTask(
-        taskId,
-        userId,
-        status,
-        evaluation,
-        staffComment
+      await reviewPeerTask(taskId, reviewerId, revieweeId, score, comment);
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
       );
-
-      // Update the specific task in the tasks array with proper typing
-      setTasks(
-        tasks.map((task) => {
-          if (task._id === taskId) {
-            const updatedAssignedUsers = task.assignedUsers.map((au) => {
-              if (au.userId === userId) {
-                return {
-                  ...au,
-                  review: {
-                    status: status as "pending" | "approved" | "rejected",
-                    evaluation: evaluation as
-                      | "excellent"
-                      | "good"
-                      | "average"
-                      | "poor",
-                    staffComment,
-                    reviewedAt: new Date(),
-                    reviewedBy: JSON.parse(localStorage.getItem("user") || "{}")
-                      ._id,
-                  },
-                };
-              }
-              return au;
-            });
-
-            return {
-              ...task,
-              assignedUsers: updatedAssignedUsers,
-            };
-          }
-          return task;
-        })
-      );
-
+      setTasks(updatedTasks);
       setReviewModalOpen(false);
       setSelectedUserId(null);
       setSnackbarMessage("Task reviewed successfully!");
@@ -404,6 +419,11 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
               setSelectedUserId(userId);
               setReviewModalOpen(true);
             }}
+            onUpdate={(task) => {
+              setSelectedTask(task);
+              setTaskModalOpen(true);
+            }}
+            onDelete={(taskId) => handleDeleteTask(taskId)}
           />
           {(!tasks || tasks.length === 0) && (
             <Alert severity="info" sx={{ mt: 2 }}>
@@ -417,9 +437,23 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         onClose={() => setTaskModalOpen(false)}
         onSubmit={(taskData) => {
           if (selectedTask) {
-            handleAssignTask(selectedTask._id, taskData.assignedUsers);
+            if (taskData.assignedUsers) {
+              handleAssignTask(selectedTask._id, taskData.assignedUsers);
+            } else {
+              handleUpdateTask(selectedTask._id, {
+                title: taskData.title,
+                description: taskData.description,
+                leaderId: taskData.leaderId ?? "",
+                assignedUsers: taskData.assignedUsers ?? [],
+              });
+            }
           } else {
-            handleCreateTask(taskData);
+            handleCreateTask({
+              title: taskData.title,
+              description: taskData.description,
+              leaderId: taskData.leaderId ?? "",
+              assignedUsers: taskData.assignedUsers ?? [],
+            });
           }
         }}
         volunteers={volunteers}
@@ -436,15 +470,15 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           if (
             selectedTask &&
             selectedUserId &&
-            taskData.evaluation &&
-            taskData.staffComment
+            taskData.score &&
+            taskData.comment
           ) {
-            handleReviewTask(
+            handlePeerReviewTask(
               selectedTask._id,
+              JSON.parse(localStorage.getItem("user") || "{}")._id,
               selectedUserId,
-              taskData.status || "approved",
-              taskData.evaluation,
-              taskData.staffComment
+              taskData.score,
+              taskData.comment
             );
           }
         }}
@@ -477,6 +511,8 @@ interface TaskListProps {
   departments: Record<string, Department[]>;
   onAssign?: (task: Task) => void;
   onReview?: (task: Task, userId: string) => void;
+  onUpdate?: (task: Task) => void;
+  onDelete?: (taskId: string) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -485,6 +521,8 @@ const TaskList: React.FC<TaskListProps> = ({
   departments,
   onAssign,
   onReview,
+  onUpdate,
+  onDelete,
 }) => {
   if (!tasks || tasks.length === 0) {
     return (
@@ -509,7 +547,16 @@ const TaskList: React.FC<TaskListProps> = ({
         >
           <ListItemText
             primary={<Typography fontWeight="bold">{task.title}</Typography>}
-            secondary={task.description}
+            secondary={
+              <>
+                <Typography variant="body2">{task.description}</Typography>
+                <Typography variant="caption">
+                  Leader:{" "}
+                  {volunteers.find((v) => v.user._id === task.leaderId)?.user
+                    .fullName || "Unknown"}
+                </Typography>
+              </>
+            }
             sx={{
               flex: 2,
               minWidth: 0,
@@ -542,6 +589,33 @@ const TaskList: React.FC<TaskListProps> = ({
                 Assign Volunteers
               </Button>
             )}
+            {onUpdate && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Edit />}
+                onClick={() => onUpdate(task)}
+                sx={{
+                  mb: 1,
+                  padding: "6px 16px",
+                }}
+              >
+                Update
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Delete />}
+                onClick={() => onDelete(task._id)}
+                sx={{
+                  padding: "6px 16px",
+                }}
+              >
+                Delete
+              </Button>
+            )}
           </Box>
           <Box sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}>
             {task.assignedUsers && task.assignedUsers.length > 0 ? (
@@ -570,10 +644,12 @@ const TaskList: React.FC<TaskListProps> = ({
                                   onClick={() => onReview(task, au.userId)}
                                   sx={{ padding: "4px 8px" }}
                                   disabled={
-                                    !au.submission ||
-                                    (!au.submission.content?.trim() &&
-                                      au.submission.images.length === 0) ||
-                                    au.review?.status !== "pending"
+                                    task.status !== "submitted" &&
+                                    !(
+                                      au.submission &&
+                                      (au.submission.content?.trim() ||
+                                        au.submission.images.length > 0)
+                                    )
                                   }
                                 >
                                   Review

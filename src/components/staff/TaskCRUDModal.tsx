@@ -20,6 +20,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Rating,
 } from "@mui/material";
 import { Task, Volunteer, Department } from "../../apis/staff";
 
@@ -29,10 +30,10 @@ interface TaskCRUDModalProps {
   onSubmit: (taskData: {
     title: string;
     description: string;
-    assignedUsers: string[];
-    status?: string;
-    evaluation?: string;
-    staffComment?: string;
+    leaderId?: string;
+    assignedUsers?: string[];
+    score?: number;
+    comment?: string;
   }) => void;
   volunteers: Volunteer[];
   departments?: Record<string, Department[]>;
@@ -53,33 +54,31 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
 }) => {
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
+  const [leaderId, setLeaderId] = useState(task?.leaderId || "");
   const [assignedUsers, setAssignedUsers] = useState<string[]>(
-    task?.assignedUsers?.map((au) =>
-      typeof au === "string" ? au : au.userId
-    ) || []
+    task?.assignedUsers?.map((au) => au.userId) || []
   );
-  const [status, setStatus] = useState<string>("pending");
-  const [evaluation, setEvaluation] = useState<string>("");
-  const [staffComment, setStaffComment] = useState<string>("");
+  const [score, setScore] = useState<number | null>(null);
+  const [comment, setComment] = useState<string>("");
 
   useEffect(() => {
     if (task && isReviewMode && selectedUserId) {
-      const assignedUser = task.assignedUsers.find(
-        (au) => au.userId === selectedUserId
+      const peerReview = task.peerReviews?.find(
+        (pr) => pr.reviewee.toString() === selectedUserId
       );
       setTitle(task.title || "");
       setDescription(task.description || "");
+      setLeaderId(task.leaderId || "");
       setAssignedUsers(task.assignedUsers?.map((au) => au.userId) || []);
-      setStatus(assignedUser?.review?.status || "pending");
-      setEvaluation(assignedUser?.review?.evaluation || "");
-      setStaffComment(assignedUser?.review?.staffComment || "");
+      setScore(peerReview?.score || null);
+      setComment(peerReview?.comment || "");
     } else if (task) {
       setTitle(task.title || "");
       setDescription(task.description || "");
+      setLeaderId(task.leaderId || "");
       setAssignedUsers(task.assignedUsers?.map((au) => au.userId) || []);
-      setStatus("pending");
-      setEvaluation("");
-      setStaffComment("");
+      setScore(null);
+      setComment("");
     } else {
       resetForm();
     }
@@ -88,10 +87,10 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
   const resetForm = () => {
     setTitle("");
     setDescription("");
+    setLeaderId("");
     setAssignedUsers([]);
-    setStatus("pending");
-    setEvaluation("");
-    setStaffComment("");
+    setScore(null);
+    setComment("");
   };
 
   const handleSubmit = () => {
@@ -99,21 +98,27 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
       onSubmit({
         title,
         description,
+        leaderId,
         assignedUsers,
-        status,
-        evaluation,
-        staffComment,
+        score: score || 0,
+        comment,
       });
     } else {
+      if (!leaderId) {
+        alert("Please select a task leader");
+        return;
+      }
       onSubmit({
         title,
         description,
+        leaderId,
         assignedUsers,
       });
     }
   };
 
   const handleToggleVolunteer = (userId: string) => {
+    if (userId === leaderId) return; // Prevent unselecting leader
     setAssignedUsers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -134,7 +139,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
           onChange={(e) => setTitle(e.target.value)}
           margin="normal"
           required
-          sx={{ input: { color: 'black' } }}
+          sx={{ input: { color: "black" } }}
           disabled={isReviewMode}
         />
         <TextField
@@ -147,6 +152,30 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
           rows={4}
           disabled={isReviewMode}
         />
+        <FormControl fullWidth margin="normal">
+          <InputLabel>Task Leader</InputLabel>
+          <Select
+            value={leaderId}
+            onChange={(e) => {
+              const newLeaderId = e.target.value;
+              setLeaderId(newLeaderId);
+              if (newLeaderId && !assignedUsers.includes(newLeaderId)) {
+                setAssignedUsers([...assignedUsers, newLeaderId]);
+              }
+            }}
+            label="Task Leader"
+            required
+            disabled={isReviewMode}
+          >
+            {volunteers
+              .filter((v) => v.status === "approved")
+              .map((volunteer) => (
+                <MenuItem key={volunteer.user._id} value={volunteer.user._id}>
+                  {volunteer.user.fullName}
+                </MenuItem>
+              ))}
+          </Select>
+        </FormControl>
 
         {!isReviewMode && (
           <>
@@ -181,6 +210,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                               onChange={() =>
                                 handleToggleVolunteer(volunteer.user._id)
                               }
+                              disabled={volunteer.user._id === leaderId}
                             />
                           </TableCell>
                         </TableRow>
@@ -253,52 +283,21 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
               })()}
             </Box>
 
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                label="Status"
-              >
-                <MenuItem value="pending">Pending</MenuItem>
-                <MenuItem value="approved">Approved</MenuItem>
-                <MenuItem value="rejected">Rejected</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth margin="normal">
-              <InputLabel
-                id="evaluation-label"
-                sx={{
-                  top: "50%", ml: 2,
-                  transform: "translateY(-50%) scale(1)",
-                  "&.MuiInputLabel-shrink": {
-                    top: 0,
-                    transform: "translateY(-100%) scale(0.75)", // floating style
-                  },
-                }}
-              >
-                Evaluation
-              </InputLabel>
-              <Select
-                labelId="evaluation-label"
-                value={evaluation}
-                onChange={(e) => setEvaluation(e.target.value)}
-                label="Evaluation"
-                fullWidth
-              >
-                <MenuItem value="excellent">Excellent</MenuItem>
-                <MenuItem value="good">Good</MenuItem>
-                <MenuItem value="average">Average</MenuItem>
-                <MenuItem value="poor">Poor</MenuItem>
-              </Select>
-            </FormControl>
-
+            <Typography variant="subtitle1" sx={{ mt: 2 }}>
+              Peer Review
+            </Typography>
+            <Rating
+              name="score"
+              value={score}
+              onChange={(event, newValue) => setScore(newValue)}
+              precision={1}
+              max={5}
+            />
             <TextField
               fullWidth
-              label="Comment for task"
-              value={staffComment}
-              onChange={(e) => setStaffComment(e.target.value)}
+              label="Comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               margin="normal"
               multiline
               rows={3}
