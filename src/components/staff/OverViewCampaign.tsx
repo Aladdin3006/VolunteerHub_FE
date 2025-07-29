@@ -115,6 +115,28 @@ const OverViewCampaign: React.FC = () => {
     return now.getTime() === dayDate.getTime(); // Check if it's the current day
   };
 
+  const refreshPhases = async () => {
+    if (!id) return;
+    try {
+      setLoadingPhases(true);
+      const data = await getPhasesByCampaignId(id);
+      const formattedPhases = data.map((phase) => ({
+        ...phase,
+        startDate: new Date(phase.startDate),
+        endDate: new Date(phase.endDate),
+        phaseDays: phase.phaseDays.map((day) => ({
+          ...day,
+          date: new Date(day.date),
+        })),
+      }));
+      setPhases(formattedPhases);
+    } catch (error) {
+      console.error("Error refreshing phases:", error);
+    } finally {
+      setLoadingPhases(false);
+    }
+  };
+
   useEffect(() => {
     const fetchCampaign = async () => {
       if (!id) return;
@@ -191,6 +213,7 @@ const OverViewCampaign: React.FC = () => {
       const campaigns = await getStaffCampaigns();
       const selectedCampaign = campaigns.find((c) => c._id === id);
       setCampaign(selectedCampaign || null);
+      await refreshPhases();
     } catch (error) {
       console.error("Error refreshing campaign:", error);
     }
@@ -947,6 +970,7 @@ const OverViewCampaign: React.FC = () => {
                 open={activeTab === 0}
                 onClose={handleCloseModal}
                 selectedCampaign={campaign}
+                onPhaseCreated={refreshPhases}
               />
             </TabPanel>
             <TabPanel value={activeTab} index={1}>

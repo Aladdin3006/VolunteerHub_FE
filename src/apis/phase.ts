@@ -1,31 +1,45 @@
 // apis/task.ts
-import axios from 'axios';
+import axios from "axios";
 
-
-export const fetchPhasesByCampaignId = async (campaignId: string, token: string) => {
-  const response = await axios.get(`http://localhost:4000/task/${campaignId}/campaign`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const fetchPhasesByCampaignId = async (
+  campaignId: string,
+  token: string
+) => {
+  const response = await axios.get(
+    `http://localhost:4000/task/${campaignId}/campaign`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
   return response.data;
 };
 
+export const fetchTasksByCampaignId = async (
+  campaignId: string,
+  token: string
+) => {
+  const response = await axios.get(
+    `http://localhost:4000/task/${campaignId}/campaign`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
 
-// export const fetchTasksByCampaignId = async (campaignId: string, token: string) => {
-//   const response = await axios.get(`http://localhost:4000/phase/${campaignId}/task/me`, {
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   });
-//   return response.data;
-// };
-
-
-export const submitTaskApi = async (taskId: string, content: string, images: File[], token: string) => {
+export const submitTaskApi = async (
+  taskId: string,
+  content: string,
+  images: File[],
+  token: string
+) => {
   const formData = new FormData();
-  formData.append('content', content);
-  images.forEach((file) => formData.append('images', file)); // key 'images' phải giống backend xử lý
+  formData.append("content", content);
+  images.forEach((file) => formData.append("images", file)); // key 'images' phải giống backend xử lý
 
   const response = await axios.post(
     `http://localhost:4000/task/${taskId}/submit`,
@@ -33,11 +47,10 @@ export const submitTaskApi = async (taskId: string, content: string, images: Fil
     {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     }
   );
 
   return response.data;
 };
-

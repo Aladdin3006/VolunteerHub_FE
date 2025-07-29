@@ -13,6 +13,7 @@ import {
   Card,
   CardContent,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import { ExpandMore, ExpandLess, Minimize, Maximize } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -107,6 +108,16 @@ const TaskListPage: React.FC = () => {
       month: '2-digit',
       year: 'numeric',
     });
+  };
+
+  const isToday = (dateStr: string): boolean => {
+    const today = new Date();
+    const phaseDayDate = new Date(dateStr);
+    return (
+      today.getFullYear() === phaseDayDate.getFullYear() &&
+      today.getMonth() === phaseDayDate.getMonth() &&
+      today.getDate() === phaseDayDate.getDate()
+    );
   };
 
   const getStatusColor = (status: string) => {
@@ -299,19 +310,24 @@ const TaskListPage: React.FC = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {(() => {
                             const isCheckedIn = checkedInPhaseDays.includes(String(day._id));
+                            const isTodayPhaseDay = isToday(day.date);
                             const toggleIcon = expandedPhaseDay === day._id ? <ExpandLess /> : <ExpandMore />;
 
                             return (
                               <>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  color={isCheckedIn ? "success" : "info"}
-                                  disabled={isCheckedIn}
-                                  onClick={() => handleCheckIn(phase._id, day._id, day.checkinLocation)}
-                                >
-                                  {isCheckedIn ? "✅ Đã check-in" : "Check-in"}
-                                </Button>
+                                <Tooltip title={!isTodayPhaseDay ? "Chỉ có thể check-in vào đúng ngày" : ""}>
+                                  <span>
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      color={isCheckedIn ? "success" : "info"}
+                                      disabled={isCheckedIn || !isTodayPhaseDay}
+                                      onClick={() => handleCheckIn(phase._id, day._id, day.checkinLocation)}
+                                    >
+                                      {isCheckedIn ? "✅ Đã check-in" : isTodayPhaseDay ? "Check-in" : "Chưa đến ngày"}
+                                    </Button>
+                                  </span>
+                                </Tooltip>
                                 {toggleIcon}
                               </>
                             );

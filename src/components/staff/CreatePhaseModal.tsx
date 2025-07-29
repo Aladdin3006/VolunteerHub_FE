@@ -113,6 +113,7 @@ interface CreatePhaseModalProps {
   campaignId: string;
   selectedCampaign: { name: string };
   onTabChange?: (tabIndex: number) => void;
+  onPhaseCreated?: () => void;
 }
 
 const TabPanel: React.FC<{
@@ -137,6 +138,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
   campaignId,
   selectedCampaign,
   onTabChange,
+  onPhaseCreated,
 }) => {
   const [phases, setPhases] = useState<PhaseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -347,6 +349,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       setIsSubmitting(true);
       setError(null);
       const updatedPhase = await startPhase(phaseId);
+      if (onPhaseCreated) {
+        await onPhaseCreated();
+      }
       setPhases(
         phases.map((phase) =>
           phase._id === phaseId
@@ -429,6 +434,10 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             }
           }
           updatedPhases.push(existingPhase);
+        }
+
+        if (onPhaseCreated) {
+          onPhaseCreated();
         }
       }
 
@@ -555,7 +564,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                               color="success"
                               startIcon={<PlayArrowIcon />}
                               onClick={() => handleStartPhase(phase._id)}
-                              disabled={phase.status !== "upcoming" || isSubmitting}
+                              disabled={
+                                phase.status !== "upcoming" || isSubmitting
+                              }
                               sx={{ mr: 2 }}
                             >
                               Start Phase
