@@ -20,7 +20,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
+  Tabs,
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   ExpandMore,
@@ -29,7 +34,6 @@ import {
   Close as CloseIcon,
   CheckCircle,
   Schedule,
-  Error,
   Info,
   KeyboardArrowLeft,
 } from "@mui/icons-material";
@@ -50,7 +54,8 @@ interface Task {
   _id: string;
   title: string;
   description: string;
-  status: string; // Updated to match backend
+  status: string;
+  leaderId: string;
   submission?: {
     content: string;
     images: string[];
@@ -63,8 +68,15 @@ interface Task {
     score: number;
     comment: string;
   }[];
+  staffReview?: {
+    evaluatedBy: string;
+    overallComment: string;
+    finalScore: number;
+    reviewedAt: string;
+  };
   assignedUsers: {
     userId: string;
+    fullName?: string;
     submission?: {
       content: string;
       images: string[];
@@ -86,7 +98,7 @@ interface PhaseDay {
   date: string;
   tasks: Task[];
   checkinLocation: {
-    coordinates: [number, number];
+    coordinatesIndic: [number, number];
     address: string;
   };
   checkinStatus?: {
@@ -112,7 +124,7 @@ const TaskListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"complete" | "search" | "review">(
+  const [modalMode, setModalMode] = useState<"complete" | "report" | "review">(
     "complete"
   );
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -131,6 +143,12 @@ const TaskListPage: React.FC = () => {
     coordinates: [number, number];
   } | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [viewReviewModalOpen, setViewReviewModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [tabValue, setTabValue] = useState(0);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user?.userId;
 
   useEffect(() => {
     const saved = localStorage.getItem("checkedInPhaseDays");
@@ -159,19 +177,26 @@ const TaskListPage: React.FC = () => {
     });
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "in_progress":
+        return "Chưa nộp";
+      case "submitted":
+        return "Đã nộp";
+      case "completed":
+        return "Hoàn thành";
+      default:
+        return "Không xác định";
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case "hoàn thành":
-      case "approved":
+      case "completed":
         return "success";
-      case "đang chờ":
       case "submitted":
         return "warning";
-      case "bị từ chối":
-      case "rejected":
-        return "error";
-      case "chưa nộp":
-      case "pending":
+      case "in_progress":
         return "info";
       default:
         return "default";
@@ -180,17 +205,11 @@ const TaskListPage: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
-      case "hoàn thành":
-      case "approved":
+      case "completed":
         return <CheckCircle />;
-      case "đang chờ":
       case "submitted":
         return <Schedule />;
-      case "bị từ chối":
-      case "rejected":
-        return <Error />;
-      case "chưa nộp":
-      case "pending":
+      case "in_progress":
         return <Info />;
       default:
         return <Info />;
@@ -199,7 +218,7 @@ const TaskListPage: React.FC = () => {
 
   const openModalWithTaskId = (
     taskId: string,
-    mode: "complete" | "search" | "review",
+    mode: "complete" | "report" | "review",
     revieweeId?: string
   ) => {
     setSelectedTaskId(taskId);
@@ -241,9 +260,9 @@ const TaskListPage: React.FC = () => {
   const handleSubmitTaskAction = async (
     taskId: string,
     content: string,
-    images: File[]
+    images: File[],
+    revieweeId?: string
   ) => {
-    console.log("Đã submit:", { taskId, content, images, mode: modalMode });
     const userString = localStorage.getItem("user");
     const token = userString ? JSON.parse(userString).token : null;
 
@@ -255,8 +274,8 @@ const TaskListPage: React.FC = () => {
     try {
       if (modalMode === "complete") {
         await submitTaskApi(taskId, content, images, token);
-        alert("Gửi hoàn thành nhiệm vụ thành công");
-      } else if (modalMode === "search") {
+        alert("Nộp báo cáo thành công");
+      } else if (modalMode === "report") {
         const [title, ...descParts] = content.trim().split("\n");
         const description = descParts.join("\n") || "Không có mô tả chi tiết";
         await reportIssueApi(
@@ -266,16 +285,20 @@ const TaskListPage: React.FC = () => {
           token
         );
         alert("Gửi báo cáo sự cố thành công");
-      } else if (modalMode === "review" && selectedRevieweeId) {
+      } else if (modalMode === "review" && revieweeId) {
+        const [score, ...commentParts] = content.split("\n");
         await reviewPeerTaskApi(
           taskId,
-          selectedRevieweeId,
-          reviewScore,
-          reviewComment,
+          revieweeId,
+          parseFloat(score),
+          commentParts.join("\n") || "Không có bình luận",
           token
         );
         alert("Gửi đánh giá đồng nghiệp thành công");
       }
+      // Refresh tasks after submission
+      const phaseRes = await fetchPhasesByCampaignId(campaignId!, token);
+      setPhases(phaseRes.data.phases);
     } catch (err: any) {
       alert(err.response?.data?.message || "Đã có lỗi xảy ra");
       console.error(err);
@@ -285,6 +308,12 @@ const TaskListPage: React.FC = () => {
       setReviewScore(0);
       setReviewComment("");
     }
+  };
+
+  const handleViewReviews = (task: Task) => {
+    setSelectedTask(task);
+    setViewReviewModalOpen(true);
+    setTabValue(0);
   };
 
   useEffect(() => {
@@ -354,7 +383,6 @@ const TaskListPage: React.FC = () => {
       <Header />
 
       <Container maxWidth="lg" sx={{ pt: 12, pb: 5 }}>
-        {/* Hero Section */}
         <Paper
           elevation={10}
           sx={{
@@ -412,7 +440,6 @@ const TaskListPage: React.FC = () => {
           </Box>
         </Paper>
 
-        {/* Loading and Error States */}
         {loading && (
           <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3 }}>
             <Typography variant="h6">Đang tải dữ liệu...</Typography>
@@ -434,7 +461,6 @@ const TaskListPage: React.FC = () => {
           </Paper>
         )}
 
-        {/* Phases List */}
         <Stack spacing={3}>
           {phases.map((phase) => (
             <Paper
@@ -639,13 +665,9 @@ const TaskListPage: React.FC = () => {
                                           }}
                                         >
                                           <Chip
-                                            icon={getStatusIcon(
-                                              task.status || "pending"
-                                            )}
-                                            label={task.status || "Chưa nộp"}
-                                            color={getStatusColor(
-                                              task.status || "pending"
-                                            )}
+                                            icon={getStatusIcon(task.status)}
+                                            label={getStatusLabel(task.status)}
+                                            color={getStatusColor(task.status)}
                                             variant="filled"
                                             sx={{
                                               fontWeight: 600,
@@ -655,31 +677,43 @@ const TaskListPage: React.FC = () => {
                                           />
 
                                           <Stack direction="row" spacing={2}>
-                                            <Button
-                                              variant="contained"
-                                              color="success"
-                                              onClick={() =>
-                                                openModalWithTaskId(
-                                                  task._id,
-                                                  "complete"
-                                                )
-                                              }
-                                              sx={{
-                                                borderRadius: 3,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                px: 3,
-                                              }}
-                                            >
-                                              Hoàn thành
-                                            </Button>
+                                            {task.leaderId === userId && (
+                                              <Button
+                                                variant={
+                                                  task.status === "in_progress"
+                                                    ? "contained"
+                                                    : "outlined"
+                                                }
+                                                color="success"
+                                                onClick={() =>
+                                                  openModalWithTaskId(
+                                                    task._id,
+                                                    "complete"
+                                                  )
+                                                }
+                                                disabled={
+                                                  task.status === "submitted" ||
+                                                  task.status === "completed"
+                                                }
+                                                sx={{
+                                                  borderRadius: 3,
+                                                  textTransform: "none",
+                                                  fontWeight: 600,
+                                                  px: 3,
+                                                }}
+                                              >
+                                                {task.status === "in_progress"
+                                                  ? "Nộp báo cáo"
+                                                  : "Đã nộp"}
+                                              </Button>
+                                            )}
                                             <Button
                                               variant="outlined"
                                               color="error"
                                               onClick={() =>
                                                 openModalWithTaskId(
                                                   task._id,
-                                                  "search"
+                                                  "report"
                                                 )
                                               }
                                               sx={{
@@ -689,77 +723,43 @@ const TaskListPage: React.FC = () => {
                                                 px: 3,
                                               }}
                                             >
-                                              Báo cáo
+                                              Sự cố
                                             </Button>
-                                            <FormControl sx={{ minWidth: 120 }}>
-                                              <InputLabel>
-                                                Review Peer
-                                              </InputLabel>
-                                              <Select
-                                                value=""
-                                                onChange={(e) =>
-                                                  openModalWithTaskId(
-                                                    task._id,
-                                                    "review",
-                                                    e.target.value as string
-                                                  )
-                                                }
-                                                label="Review Peer"
-                                              >
-                                                {task.assignedUsers
-                                                  .filter(
-                                                    (u) =>
-                                                      u.userId !==
-                                                      JSON.parse(
-                                                        localStorage.getItem(
-                                                          "user"
-                                                        ) || "{}"
-                                                      )?.userId
-                                                  )
-                                                  .map((user) => (
-                                                    <MenuItem
-                                                      key={user.userId}
-                                                      value={user.userId}
-                                                    >
-                                                      User {user.userId}
-                                                    </MenuItem>
-                                                  ))}
-                                              </Select>
-                                            </FormControl>
+                                            <Button
+                                              variant="outlined"
+                                              color="primary"
+                                              onClick={() =>
+                                                openModalWithTaskId(
+                                                  task._id,
+                                                  "review"
+                                                )
+                                              }
+                                              sx={{
+                                                borderRadius: 3,
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                px: 3,
+                                              }}
+                                            >
+                                              Đánh giá đồng nghiệp
+                                            </Button>
+                                            <Button
+                                              variant="outlined"
+                                              color="info"
+                                              onClick={() =>
+                                                handleViewReviews(task)
+                                              }
+                                              sx={{
+                                                borderRadius: 3,
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                px: 3,
+                                              }}
+                                            >
+                                              Xem đánh giá
+                                            </Button>
                                           </Stack>
                                         </Box>
-                                        {task.peerReviews &&
-                                          task.peerReviews.length > 0 && (
-                                            <Box>
-                                              <Typography
-                                                variant="subtitle1"
-                                                fontWeight="bold"
-                                              >
-                                                Peer Reviews:
-                                              </Typography>
-                                              {task.peerReviews.map(
-                                                (review, index) => (
-                                                  <Box
-                                                    key={index}
-                                                    sx={{ mt: 1 }}
-                                                  >
-                                                    <Typography variant="body2">
-                                                      Reviewer:{" "}
-                                                      {review.reviewer},
-                                                      Reviewee:{" "}
-                                                      {review.reviewee}
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                      Score: {review.score}
-                                                    </Typography>
-                                                    <Typography variant="body2">
-                                                      Comment: {review.comment}
-                                                    </Typography>
-                                                  </Box>
-                                                )
-                                              )}
-                                            </Box>
-                                          )}
                                       </Stack>
                                     </CardContent>
                                   </Card>
@@ -777,7 +777,6 @@ const TaskListPage: React.FC = () => {
           ))}
         </Stack>
 
-        {/* Chat Feature */}
         <Fade in={!isChatOpen}>
           <IconButton
             onClick={() => setIsChatOpen(true)}
@@ -847,46 +846,178 @@ const TaskListPage: React.FC = () => {
             </Box>
           </Paper>
         </Fade>
+
+        <TaskActionModal
+          open={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setSelectedRevieweeId(null);
+            setReviewScore(0);
+            setReviewComment("");
+          }}
+          mode={modalMode}
+          taskId={selectedTaskId}
+          onSubmit={handleSubmitTaskAction}
+          reviewProps={
+            modalMode === "review"
+              ? {
+                  score: reviewScore,
+                  setScore: setReviewScore,
+                  comment: reviewComment,
+                  setComment: setReviewComment,
+                  assignedUsers: selectedTaskId
+                    ? phases
+                        .flatMap((p) => p.phaseDays)
+                        .flatMap((pd) => pd.tasks)
+                        .find((t) => t._id === selectedTaskId)?.assignedUsers ||
+                      []
+                    : [],
+                }
+              : undefined
+          }
+        />
+
+        {checkinModalOpen &&
+          selectedPhaseId &&
+          selectedPhaseDayId &&
+          selectedCheckinLocation && (
+            <FaceCheckinModal
+              open={checkinModalOpen}
+              onClose={() => setCheckinModalOpen(false)}
+              campaignId={campaignId || ""}
+              phaseId={selectedPhaseId}
+              phaseDayId={selectedPhaseDayId}
+              checkinLocation={selectedCheckinLocation}
+              onCheckinSuccess={handleCheckinSuccess}
+            />
+          )}
+
+        <Dialog
+          open={viewReviewModalOpen}
+          onClose={() => setViewReviewModalOpen(false)}
+          fullWidth
+          maxWidth="md"
+        >
+          <DialogTitle>Xem đánh giá: {selectedTask?.title}</DialogTitle>
+          <DialogContent>
+            <Tabs
+              value={tabValue}
+              onChange={(e, newValue) => setTabValue(newValue)}
+              centered
+            >
+              <Tab label="Đánh giá của staff" />
+              <Tab label="Đánh giá của mọi người" />
+              <Tab label="Báo cáo đã nộp" />
+            </Tabs>
+            <Box sx={{ mt: 2 }}>
+              {tabValue === 0 && (
+                <Box>
+                  {selectedTask?.staffReview ? (
+                    <>
+                      <Typography variant="body1">
+                        <strong>Người đánh giá:</strong>{" "}
+                        {selectedTask.staffReview.evaluatedBy}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Điểm số:</strong>{" "}
+                        {selectedTask.staffReview.finalScore}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Bình luận:</strong>{" "}
+                        {selectedTask.staffReview.overallComment}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Thời gian:</strong>{" "}
+                        {new Date(
+                          selectedTask.staffReview.reviewedAt
+                        ).toLocaleString("vi-VN")}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography>Chưa có đánh giá từ staff.</Typography>
+                  )}
+                </Box>
+              )}
+              {tabValue === 1 && (
+                <Box>
+                  {selectedTask?.peerReviews &&
+                  selectedTask.peerReviews.length > 0 ? (
+                    selectedTask.peerReviews.map((review, index) => (
+                      <Box
+                        key={index}
+                        sx={{ mb: 2, borderBottom: "1px solid #eee", pb: 1 }}
+                      >
+                        <Typography variant="body1">
+                          <strong>Người đánh giá:</strong> {review.reviewer}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Người được đánh giá:</strong>{" "}
+                          {review.reviewee}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Điểm số:</strong> {review.score}
+                        </Typography>
+                        <Typography variant="body1">
+                          <strong>Bình luận:</strong> {review.comment}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography>Chưa có đánh giá từ đồng nghiệp.</Typography>
+                  )}
+                </Box>
+              )}
+              {tabValue === 2 && (
+                <Box>
+                  {selectedTask?.submission ? (
+                    <>
+                      <Typography variant="body1">
+                        <strong>Nội dung:</strong>{" "}
+                        {selectedTask.submission.content}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Người nộp:</strong>{" "}
+                        {selectedTask.submission.submittedBy}
+                      </Typography>
+                      <Typography variant="body1">
+                        <strong>Thời gian nộp:</strong>{" "}
+                        {new Date(
+                          selectedTask.submission.submittedAt
+                        ).toLocaleString("vi-VN")}
+                      </Typography>
+                      {selectedTask.submission.images.length > 0 && (
+                        <Box>
+                          <Typography variant="body1">
+                            <strong>Hình ảnh:</strong>
+                          </Typography>
+                          {selectedTask.submission.images.map((img, index) => (
+                            <img
+                              key={index}
+                              src={img}
+                              alt={`Submission ${index}`}
+                              style={{
+                                maxWidth: "200px",
+                                margin: "10px",
+                                maxHeight: "200px",
+                                objectFit: "contain",
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </>
+                  ) : (
+                    <Typography>Chưa có báo cáo được nộp.</Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setViewReviewModalOpen(false)}>Đóng</Button>
+          </DialogActions>
+        </Dialog>
       </Container>
-
-      {/* Modals */}
-      <TaskActionModal
-        open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setSelectedRevieweeId(null);
-          setReviewScore(0);
-          setReviewComment("");
-        }}
-        mode={modalMode}
-        taskId={selectedTaskId}
-        onSubmit={handleSubmitTaskAction}
-        reviewProps={
-          modalMode === "review"
-            ? {
-                score: reviewScore,
-                setScore: setReviewScore,
-                comment: reviewComment,
-                setComment: setReviewComment,
-              }
-            : undefined
-        }
-      />
-
-      {checkinModalOpen &&
-        selectedPhaseId &&
-        selectedPhaseDayId &&
-        selectedCheckinLocation && (
-          <FaceCheckinModal
-            open={checkinModalOpen}
-            onClose={() => setCheckinModalOpen(false)}
-            campaignId={campaignId || ""}
-            phaseId={selectedPhaseId}
-            phaseDayId={selectedPhaseDayId}
-            checkinLocation={selectedCheckinLocation}
-            onCheckinSuccess={handleCheckinSuccess}
-          />
-        )}
     </Box>
   );
 };

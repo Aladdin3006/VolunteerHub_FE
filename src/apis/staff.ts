@@ -129,32 +129,32 @@ export interface Task {
   _id: string;
   phaseDayId: string;
   title: string;
-  description: string;
+  description?: string;
   leaderId: string;
   assignedUsers: {
     userId: string;
-    submission?: {
-      content?: string;
-      images: string[];
-      submittedAt?: Date;
-      submittedBy?: string;
-    };
   }[];
+  submission?: {
+    content?: string;
+    images: string[];
+    submittedAt: Date;
+    submittedBy: string;
+  };
   peerReviews?: {
     reviewer: string;
     reviewee: string;
     score: number;
-    comment: string;
+    comment?: string;
     reviewedAt: Date;
   }[];
   staffReview?: {
     evaluatedBy: string;
-    finalScore: number;
-    overallComment: string;
+    finalScore?: number;
+    overallComment?: string;
     reviewedAt: Date;
   };
   status: "in_progress" | "submitted" | "completed";
-  campaignId: string;
+  campaignId?: string;
   updatedAt: Date;
 }
 
@@ -761,6 +761,11 @@ export const getTasksByPhaseDayId = async (
   phaseDayId: string
 ): Promise<Task[]> => {
   try {
+    // Validate phaseDayId format
+    if (!phaseDayId || !phaseDayId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid phaseDay ID format: ${phaseDayId}`);
+    }
+
     const response = await axios.get(
       `${API_BASE}/task/phaseDay/${phaseDayId}`,
       {
@@ -785,21 +790,30 @@ export const getTasksByPhaseDayId = async (
       assignedUsers:
         task.assignedUsers?.map((au: any) => ({
           userId: au.userId?._id || au.userId || au._id,
-          submission: au.submission,
         })) || [],
+      submission: task.submission
+        ? {
+            content: task.submission.content || "",
+            images: task.submission.images || [],
+            submittedAt: task.submission.submittedAt
+              ? new Date(task.submission.submittedAt)
+              : new Date(),
+            submittedBy: task.submission.submittedBy || "",
+          }
+        : undefined,
       peerReviews:
         task.peerReviews?.map((pr: any) => ({
           reviewer: pr.reviewer,
           reviewee: pr.reviewee,
           score: pr.score,
-          comment: pr.comment,
+          comment: pr.comment || "",
           reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
         })) || [],
       staffReview: task.staffReview
         ? {
             evaluatedBy: task.staffReview.evaluatedBy,
             finalScore: task.staffReview.finalScore,
-            overallComment: task.staffReview.overallComment,
+            overallComment: task.staffReview.overallComment || "",
             reviewedAt: task.staffReview.reviewedAt
               ? new Date(task.staffReview.reviewedAt)
               : new Date(),
@@ -810,8 +824,13 @@ export const getTasksByPhaseDayId = async (
       updatedAt: task.updatedAt ? new Date(task.updatedAt) : new Date(),
     }));
   } catch (error) {
-    console.error("Error fetching tasks:", error);
-    throw new Error("Failed to fetch tasks");
+    if (axios.isAxiosError(error)) {
+      console.error("Error fetching tasks:", error.response?.data);
+      throw new Error(error.response?.data?.message || "Failed to fetch tasks");
+    } else {
+      console.error("Error fetching tasks:", error);
+      throw new Error("Failed to fetch tasks");
+    }
   }
 };
 
@@ -823,6 +842,11 @@ export const createTask = async (
     leaderId: string;
     assignedUsers?: string[];
     phaseDayDate?: Date;
+    submission?: {
+      content?: string;
+      images?: string[];
+      submittedBy?: string;
+    };
   }
 ): Promise<Task> => {
   try {
@@ -835,12 +859,20 @@ export const createTask = async (
     checkoutTime.setHours(20, 0, 0, 0);
 
     const backendPayload = {
-      ...payload,
+      title: payload.title,
+      description: payload.description,
+      leaderId: payload.leaderId,
       assignedUsers: (payload.assignedUsers || []).map((userId) => ({
         userId,
-        checkinTime: checkinTime.toISOString(),
-        checkoutTime: checkoutTime.toISOString(),
       })),
+      submission: payload.submission
+        ? {
+            content: payload.submission.content || "",
+            images: payload.submission.images || [],
+            submittedAt: new Date(),
+            submittedBy: payload.submission.submittedBy || "",
+          }
+        : undefined,
     };
 
     const response = await axios.post(
@@ -851,22 +883,46 @@ export const createTask = async (
 
     const taskData = response.data.data;
     return {
-      ...taskData,
+      _id: taskData._id,
+      phaseDayId: taskData.phaseDayId || phaseDayId,
+      title: taskData.title,
+      description: taskData.description,
       leaderId: taskData.leaderId,
       assignedUsers:
-        taskData.assignedUsers?.map((u: any) => ({
-          userId: u.userId,
-          submission: u.submission,
+        taskData.assignedUsers?.map((au: any) => ({
+          userId: au.userId,
         })) || [],
+      submission: taskData.submission
+        ? {
+            content: taskData.submission.content || "",
+            images: taskData.submission.images || [],
+            submittedAt: taskData.submission.submittedAt
+              ? new Date(taskData.submission.submittedAt)
+              : new Date(),
+            submittedBy: taskData.submission.submittedBy || "",
+          }
+        : undefined,
       peerReviews:
         taskData.peerReviews?.map((pr: any) => ({
           reviewer: pr.reviewer,
           reviewee: pr.reviewee,
           score: pr.score,
-          comment: pr.comment,
+          comment: pr.comment || "",
           reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
         })) || [],
+      staffReview: taskData.staffReview
+        ? {
+            evaluatedBy: taskData.staffReview.evaluatedBy,
+            finalScore: taskData.staffReview.finalScore,
+            overallComment: taskData.staffReview.overallComment || "",
+            reviewedAt: taskData.staffReview.reviewedAt
+              ? new Date(taskData.staffReview.reviewedAt)
+              : new Date(),
+          }
+        : undefined,
       status: taskData.status || "in_progress",
+      campaignId: taskData.campaignId,
+      updatedAt: taskData.updatedAt ? new Date(taskData.updatedAt) : new Date(),
     };
   } catch (error) {
     console.error("Error creating task:", error);
@@ -882,6 +938,11 @@ export const updateTask = async (
     leaderId?: string;
     assignedUsers?: string[];
     phaseDayDate?: Date;
+    submission?: {
+      content?: string;
+      images?: string[];
+      submittedBy?: string;
+    };
   }
 ): Promise<Task> => {
   try {
@@ -889,23 +950,19 @@ export const updateTask = async (
       throw new Error(`Invalid task ID: ${taskId}`);
     }
 
-    const phaseDayDate = payload.phaseDayDate
-      ? new Date(payload.phaseDayDate)
-      : new Date();
-    const checkinTime = new Date(phaseDayDate);
-    checkinTime.setHours(7, 0, 0, 0);
-    const checkoutTime = new Date(phaseDayDate);
-    checkoutTime.setHours(20, 0, 0, 0);
-
     const backendPayload = {
-      ...payload,
-      ...(payload.assignedUsers && {
-        assignedUsers: payload.assignedUsers.map((userId) => ({
-          userId,
-          checkinTime: checkinTime.toISOString(),
-          checkoutTime: checkoutTime.toISOString(),
-        })),
-      }),
+      title: payload.title,
+      description: payload.description,
+      leaderId: payload.leaderId,
+      assignedUsers: payload.assignedUsers?.map((userId) => ({ userId })),
+      submission: payload.submission
+        ? {
+            content: payload.submission.content || "",
+            images: payload.submission.images || [],
+            submittedAt: new Date(),
+            submittedBy: payload.submission.submittedBy || "",
+          }
+        : undefined,
     };
 
     const response = await axios.patch(
@@ -922,18 +979,37 @@ export const updateTask = async (
       description: updatedTaskData.description,
       leaderId: updatedTaskData.leaderId,
       assignedUsers:
-        updatedTaskData.assignedUsers?.map((u: any) => ({
-          userId: u.userId || u._id,
-          submission: u.submission,
+        updatedTaskData.assignedUsers?.map((au: any) => ({
+          userId: au.userId || au._id,
         })) || [],
+      submission: updatedTaskData.submission
+        ? {
+            content: updatedTaskData.submission.content || "",
+            images: updatedTaskData.submission.images || [],
+            submittedAt: updatedTaskData.submission.submittedAt
+              ? new Date(updatedTaskData.submission.submittedAt)
+              : new Date(),
+            submittedBy: updatedTaskData.submission.submittedBy || "",
+          }
+        : undefined,
       peerReviews:
         updatedTaskData.peerReviews?.map((pr: any) => ({
           reviewer: pr.reviewer,
           reviewee: pr.reviewee,
           score: pr.score,
-          comment: pr.comment,
+          comment: pr.comment || "",
           reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
         })) || [],
+      staffReview: updatedTaskData.staffReview
+        ? {
+            evaluatedBy: updatedTaskData.staffReview.evaluatedBy,
+            finalScore: updatedTaskData.staffReview.finalScore,
+            overallComment: updatedTaskData.staffReview.overallComment || "",
+            reviewedAt: updatedTaskData.staffReview.reviewedAt
+              ? new Date(updatedTaskData.staffReview.reviewedAt)
+              : new Date(),
+          }
+        : undefined,
       status: updatedTaskData.status || "in_progress",
       campaignId: updatedTaskData.campaignId,
       updatedAt: updatedTaskData.updatedAt
@@ -976,22 +1052,46 @@ export const assignTaskToUsers = async (
 
     const taskData = response.data.data || response.data;
     return {
-      ...taskData,
+      _id: taskData._id,
+      phaseDayId: taskData.phaseDayId,
+      title: taskData.title,
+      description: taskData.description,
       leaderId: taskData.leaderId,
       assignedUsers:
-        taskData.assignedUsers?.map((u: any) => ({
-          userId: u.userId,
-          submission: u.submission,
+        taskData.assignedUsers?.map((au: any) => ({
+          userId: au.userId,
         })) || [],
+      submission: taskData.submission
+        ? {
+            content: taskData.submission.content || "",
+            images: taskData.submission.images || [],
+            submittedAt: taskData.submission.submittedAt
+              ? new Date(taskData.submission.submittedAt)
+              : new Date(),
+            submittedBy: taskData.submission.submittedBy || "",
+          }
+        : undefined,
       peerReviews:
         taskData.peerReviews?.map((pr: any) => ({
           reviewer: pr.reviewer,
           reviewee: pr.reviewee,
           score: pr.score,
-          comment: pr.comment,
+          comment: pr.comment || "",
           reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
         })) || [],
+      staffReview: taskData.staffReview
+        ? {
+            evaluatedBy: taskData.staffReview.evaluatedBy,
+            finalScore: taskData.staffReview.finalScore,
+            overallComment: taskData.staffReview.overallComment || "",
+            reviewedAt: taskData.staffReview.reviewedAt
+              ? new Date(taskData.staffReview.reviewedAt)
+              : new Date(),
+          }
+        : undefined,
       status: taskData.status || "in_progress",
+      campaignId: taskData.campaignId,
+      updatedAt: taskData.updatedAt ? new Date(taskData.updatedAt) : new Date(),
     };
   } catch (error) {
     console.error("Error assigning task:", error);
@@ -999,62 +1099,84 @@ export const assignTaskToUsers = async (
   }
 };
 
-export const reviewPeerTask = async (
+export const staffReviewTask = async (
   taskId: string,
-  reviewerId: string,
-  revieweeId: string,
-  score: number,
-  comment: string
+  staffId: string,
+  finalScore: number,
+  overallComment: string
 ): Promise<Task> => {
   try {
     if (!taskId || !taskId.match(/^[0-9a-fA-F]{24}$/)) {
       throw new Error(`Invalid task ID: ${taskId}`);
     }
-    if (!reviewerId || !reviewerId.match(/^[0-9a-fA-F]{24}$/)) {
-      throw new Error(`Invalid reviewer ID: ${reviewerId}`);
-    }
-    if (!revieweeId || !revieweeId.match(/^[0-9a-fA-F]{24}$/)) {
-      throw new Error(`Invalid reviewee ID: ${revieweeId}`);
+    if (!staffId || !staffId.match(/^[0-9a-fA-F]{24}$/)) {
+      throw new Error(`Invalid staff ID: ${staffId}`);
     }
 
     const response = await axios.post(
-      `${API_BASE}/task/${taskId}/peer-review/${revieweeId}`,
+      `${API_BASE}/task/${taskId}/review/${staffId}`,
       {
-        score,
-        comment,
+        finalScore,
+        overallComment,
       },
       { headers: getAuthHeaders() }
     );
 
-    const updatedTaskData = response.data.data || response.data;
+    const updatedTaskData = response.data.task;
     return {
-      _id: updatedTaskData._id || updatedTaskData.id,
+      _id: updatedTaskData._id,
       phaseDayId: updatedTaskData.phaseDayId,
-      title: updatedTaskData.title || updatedTaskData.name,
+      title: updatedTaskData.title,
       description: updatedTaskData.description,
       leaderId: updatedTaskData.leaderId,
       assignedUsers:
-        updatedTaskData.assignedUsers?.map((u: any) => ({
-          userId: u.userId || u._id,
-          submission: u.submission,
+        updatedTaskData.assignedUsers?.map((au: any) => ({
+          userId: au.userId,
         })) || [],
+      submission: updatedTaskData.submission
+        ? {
+            content: updatedTaskData.submission.content || "",
+            images: updatedTaskData.submission.images || [],
+            submittedAt: updatedTaskData.submission.submittedAt
+              ? new Date(updatedTaskData.submission.submittedAt)
+              : new Date(),
+            submittedBy: updatedTaskData.submission.submittedBy || "",
+          }
+        : undefined,
       peerReviews:
         updatedTaskData.peerReviews?.map((pr: any) => ({
           reviewer: pr.reviewer,
           reviewee: pr.reviewee,
           score: pr.score,
-          comment: pr.comment,
+          comment: pr.comment || "",
           reviewedAt: pr.reviewedAt ? new Date(pr.reviewedAt) : new Date(),
         })) || [],
-      status: updatedTaskData.status || "in_progress",
+      staffReview: updatedTaskData.staffReview
+        ? {
+            evaluatedBy: updatedTaskData.staffReview.evaluatedBy,
+            finalScore: updatedTaskData.staffReview.finalScore,
+            overallComment: updatedTaskData.staffReview.overallComment || "",
+            reviewedAt: updatedTaskData.staffReview.reviewedAt
+              ? new Date(updatedTaskData.staffReview.reviewedAt)
+              : new Date(),
+          }
+        : undefined,
+      status: updatedTaskData.status || "completed",
       campaignId: updatedTaskData.campaignId,
       updatedAt: updatedTaskData.updatedAt
         ? new Date(updatedTaskData.updatedAt)
         : new Date(),
     };
   } catch (error) {
-    console.error("Error reviewing task:", error);
-    throw new Error("Failed to review task");
+    if (axios.isAxiosError(error)) {
+      console.error("Error submitting staff review:", error.response?.data);
+      throw new Error(
+        error.response?.data?.message || "Failed to submit staff review"
+      );
+    } else {
+      console.error("Error submitting staff review:", error);
+      throw new Error("Failed to submit staff review");
+    }
   }
 };
 

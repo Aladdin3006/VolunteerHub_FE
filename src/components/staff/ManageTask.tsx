@@ -17,8 +17,8 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableRow,
   TableContainer,
+  TableRow,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -42,7 +42,7 @@ import {
   PhaseDay,
   Department,
   getDepartmentsByVolunteerId,
-  reviewPeerTask,
+  staffReviewTask,
 } from "../../apis/staff";
 import TaskCRUDModal from "./TaskCRUDModal";
 
@@ -235,22 +235,21 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   };
 
-  const handlePeerReviewTask = async (
+  const handleStaffReviewTask = async (
     taskId: string,
-    reviewerId: string,
-    revieweeId: string,
-    score: number,
+    staffId: string,
+    finalScore: number,
     comment: string
   ) => {
     try {
-      await reviewPeerTask(taskId, reviewerId, revieweeId, score, comment);
+      await staffReviewTask(taskId, staffId, finalScore, comment);
       const updatedTasks = await getTasksByPhaseDayId(
         selectedPhaseDay?._id || ""
       );
       setTasks(updatedTasks);
       setReviewModalOpen(false);
       setSelectedUserId(null);
-      setSnackbarMessage("Task reviewed successfully!");
+      setSnackbarMessage("Task reviewed successfully by staff!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch (error) {
@@ -473,10 +472,9 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
             taskData.score &&
             taskData.comment
           ) {
-            handlePeerReviewTask(
+            handleStaffReviewTask(
               selectedTask._id,
-              JSON.parse(localStorage.getItem("user") || "{}")._id,
-              selectedUserId,
+              JSON.parse(localStorage.getItem("user") || "{}").id,
               taskData.score,
               taskData.comment
             );
@@ -518,7 +516,6 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
   volunteers,
-  departments,
   onAssign,
   onReview,
   onUpdate,
@@ -526,7 +523,10 @@ const TaskList: React.FC<TaskListProps> = ({
 }) => {
   if (!tasks || tasks.length === 0) {
     return (
-      <Typography variant="body1" sx={{ p: 2, textAlign: "center" }}>
+      <Typography
+        variant="body1"
+        sx={{ p: 2, textAlign: "center", color: "#666" }}
+      >
         No tasks found
       </Typography>
     );
@@ -541,16 +541,26 @@ const TaskList: React.FC<TaskListProps> = ({
           sx={{
             "&:hover": { backgroundColor: "action.hover" },
             display: "flex",
-            alignItems: "flex-start",
-            minHeight: "56px",
+            alignItems: "center",
+            minHeight: "80px",
+            borderRadius: 1,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            backgroundColor: "#fff",
+            transition: "all 0.3s ease",
           }}
         >
           <ListItemText
-            primary={<Typography fontWeight="bold">{task.title}</Typography>}
+            primary={
+              <Typography fontWeight="bold" color="#333">
+                {task.title}
+              </Typography>
+            }
             secondary={
               <>
-                <Typography variant="body2">{task.description}</Typography>
-                <Typography variant="caption">
+                <Typography variant="body2" color="#666">
+                  {task.description}
+                </Typography>
+                <Typography variant="caption" color="#999">
                   Leader:{" "}
                   {volunteers.find((v) => v.user._id === task.leaderId)?.user
                     .fullName || "Unknown"}
@@ -562,17 +572,19 @@ const TaskList: React.FC<TaskListProps> = ({
               minWidth: 0,
               overflow: "hidden",
               textOverflow: "ellipsis",
-              mr: 1,
+              mr: 2,
+              padding: 1,
             }}
           />
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row",
               gap: 1,
               flex: 0,
               alignItems: "center",
-              height: "56px",
+              height: "100%",
+              padding: 1,
             }}
           >
             {onAssign && (
@@ -582,8 +594,10 @@ const TaskList: React.FC<TaskListProps> = ({
                 startIcon={<Assignment />}
                 onClick={() => onAssign(task)}
                 sx={{
-                  mb: 1,
-                  padding: "6px 16px",
+                  padding: "6px 12px",
+                  borderColor: "#1976d2",
+                  color: "#1976d2",
+                  "&:hover": { backgroundColor: "rgba(25, 118, 210, 0.1)" },
                 }}
               >
                 Assign Volunteers
@@ -596,8 +610,10 @@ const TaskList: React.FC<TaskListProps> = ({
                 startIcon={<Edit />}
                 onClick={() => onUpdate(task)}
                 sx={{
-                  mb: 1,
-                  padding: "6px 16px",
+                  padding: "6px 12px",
+                  borderColor: "#1976d2",
+                  color: "#1976d2",
+                  "&:hover": { backgroundColor: "rgba(25, 118, 210, 0.1)" },
                 }}
               >
                 Update
@@ -610,20 +626,27 @@ const TaskList: React.FC<TaskListProps> = ({
                 startIcon={<Delete />}
                 onClick={() => onDelete(task._id)}
                 sx={{
-                  padding: "6px 16px",
+                  padding: "6px 12px",
+                  borderColor: "#d32f2f",
+                  color: "#d32f2f",
+                  "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.1)" },
                 }}
               >
                 Delete
               </Button>
             )}
           </Box>
-          <Box sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}>
+          <Box
+            sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2, padding: 1 }}
+          >
             {task.assignedUsers && task.assignedUsers.length > 0 ? (
               <>
-                <Typography variant="subtitle2">
+                <Typography variant="subtitle2" color="#333" fontWeight="bold">
                   Volunteers ({task.assignedUsers.length})
                 </Typography>
-                <TableContainer>
+                <TableContainer
+                  sx={{ mt: 1, borderRadius: 4, overflow: "hidden" }}
+                >
                   <Table>
                     <TableBody>
                       {task.assignedUsers.map((au) => {
@@ -631,25 +654,47 @@ const TaskList: React.FC<TaskListProps> = ({
                           (v) => v.user._id === au.userId
                         );
                         return (
-                          <TableRow key={au.userId}>
-                            <TableCell>
+                          <TableRow
+                            key={au.userId}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: "rgba(0,0,0,0.04)",
+                              },
+                            }}
+                          >
+                            <TableCell
+                              sx={{
+                                padding: "8px",
+                                borderBottom: "1px solid #eee",
+                              }}
+                            >
                               {volunteer?.user.fullName || "Unknown"}
                             </TableCell>
-                            <TableCell>
+                            <TableCell
+                              sx={{
+                                padding: "8px",
+                                borderBottom: "1px solid #eee",
+                              }}
+                            >
                               {onReview && (
                                 <Button
                                   variant="contained"
                                   size="small"
                                   startIcon={<RateReview />}
                                   onClick={() => onReview(task, au.userId)}
-                                  sx={{ padding: "4px 8px" }}
+                                  sx={{
+                                    padding: "4px 8px",
+                                    backgroundColor: "#1976d2",
+                                    "&:hover": { backgroundColor: "#1565c0" },
+                                    "&:disabled": {
+                                      backgroundColor: "#ccc",
+                                      color: "#fff",
+                                    },
+                                  }}
                                   disabled={
-                                    task.status !== "submitted" &&
-                                    !(
-                                      au.submission &&
-                                      (au.submission.content?.trim() ||
-                                        au.submission.images.length > 0)
-                                    )
+                                    (task.status !== "submitted" &&
+                                      task.status !== "completed") ||
+                                    !task.submission
                                   }
                                 >
                                   Review
@@ -664,7 +709,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 </TableContainer>
               </>
             ) : (
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="#999">
                 No volunteers assigned
               </Typography>
             )}

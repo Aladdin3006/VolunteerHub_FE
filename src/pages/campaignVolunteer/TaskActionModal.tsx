@@ -8,8 +8,12 @@ import {
   TextField,
   Box,
   Typography,
+  Rating,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   CircularProgress,
-  Slider,
 } from "@mui/material";
 
 interface TaskActionModalProps {
@@ -17,12 +21,23 @@ interface TaskActionModalProps {
   onClose: () => void;
   mode: "complete" | "report" | "review";
   taskId: string | null;
-  onSubmit: (taskId: string, content: string, images: File[]) => void;
+  onSubmit: (
+    taskId: string,
+    content: string,
+    images: File[],
+    revieweeId?: string
+  ) => void;
   reviewProps?: {
     score: number;
     setScore: (score: number) => void;
     comment: string;
     setComment: (comment: string) => void;
+    assignedUsers: { userId: string; fullName?: string }[];
+    staffReview?: {
+      finalScore: number;
+      overallComment: string;
+      evaluatedBy: string;
+    };
   };
 }
 
@@ -38,18 +53,20 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
   const [title, setTitle] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRevieweeId, setSelectedRevieweeId] = useState<string>("");
 
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = user?.userId;
+
+  // Only reset non-review fields when modal opens
   useEffect(() => {
     if (open) {
       setContent("");
       setTitle("");
       setImages([]);
-      if (reviewProps) {
-        reviewProps.setScore(0);
-        reviewProps.setComment("");
-      }
+      setSelectedRevieweeId("");
     }
-  }, [open, reviewProps]);
+  }, [open]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -65,9 +82,13 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      if (mode === "review" && reviewProps) {
-        // For review mode, pass empty content and images since they are not needed
-        await onSubmit(taskId, "", []);
+      if (mode === "review" && reviewProps && selectedRevieweeId) {
+        await onSubmit(
+          taskId,
+          `${reviewProps.score}\n${reviewProps.comment}`,
+          [],
+          selectedRevieweeId
+        );
       } else {
         const finalContent =
           mode === "report" ? `${title}\n${content}` : content;
@@ -91,27 +112,68 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
           ? "Báo cáo sự cố"
           : "Đánh giá đồng nghiệp"}
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ p: 2 }}>
         {mode === "review" && reviewProps ? (
-          <Box sx={{ mt: 2 }}>
-            <Typography gutterBottom>Điểm số (0-100):</Typography>
-            <Slider
+          <Box sx={{ p: 1 }}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Chọn tình nguyện viên</InputLabel>
+              <Select
+                value={selectedRevieweeId}
+                onChange={(e) => setSelectedRevieweeId(e.target.value)}
+                label="Chọn tình nguyện viên"
+                disabled={isSubmitting}
+                sx={{ minWidth: 200 }}
+              >
+                {reviewProps.assignedUsers
+                  .filter((user) => user.userId !== userId)
+                  .map((user) => (
+                    <MenuItem key={user.userId} value={user.userId}>
+                      {user.fullName || `Tình nguyện viên ${user.userId}`}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            {reviewProps.staffReview && (
+              <Box
+                sx={{ mb: 2, p: 1, border: "1px solid #eee", borderRadius: 2 }}
+              >
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Đánh giá của Staff
+                </Typography>
+                <Typography>
+                  <strong>Người đánh giá:</strong>{" "}
+                  {reviewProps.staffReview.evaluatedBy}
+                </Typography>
+                <Typography>
+                  <strong>Điểm số:</strong> {reviewProps.staffReview.finalScore}
+                </Typography>
+                <Typography>
+                  <strong>Bình luận:</strong>{" "}
+                  {reviewProps.staffReview.overallComment}
+                </Typography>
+              </Box>
+            )}
+            <Typography variant="subtitle1" gutterBottom>
+              Đánh giá của bạn
+            </Typography>
+            <Rating
               value={reviewProps.score}
-              onChange={(e, value) => reviewProps.setScore(value as number)}
-              min={0}
-              max={100}
-              valueLabelDisplay="auto"
-              disabled={isSubmitting}
+              onChange={(e, value) => reviewProps.setScore(value || 0)}
+              max={5}
+              precision={0.5}
+              disabled={isSubmitting || !selectedRevieweeId}
+              sx={{ mb: 2 }}
             />
             <TextField
               label="Bình luận"
               multiline
-              rows={4}
+              rows={3}
               value={reviewProps.comment}
               onChange={(e) => reviewProps.setComment(e.target.value)}
               fullWidth
               margin="normal"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !selectedRevieweeId}
+              sx={{ mb: 1 }}
             />
           </Box>
         ) : (
@@ -122,7 +184,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                 label="Tiêu đề sự cố"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                sx={{ mt: 2 }}
+                sx={{ mt: 2, mb: 2 }}
                 disabled={isSubmitting}
               />
             )}
@@ -135,11 +197,11 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
               rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              sx={{ mt: 2 }}
+              sx={{ mt: 2, mb: 2 }}
               disabled={isSubmitting}
             />
             {mode === "complete" && (
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ mt: 2, mb: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   Ảnh minh chứng (nếu có):
                 </Typography>
@@ -149,14 +211,15 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                   multiple
                   onChange={handleImageChange}
                   disabled={isSubmitting}
+                  style={{ marginBottom: "8px" }}
                 />
               </Box>
             )}
           </>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={isSubmitting}>
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} disabled={isSubmitting} sx={{ mr: 1 }}>
           Hủy
         </Button>
         <Button
@@ -165,12 +228,15 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
           disabled={
             isSubmitting ||
             (mode === "review" && reviewProps
-              ? reviewProps.score === 0 || !reviewProps.comment.trim()
+              ? !selectedRevieweeId ||
+                reviewProps.score === 0 ||
+                !reviewProps.comment.trim()
               : !content.trim() || (mode === "report" && !title.trim()))
           }
           startIcon={
             isSubmitting ? <CircularProgress size={20} color="inherit" /> : null
           }
+          sx={{ px: 2, py: 1 }}
         >
           {mode === "complete"
             ? "Gửi hoàn thành"
