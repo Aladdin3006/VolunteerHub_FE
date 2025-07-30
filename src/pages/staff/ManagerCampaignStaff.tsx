@@ -22,7 +22,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 import ListAltIcon from "@mui/icons-material/ListAlt";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   INewCampaignDialogRef,
   NewCampaignDialog,
@@ -79,7 +79,11 @@ const ManagerCampaignStaff: React.FC = () => {
   const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
     null
   );
+  const [activeLink, setActiveLink] = useState<"ongoing" | "finished">(
+    "ongoing"
+  );
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -165,6 +169,41 @@ const ManagerCampaignStaff: React.FC = () => {
         top: 0,
       }}
     >
+      <Box sx={{ mb: 3 }}>
+        <Tabs
+          value={activeLink === "ongoing" ? 0 : 1}
+          onChange={(_, newValue) => {
+            const link = newValue === 0 ? "ongoing" : "finished";
+            setActiveLink(link);
+            if (link === "finished") {
+              navigate("/staff/donations");
+            }
+          }}
+          variant="fullWidth"
+          sx={{
+            "& .MuiTabs-indicator": {
+              backgroundColor: "#1976d2",
+            },
+          }}
+        >
+          <Tab
+            label="Quản lý Chiến dịch"
+            sx={{
+              fontWeight: "bold",
+              textTransform: "none",
+              fontSize: "1rem",
+            }}
+          />
+          <Tab
+            label="Quản lý Quyên góp"
+            sx={{
+              fontWeight: "bold",
+              textTransform: "none",
+              fontSize: "1rem",
+            }}
+          />
+        </Tabs>
+      </Box>
       <Box
         sx={{
           mb: 4,

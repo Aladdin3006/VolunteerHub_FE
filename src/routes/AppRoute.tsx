@@ -36,6 +36,8 @@ import { UpdateCampaignDialog } from "@/components/staff/UpdateCampaignDialog";
 import ReliefPointManager from "@/pages/manager/reliefPointManager/ReliefPointManager";
 import DonationHome from "@/pages/campaignDonation/DonationHome";
 import DonationDetail from "../pages/campaignDonation/DonationDetail";
+import { Manager } from "socket.io-client";
+import ManagerDonationStaff from "@/pages/staff/ManagerDonationStaff";
 
 const AppRoutes = () => (
   <Routes>
@@ -51,7 +53,7 @@ const AppRoutes = () => (
           if (user?.role === "admin")
             return <Navigate to="/admin/dashboard" replace />;
           if (user?.role === "organization")
-            return <Navigate to="/staff" replace />;
+            return <Navigate to="/staff/campaigns" replace />;
           if (user?.role === "manager")
             return <Navigate to="/manager/campaigns" replace />;
         }
@@ -263,7 +265,7 @@ const AppRoutes = () => (
         <ProtectedRoute requiredRole="organization">
           <Routes>
             <Route
-              path=""
+              path="campaigns"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
                   <ManagerCampaignStaff />
@@ -295,10 +297,10 @@ const AppRoutes = () => (
               }
             />
             <Route
-              path="donations/new"
+              path="donations"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <NewDonationPage />
+                  <ManagerDonationStaff />
                 </LayoutWrapper>
               }
             />
