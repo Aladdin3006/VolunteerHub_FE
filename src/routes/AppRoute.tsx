@@ -38,6 +38,7 @@ import DonationHome from "@/pages/campaignDonation/DonationHome";
 import DonationDetail from "../pages/campaignDonation/DonationDetail";
 import { Manager } from "socket.io-client";
 import ManagerDonationStaff from "@/pages/staff/ManagerDonationStaff";
+import CampaignDonationView from "../components/staff/CampaignDonationView"
 
 const AppRoutes = () => (
   <Routes>
@@ -115,6 +116,16 @@ const AppRoutes = () => (
         </LayoutWrapper>
       }
     />
+     
+     <Route
+      path="/staff/donation/:campaignId"
+      element={
+        <LayoutWrapper>
+          <CampaignDonationView />
+        </LayoutWrapper>
+      }
+    />
+
     <Route
       path="/campaigns"
       element={
