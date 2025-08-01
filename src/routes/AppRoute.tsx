@@ -3,7 +3,7 @@ import Home from "../pages/home/Home";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
 import CampaignHome from "../pages/campaignVolunteer/CampaignHome";
-import CampaignDetail from "../pages/campaignDonation/DonationDetail";
+// import CampaignDetail from "../pages/campaignDonation/DonationDetail";
 import AboutUs from "../pages/about-us/aboutus";
 import DonatePage from "../pages/about-us/DonatePage";
 import ForgotPW from "../pages/login/ForgotPW";
@@ -38,6 +38,8 @@ import DonationHome from "@/pages/campaignDonation/DonationHome";
 import DonationDetail from "../pages/campaignDonation/DonationDetail";
 import { Manager } from "socket.io-client";
 import ManagerDonationStaff from "@/pages/staff/ManagerDonationStaff";
+import CampaignDonationView from "../components/staff/CampaignDonationView"
+import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
 
 const AppRoutes = () => (
   <Routes>
@@ -115,6 +117,25 @@ const AppRoutes = () => (
         </LayoutWrapper>
       }
     />
+     
+     <Route
+      path="/staff/donation/:campaignId"
+      element={
+        <LayoutWrapper>
+          <CampaignDonationView />
+        </LayoutWrapper>
+      }
+    />
+
+    <Route
+      path="/manager/donations"
+      element={
+        <LayoutWrapper>
+          <ManagerCampaignDonation />
+        </LayoutWrapper>
+      }
+    />
+
     <Route
       path="/campaigns"
       element={

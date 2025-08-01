@@ -68,25 +68,25 @@ interface ReliefPoint {
   description?: string;
   surplus?: Array<{
     type:
-      | "thực phẩm"
-      | "nước uống"
-      | "quần áo"
-      | "thuốc men"
-      | "chăn màn"
-      | "dụng cụ y tế"
-      | "khác";
+    | "thực phẩm"
+    | "nước uống"
+    | "quần áo"
+    | "thuốc men"
+    | "chăn màn"
+    | "dụng cụ y tế"
+    | "khác";
     quantity: number;
     note: string;
     _id?: string; // Optional, backend generate cho response
   }>;
   needs?: Array<{
     type:
-      | "người mắc kẹt"
-      | "bị thương"
-      | "thiếu đồ ăn"
-      | "thiếu nước"
-      | "thiếu thuốc"
-      | "khác";
+    | "người mắc kẹt"
+    | "bị thương"
+    | "thiếu đồ ăn"
+    | "thiếu nước"
+    | "thiếu thuốc"
+    | "khác";
     quantity: number;
     note: string;
     _id?: string; // Optional
@@ -104,24 +104,24 @@ interface ReliefPoint {
 interface FormDataType extends Partial<ReliefPoint> {
   surplus: Array<{
     type:
-      | "thực phẩm"
-      | "nước uống"
-      | "quần áo"
-      | "thuốc men"
-      | "chăn màn"
-      | "dụng cụ y tế"
-      | "khác";
+    | "thực phẩm"
+    | "nước uống"
+    | "quần áo"
+    | "thuốc men"
+    | "chăn màn"
+    | "dụng cụ y tế"
+    | "khác";
     quantity: number;
     note: string;
   }>;
   needs: Array<{
     type:
-      | "người mắc kẹt"
-      | "bị thương"
-      | "thiếu đồ ăn"
-      | "thiếu nước"
-      | "thiếu thuốc"
-      | "khác";
+    | "người mắc kẹt"
+    | "bị thương"
+    | "thiếu đồ ăn"
+    | "thiếu nước"
+    | "thiếu thuốc"
+    | "khác";
     quantity: number;
     note: string;
   }>;
@@ -409,13 +409,26 @@ const ReliefPointManager: React.FC = () => {
             Quản lý Chiến dịch
           </li>
           <li
-            className={activeLink === "storms" ? "active" : ""}
-            onClick={() => setActiveLink("storms")}
+            className={activeLink === "donations" ? "active" : ""}
+            onClick={() => {
+              setActiveLink("donations");
+              navigate("/manager/donations");
+            }}
           >
-            Quản lý bão
+            Quản lý Donation
+          </li>
+          <li
+            className={activeLink === "storms" ? "active" : ""}
+            onClick={() => {
+              setActiveLink("storms");
+              navigate("/manager/storms");
+            }}
+          >
+            Quản lý Bão
           </li>
         </ul>
       </div>
+
       <Typography variant="h5" fontWeight="bold" p={3}>
         📍 Quản lý điểm cứu trợ
       </Typography>
@@ -890,9 +903,8 @@ const ReliefPointManager: React.FC = () => {
                         <ListItem key={i}>
                           <ListItemText
                             primary={s.type}
-                            secondary={`${s.quantity} - ${
-                              s.note || "Không có ghi chú"
-                            }`}
+                            secondary={`${s.quantity} - ${s.note || "Không có ghi chú"
+                              }`}
                           />
                         </ListItem>
                       ))}
@@ -913,9 +925,8 @@ const ReliefPointManager: React.FC = () => {
                         <ListItem key={i}>
                           <ListItemText
                             primary={n.type}
-                            secondary={`${n.quantity} - ${
-                              n.note || "Không có ghi chú"
-                            }`}
+                            secondary={`${n.quantity} - ${n.note || "Không có ghi chú"
+                              }`}
                           />
                         </ListItem>
                       ))}

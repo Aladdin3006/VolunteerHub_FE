@@ -34,7 +34,7 @@ import getCampaignDetail, {
   Campaign,
   DonationTransaction,
 } from "../../apis/campaign";
-import DonationModal from "../campaignVolunteer/DonationModal";
+import DonationModal from "./DonationModal";
 import ImageGallery from "../../components/image/ImageGallery";
 import { io } from "socket.io-client";
 
