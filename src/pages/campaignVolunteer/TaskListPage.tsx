@@ -49,6 +49,7 @@ import { getCampaignVolunteerDetail } from "../../apis/campaign";
 import CampaignChatModal from "../../components/chat/CampaignChat";
 import { reportIssueApi } from "../../apis/issue";
 import FaceCheckinModal from "./FaceCheckinModal";
+import { Star as StarIcon } from "@mui/icons-material";
 
 interface Task {
   _id: string;
@@ -75,21 +76,9 @@ interface Task {
     reviewedAt: string;
   };
   assignedUsers: {
-    userId: string;
-    fullName?: string;
-    submission?: {
-      content: string;
-      images: string[];
-      submittedAt: string;
-      submittedBy: string;
-    };
-    review?: {
-      status: string;
-      evaluation?: string;
-      staffComment?: string;
-      reviewedBy?: string;
-      reviewedAt?: string;
-    };
+    userId: { _id: string; fullName?: string; avatar?: string };
+    userName: string;
+    avatar?: string;
   }[];
 }
 
@@ -98,7 +87,7 @@ interface PhaseDay {
   date: string;
   tasks: Task[];
   checkinLocation: {
-    coordinatesIndic: [number, number];
+    coordinates: [number, number];
     address: string;
   };
   checkinStatus?: {
@@ -119,6 +108,8 @@ const TaskListPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [phases, setPhases] = useState<Phase[]>([]);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const [expandedPhaseDay, setExpandedPhaseDay] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -141,6 +132,7 @@ const TaskListPage: React.FC = () => {
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [selectedCheckinLocation, setSelectedCheckinLocation] = useState<{
     coordinates: [number, number];
+    address: string;
   } | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [viewReviewModalOpen, setViewReviewModalOpen] = useState(false);
@@ -148,7 +140,7 @@ const TaskListPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = user?.userId;
+  const userId = user?.id || user?._id;
 
   useEffect(() => {
     const saved = localStorage.getItem("checkedInPhaseDays");
@@ -219,7 +211,8 @@ const TaskListPage: React.FC = () => {
   const openModalWithTaskId = (
     taskId: string,
     mode: "complete" | "report" | "review",
-    revieweeId?: string
+    revieweeId?: string,
+    leaderId?: string
   ) => {
     setSelectedTaskId(taskId);
     setModalMode(mode);
@@ -240,7 +233,10 @@ const TaskListPage: React.FC = () => {
   ) => {
     setSelectedPhaseId(phaseId);
     setPhaseDayId(phaseDayId);
-    setSelectedCheckinLocation(checkinLocation);
+    setSelectedCheckinLocation({
+      coordinates: checkinLocation.coordinates,
+      address: checkinLocation.address,
+    });
     setCheckinModalOpen(true);
   };
 
@@ -296,7 +292,6 @@ const TaskListPage: React.FC = () => {
         );
         alert("Gửi đánh giá đồng nghiệp thành công");
       }
-      // Refresh tasks after submission
       const phaseRes = await fetchPhasesByCampaignId(campaignId!, token);
       setPhases(phaseRes.data.phases);
     } catch (err: any) {
@@ -330,7 +325,8 @@ const TaskListPage: React.FC = () => {
         const campaignDetail = await getCampaignVolunteerDetail(campaignId);
         setCampaignName(campaignDetail.name);
         setCampaignImageUrl(campaignDetail.image || null);
-
+        setStartDate(campaignDetail.startDate || "");
+        setEndDate(campaignDetail.endDate || "");
         const phaseRes = await fetchPhasesByCampaignId(campaignId, token);
         setPhases(phaseRes.data.phases);
         if (phaseRes.data.phases.length > 0)
@@ -429,6 +425,21 @@ const TaskListPage: React.FC = () => {
               }}
             >
               {campaignName}
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 500,
+                mb: 2,
+                color: "text.primary",
+                textAlign: "center",
+              }}
+            >
+              {startDate && endDate
+                ? `Thời gian diễn ra: ${formatDate(startDate)} - ${formatDate(
+                    endDate
+                  )}`
+                : "Thời gian diễn ra: Đang cập nhật"}
             </Typography>
             <Typography
               variant="h6"
@@ -596,8 +607,8 @@ const TaskListPage: React.FC = () => {
                               }}
                             >
                               {day.checkinStatus?.hasCheckedIn
-                                ? "✅ Đã check-in"
-                                : "Check-in"}
+                                ? "✅ Đã điểm danh"
+                                : "Điểm danh"}
                             </Button>
                             {expandedPhaseDay === day._id ? (
                               <ExpandLess />
@@ -756,7 +767,7 @@ const TaskListPage: React.FC = () => {
                                                 px: 3,
                                               }}
                                             >
-                                              Xem đánh giá
+                                              Xem đánh giá nhiệm vụ
                                             </Button>
                                           </Stack>
                                         </Box>
@@ -857,6 +868,14 @@ const TaskListPage: React.FC = () => {
           }}
           mode={modalMode}
           taskId={selectedTaskId}
+          leaderId={
+            selectedTaskId
+              ? phases
+                  .flatMap((p) => p.phaseDays)
+                  .flatMap((pd) => pd.tasks)
+                  .find((t) => t._id === selectedTaskId)?.leaderId
+              : null
+          }
           onSubmit={handleSubmitTaskAction}
           reviewProps={
             modalMode === "review"
@@ -870,6 +889,13 @@ const TaskListPage: React.FC = () => {
                         .flatMap((p) => p.phaseDays)
                         .flatMap((pd) => pd.tasks)
                         .find((t) => t._id === selectedTaskId)?.assignedUsers ||
+                      []
+                    : [],
+                  peerReviews: selectedTaskId
+                    ? phases
+                        .flatMap((p) => p.phaseDays)
+                        .flatMap((pd) => pd.tasks)
+                        .find((t) => t._id === selectedTaskId)?.peerReviews ||
                       []
                     : [],
                 }
@@ -898,14 +924,17 @@ const TaskListPage: React.FC = () => {
           fullWidth
           maxWidth="md"
         >
-          <DialogTitle>Xem đánh giá: {selectedTask?.title}</DialogTitle>
+          <DialogTitle>
+            Xem đánh giá nhiệm vụ:{" "}
+            <strong style={{ color: "#1976d2" }}>{selectedTask?.title}</strong>
+          </DialogTitle>
           <DialogContent>
             <Tabs
               value={tabValue}
               onChange={(e, newValue) => setTabValue(newValue)}
               centered
             >
-              <Tab label="Đánh giá của staff" />
+              <Tab label="Đánh giá của VHHT" />
               <Tab label="Đánh giá của mọi người" />
               <Tab label="Báo cáo đã nộp" />
             </Tabs>
@@ -914,13 +943,16 @@ const TaskListPage: React.FC = () => {
                 <Box>
                   {selectedTask?.staffReview ? (
                     <>
-                      <Typography variant="body1">
-                        <strong>Người đánh giá:</strong>{" "}
-                        {selectedTask.staffReview.evaluatedBy}
-                      </Typography>
-                      <Typography variant="body1">
-                        <strong>Điểm số:</strong>{" "}
+                      <Typography
+                        variant="body1"
+                        sx={{ display: "flex", alignItems: "center" }}
+                      >
+                        <strong>Điểm số:</strong>&nbsp;
                         {selectedTask.staffReview.finalScore}
+                        <StarIcon
+                          fontSize="small"
+                          sx={{ color: "gold", ml: 0.5 }}
+                        />
                       </Typography>
                       <Typography variant="body1">
                         <strong>Bình luận:</strong>{" "}
@@ -942,26 +974,87 @@ const TaskListPage: React.FC = () => {
                 <Box>
                   {selectedTask?.peerReviews &&
                   selectedTask.peerReviews.length > 0 ? (
-                    selectedTask.peerReviews.map((review, index) => (
-                      <Box
-                        key={index}
-                        sx={{ mb: 2, borderBottom: "1px solid #eee", pb: 1 }}
-                      >
-                        <Typography variant="body1">
-                          <strong>Người đánh giá:</strong> {review.reviewer}
-                        </Typography>
-                        <Typography variant="body1">
-                          <strong>Người được đánh giá:</strong>{" "}
-                          {review.reviewee}
-                        </Typography>
-                        <Typography variant="body1">
-                          <strong>Điểm số:</strong> {review.score}
-                        </Typography>
-                        <Typography variant="body1">
-                          <strong>Bình luận:</strong> {review.comment}
-                        </Typography>
-                      </Box>
-                    ))
+                    selectedTask.peerReviews.map((review, index) => {
+                      const reviewerUser = selectedTask.assignedUsers.find(
+                        (u) => u.userId._id === review.reviewer
+                      );
+                      const revieweeUser = selectedTask.assignedUsers.find(
+                        (u) => u.userId._id === review.reviewee
+                      );
+                      const reviewerAvatar =
+                        reviewerUser?.avatar || reviewerUser?.userId.avatar;
+                      const revieweeAvatar =
+                        revieweeUser?.avatar || revieweeUser?.userId.avatar;
+
+                      return (
+                        <Box
+                          key={index}
+                          sx={{ mb: 2, borderBottom: "1px solid #eee", pb: 1 }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{ display: "flex", alignItems: "center" }}
+                          >
+                            <strong>Người đánh giá:</strong>&nbsp;
+                            <Avatar
+                              src={reviewerAvatar || undefined}
+                              alt={reviewerUser?.userName || review.reviewer}
+                              sx={{ width: 24, height: 24, mx: 1 }}
+                            />
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              {reviewerUser?.userId.fullName ||
+                                reviewerUser?.userName ||
+                                review.reviewer}
+                              {selectedTask.leaderId ===
+                                reviewerUser?.userId._id && (
+                                <StarIcon
+                                  fontSize="small"
+                                  sx={{ color: "gold", ml: 0.5 }}
+                                />
+                              )}
+                            </Box>
+                          </Typography>
+
+                          <Typography
+                            variant="body1"
+                            sx={{ display: "flex", alignItems: "center" }}
+                          >
+                            <strong>Người được đánh giá:</strong>&nbsp;
+                            <Avatar
+                              src={revieweeAvatar || undefined}
+                              alt={revieweeUser?.userName || review.reviewee}
+                              sx={{ width: 24, height: 24, mx: 1 }}
+                            />
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              {revieweeUser?.userId.fullName ||
+                                revieweeUser?.userName ||
+                                review.reviewee}
+                              {selectedTask.leaderId ===
+                                revieweeUser?.userId._id && (
+                                <StarIcon
+                                  fontSize="small"
+                                  sx={{ color: "gold", ml: 0.5 }}
+                                />
+                              )}
+                            </Box>
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{ display: "flex", alignItems: "center" }}
+                          >
+                            <strong>Điểm số:</strong>&nbsp;
+                            {review.score}
+                            <StarIcon
+                              fontSize="small"
+                              sx={{ color: "gold", ml: 0.5 }}
+                            />
+                          </Typography>
+                          <Typography variant="body1">
+                            <strong>Bình luận:</strong> {review.comment}
+                          </Typography>
+                        </Box>
+                      );
+                    })
                   ) : (
                     <Typography>Chưa có đánh giá từ đồng nghiệp.</Typography>
                   )}
@@ -975,9 +1068,51 @@ const TaskListPage: React.FC = () => {
                         <strong>Nội dung:</strong>{" "}
                         {selectedTask.submission.content}
                       </Typography>
-                      <Typography variant="body1">
-                        <strong>Người nộp:</strong>{" "}
-                        {selectedTask.submission.submittedBy}
+                      <Typography
+                        variant="body1"
+                        sx={{ display: "flex", alignItems: "center" }}
+                      >
+                        <strong>Người nộp:</strong>&nbsp;
+                        <Avatar
+                          src={
+                            selectedTask.assignedUsers.find(
+                              (u) =>
+                                u.userId._id ===
+                                selectedTask.submission?.submittedBy
+                            )?.avatar ||
+                            selectedTask.assignedUsers.find(
+                              (u) =>
+                                u.userId._id ===
+                                selectedTask.submission?.submittedBy
+                            )?.userId.avatar ||
+                            undefined
+                          }
+                          alt={
+                            selectedTask.assignedUsers.find(
+                              (u) =>
+                                u.userId._id ===
+                                selectedTask.submission?.submittedBy
+                            )?.userName || selectedTask.submission.submittedBy
+                          }
+                          sx={{ width: 24, height: 24, mx: 1 }}
+                        />
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          {selectedTask.assignedUsers.find(
+                            (u) =>
+                              u.userId._id ===
+                              selectedTask.submission?.submittedBy
+                          )?.userId.fullName ||
+                            selectedTask.assignedUsers.find(
+                              (u) =>
+                                u.userId._id ===
+                                selectedTask.submission?.submittedBy
+                            )?.userName ||
+                            selectedTask.submission.submittedBy}
+                          <StarIcon
+                            fontSize="small"
+                            sx={{ color: "gold", ml: 0.5 }}
+                          />
+                        </Box>
                       </Typography>
                       <Typography variant="body1">
                         <strong>Thời gian nộp:</strong>{" "}

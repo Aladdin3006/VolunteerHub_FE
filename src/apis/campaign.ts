@@ -320,7 +320,6 @@ export const getCampaignVolunteerDetail = async (
   }
 
   const raw = await res.json();
-  console.log("Kết quả từ API:", raw); // ✅ in ra full response
 
   if (raw.data) return raw.data;
   return raw;
