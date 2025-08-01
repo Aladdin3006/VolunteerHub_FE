@@ -114,14 +114,6 @@ export const FaceCheckinModal: React.FC<Props> = ({
           const distance = haversineDistance(userLat, userLng, targetLat, targetLng);
 
           console.log("📍 Calculated distance:", distance.toFixed(2), "meters");
-
-          const distance = haversineDistance(
-            userLat,
-            userLng,
-            targetLat,
-            targetLng
-          );
-
           setDistanceToCheckpoint(distance);
           setIsWithinRange(distance <= 150);
           setLoadingLocation(false);
