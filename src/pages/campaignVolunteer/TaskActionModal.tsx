@@ -14,13 +14,17 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Chip,
+  Avatar,
 } from "@mui/material";
+import { Star as StarIcon } from "@mui/icons-material";
 
 interface TaskActionModalProps {
   open: boolean;
   onClose: () => void;
   mode: "complete" | "report" | "review";
   taskId: string | null;
+  leaderId: string | null; // Check for leader
   onSubmit: (
     taskId: string,
     content: string,
@@ -32,12 +36,22 @@ interface TaskActionModalProps {
     setScore: (score: number) => void;
     comment: string;
     setComment: (comment: string) => void;
-    assignedUsers: { userId: string; fullName?: string }[];
+    assignedUsers: {
+      userId: { _id: string; fullName?: string; avatar?: string };
+      userName: string;
+      avatar?: string;
+    }[];
     staffReview?: {
       finalScore: number;
       overallComment: string;
       evaluatedBy: string;
     };
+    peerReviews?: {
+      reviewer: string;
+      reviewee: string;
+      score: number;
+      comment: string;
+    }[];
   };
 }
 
@@ -46,6 +60,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
   onClose,
   mode,
   taskId,
+  leaderId,
   onSubmit,
   reviewProps,
 }) => {
@@ -56,9 +71,8 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
   const [selectedRevieweeId, setSelectedRevieweeId] = useState<string>("");
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = user?.userId;
+  const userId = user?.id || user?._id;
 
-  // Only reset non-review fields when modal opens
   useEffect(() => {
     if (open) {
       setContent("");
@@ -103,6 +117,31 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
     }
   };
 
+  const hasReviewed = (revieweeId: string) => {
+    if (!reviewProps?.peerReviews || !userId) {
+      console.log("Debug: No peer reviews or userId", {
+        peerReviews: reviewProps?.peerReviews,
+        userId,
+        reviewProps: reviewProps,
+      });
+      return false;
+    }
+
+    const result = reviewProps.peerReviews.some(
+      (review) => review.reviewer === userId && review.reviewee === revieweeId
+    );
+    return result;
+  };
+
+  const getAvailableUsersForReview = () => {
+    if (!reviewProps?.assignedUsers) return [];
+
+    return reviewProps.assignedUsers.filter((user) => {
+      if (user.userId._id === userId) return false;
+      return true;
+    });
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>
@@ -124,21 +163,140 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                 disabled={isSubmitting}
                 sx={{ minWidth: 200 }}
               >
-                {reviewProps.assignedUsers
-                  .filter((user) => user.userId !== userId)
-                  .map((user) => (
-                    <MenuItem key={user.userId} value={user.userId}>
-                      {user.fullName || `Tình nguyện viên ${user.userId}`}
+                {getAvailableUsersForReview().map((user) => {
+                  const isReviewed = hasReviewed(user.userId._id);
+                  const isLeader = leaderId === user.userId._id;
+                  const avatarUrl = user.avatar || user.userId.avatar; // Use top-level avatar or userId.avatar
+                  return (
+                    <MenuItem
+                      key={user.userId._id}
+                      value={user.userId._id}
+                      disabled={isReviewed}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Avatar
+                          src={avatarUrl || undefined}
+                          alt={user.userName}
+                          sx={{ width: 24, height: 24 }}
+                        />
+                        <Typography
+                          sx={{
+                            color: isReviewed
+                              ? "text.disabled"
+                              : "text.primary",
+                          }}
+                        >
+                          {user.userId.fullName ||
+                            user.userName ||
+                            `Tình nguyện viên ${user.userId._id}`}
+                          {isLeader && (
+                            <StarIcon
+                              fontSize="small"
+                              sx={{ ml: 0.5, color: "gold" }}
+                            />
+                          )}
+                        </Typography>
+                        <Chip
+                          label={isReviewed ? "Đã đánh giá" : "Chưa đánh giá"}
+                          color={isReviewed ? "success" : "default"}
+                          size="small"
+                        />
+                      </Box>
                     </MenuItem>
-                  ))}
+                  );
+                })}
               </Select>
             </FormControl>
+
+            {reviewProps.peerReviews && reviewProps.peerReviews.length > 0 && (
+              <Box
+                sx={{ mb: 2, p: 1, border: "1px solid #eee", borderRadius: 2 }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  sx={{ mb: 1 }}
+                >
+                  Đánh giá đồng nghiệp hiện có
+                </Typography>
+                {reviewProps.peerReviews.map((review, index) => {
+                  const revieweeUser = reviewProps.assignedUsers.find(
+                    (u) => u.userId._id === review.reviewee
+                  );
+                  const reviewerUser = reviewProps.assignedUsers.find(
+                    (u) => u.userId._id === review.reviewer
+                  );
+                  const revieweeAvatar =
+                    revieweeUser?.avatar || revieweeUser?.userId.avatar;
+                  const reviewerAvatar =
+                    reviewerUser?.avatar || reviewerUser?.userId.avatar;
+
+                  return (
+                    <Box
+                      key={index}
+                      sx={{ mb: 1, p: 1, bgcolor: "#f5f5f5", borderRadius: 1 }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ display: "flex", alignItems: "center" }}
+                      >
+                        <strong>Người đánh giá:</strong>&nbsp;
+                        <Avatar
+                          src={reviewerAvatar || undefined}
+                          alt={reviewerUser?.userName || review.reviewer}
+                          sx={{ width: 24, height: 24, mr: 1 }}
+                        />
+                        {reviewerUser?.userId.fullName ||
+                          reviewerUser?.userName ||
+                          review.reviewer}
+                        {leaderId === reviewerUser?.userId._id && (
+                          <StarIcon
+                            fontSize="small"
+                            sx={{ ml: 0.5, mb: 0.5, color: "gold" }}
+                          />
+                        )}
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        sx={{ display: "flex", alignItems: "center" }}
+                      >
+                        <strong>Người được đánh giá:</strong>&nbsp;
+                        <Avatar
+                          src={revieweeAvatar || undefined}
+                          alt={revieweeUser?.userName || review.reviewee}
+                          sx={{ width: 24, height: 24, mr: 1 }}
+                        />
+                        {revieweeUser?.userId.fullName ||
+                          revieweeUser?.userName ||
+                          review.reviewee}
+                        {leaderId === revieweeUser?.userId._id && (
+                          <StarIcon
+                            fontSize="small"
+                            sx={{ ml: 0.5, mb: 0.5, color: "gold" }}
+                          />
+                        )}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Điểm:</strong> {review.score}/5
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Bình luận:</strong> {review.comment}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+
             {reviewProps.staffReview && (
               <Box
                 sx={{ mb: 2, p: 1, border: "1px solid #eee", borderRadius: 2 }}
               >
                 <Typography variant="subtitle1" fontWeight="bold">
-                  Đánh giá của Staff
+                  Đánh giá của VHHT
                 </Typography>
                 <Typography>
                   <strong>Người đánh giá:</strong>{" "}
@@ -153,28 +311,33 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                 </Typography>
               </Box>
             )}
-            <Typography variant="subtitle1" gutterBottom>
-              Đánh giá của bạn
-            </Typography>
-            <Rating
-              value={reviewProps.score}
-              onChange={(e, value) => reviewProps.setScore(value || 0)}
-              max={5}
-              precision={0.5}
-              disabled={isSubmitting || !selectedRevieweeId}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              label="Bình luận"
-              multiline
-              rows={3}
-              value={reviewProps.comment}
-              onChange={(e) => reviewProps.setComment(e.target.value)}
-              fullWidth
-              margin="normal"
-              disabled={isSubmitting || !selectedRevieweeId}
-              sx={{ mb: 1 }}
-            />
+
+            {selectedRevieweeId && !hasReviewed(selectedRevieweeId) && (
+              <>
+                <Typography variant="subtitle1" gutterBottom>
+                  Đánh giá của bạn
+                </Typography>
+                <Rating
+                  value={reviewProps.score}
+                  onChange={(e, value) => reviewProps.setScore(value || 0)}
+                  max={5}
+                  precision={0.5}
+                  disabled={isSubmitting}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  label="Bình luận"
+                  multiline
+                  rows={3}
+                  value={reviewProps.comment}
+                  onChange={(e) => reviewProps.setComment(e.target.value)}
+                  fullWidth
+                  margin="normal"
+                  disabled={isSubmitting}
+                  sx={{ mb: 1 }}
+                />
+              </>
+            )}
           </Box>
         ) : (
           <>
@@ -229,6 +392,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
             isSubmitting ||
             (mode === "review" && reviewProps
               ? !selectedRevieweeId ||
+                hasReviewed(selectedRevieweeId) ||
                 reviewProps.score === 0 ||
                 !reviewProps.comment.trim()
               : !content.trim() || (mode === "report" && !title.trim()))
