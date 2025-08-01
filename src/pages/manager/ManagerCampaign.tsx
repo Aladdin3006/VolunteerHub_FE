@@ -515,6 +515,15 @@ const ManagerCampaign: React.FC = () => {
             Quản lý Chiến dịch
           </li>
           <li
+            className={activeLink === "ongoing" ? "active" : ""}
+            onClick={() => {
+              setActiveLink("ongoing");
+              navigate("/manager/donations");
+            }}
+          >
+            Quản lý Donation
+          </li>
+          <li
             className={activeLink === "finished" ? "active" : ""}
             onClick={() => {
               setActiveLink("finished");

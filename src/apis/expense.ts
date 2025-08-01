@@ -57,3 +57,37 @@ export const editExpense = async (id: string, token: string, formData: FormData)
   return response.data;
 };
 
+//accept expense
+export const acceptExpense = async (expenseId: string, token: string) => {
+  const response = await axios.patch(
+    `http://localhost:4000/expense/${expenseId}/approve`,
+    {
+      note: "Chi phí được chấp nhận", // hoặc truyền note từ phía frontend nếu cần
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+
+//denyExpense
+export const denyExpense = async (expenseId: string, token: string) => {
+  const response = await axios.patch(
+    `http://localhost:4000/expense/${expenseId}/reject`,
+    {
+      note: "Chi phí bị từ chối", // hoặc truyền từ frontend nếu muốn
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
