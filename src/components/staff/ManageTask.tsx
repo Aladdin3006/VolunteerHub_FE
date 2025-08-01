@@ -17,10 +17,17 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableRow,
   TableContainer,
+  TableRow,
 } from "@mui/material";
-import { ArrowBack, Add, Assignment, RateReview } from "@mui/icons-material";
+import {
+  ArrowBack,
+  Add,
+  Assignment,
+  RateReview,
+  Edit,
+  Delete,
+} from "@mui/icons-material";
 import {
   Volunteer,
   getCampaignVolunteers,
@@ -28,12 +35,14 @@ import {
   getTasksByPhaseDayId,
   createTask,
   updateTask,
+  deleteTask,
+  assignTaskToUsers,
   Phase,
   getPhasesByCampaignId,
   PhaseDay,
   Department,
   getDepartmentsByVolunteerId,
-  reviewTask,
+  staffReviewTask,
 } from "../../apis/staff";
 import TaskCRUDModal from "./TaskCRUDModal";
 
@@ -102,7 +111,8 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           await Promise.all(
             volunteersData.map(async (volunteer) => {
               const deptData = await getDepartmentsByVolunteerId(
-                volunteer.user._id
+                volunteer.user._id,
+                campaignId
               );
               departmentsMap[volunteer.user._id] = deptData;
             })
@@ -121,6 +131,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const handleCreateTask = async (taskData: {
     title: string;
     description: string;
+    leaderId: string;
     assignedUsers: string[];
   }) => {
     if (!selectedPhaseDay) {
@@ -134,6 +145,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       const newTask = await createTask(selectedPhaseDay._id, {
         title: taskData.title,
         description: taskData.description,
+        leaderId: taskData.leaderId,
         assignedUsers: taskData.assignedUsers || [],
         phaseDayDate: selectedPhaseDay.date,
       });
@@ -152,20 +164,61 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   };
 
-  const handleAssignTask = async (taskId: string, assignedUsers: string[]) => {
-    if (!taskId.match(/^[0-9a-fA-F]{24}$/)) {
-      setSnackbarMessage("Invalid task ID format");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-      return;
+  const handleUpdateTask = async (
+    taskId: string,
+    taskData: {
+      title: string;
+      description: string;
+      leaderId: string;
+      assignedUsers: string[];
     }
-
+  ) => {
     try {
       const updatedTask = await updateTask(taskId, {
-        assignedUsers: assignedUsers || [],
+        title: taskData.title,
+        description: taskData.description,
+        leaderId: taskData.leaderId,
+        assignedUsers: taskData.assignedUsers,
         phaseDayDate: selectedPhaseDay?.date,
       });
 
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
+      );
+      setTasks(updatedTasks);
+      setTaskModalOpen(false);
+      setSnackbarMessage("Task updated successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      setSnackbarMessage("Failed to update task");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
+      );
+      setTasks(updatedTasks);
+      setSnackbarMessage("Task deleted successfully!");
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      setSnackbarMessage("Failed to delete task");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleAssignTask = async (taskId: string, assignedUsers: string[]) => {
+    try {
+      await assignTaskToUsers(taskId, assignedUsers);
       const updatedTasks = await getTasksByPhaseDayId(
         selectedPhaseDay?._id || ""
       );
@@ -182,59 +235,21 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   };
 
-  const handleReviewTask = async (
+  const handleStaffReviewTask = async (
     taskId: string,
-    userId: string,
-    status: string,
-    evaluation: string,
-    staffComment: string
+    staffId: string,
+    finalScore: number,
+    comment: string
   ) => {
     try {
-      const updatedTask = await reviewTask(
-        taskId,
-        userId,
-        status,
-        evaluation,
-        staffComment
+      await staffReviewTask(taskId, staffId, finalScore, comment);
+      const updatedTasks = await getTasksByPhaseDayId(
+        selectedPhaseDay?._id || ""
       );
-
-      // Update the specific task in the tasks array with proper typing
-      setTasks(
-        tasks.map((task) => {
-          if (task._id === taskId) {
-            const updatedAssignedUsers = task.assignedUsers.map((au) => {
-              if (au.userId === userId) {
-                return {
-                  ...au,
-                  review: {
-                    status: status as "pending" | "approved" | "rejected",
-                    evaluation: evaluation as
-                      | "excellent"
-                      | "good"
-                      | "average"
-                      | "poor",
-                    staffComment,
-                    reviewedAt: new Date(),
-                    reviewedBy: JSON.parse(localStorage.getItem("user") || "{}")
-                      ._id,
-                  },
-                };
-              }
-              return au;
-            });
-
-            return {
-              ...task,
-              assignedUsers: updatedAssignedUsers,
-            };
-          }
-          return task;
-        })
-      );
-
+      setTasks(updatedTasks);
       setReviewModalOpen(false);
       setSelectedUserId(null);
-      setSnackbarMessage("Task reviewed successfully!");
+      setSnackbarMessage("Task reviewed successfully by staff!");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch (error) {
@@ -403,6 +418,11 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
               setSelectedUserId(userId);
               setReviewModalOpen(true);
             }}
+            onUpdate={(task) => {
+              setSelectedTask(task);
+              setTaskModalOpen(true);
+            }}
+            onDelete={(taskId) => handleDeleteTask(taskId)}
           />
           {(!tasks || tasks.length === 0) && (
             <Alert severity="info" sx={{ mt: 2 }}>
@@ -416,9 +436,23 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         onClose={() => setTaskModalOpen(false)}
         onSubmit={(taskData) => {
           if (selectedTask) {
-            handleAssignTask(selectedTask._id, taskData.assignedUsers);
+            if (taskData.assignedUsers) {
+              handleAssignTask(selectedTask._id, taskData.assignedUsers);
+            } else {
+              handleUpdateTask(selectedTask._id, {
+                title: taskData.title,
+                description: taskData.description,
+                leaderId: taskData.leaderId ?? "",
+                assignedUsers: taskData.assignedUsers ?? [],
+              });
+            }
           } else {
-            handleCreateTask(taskData);
+            handleCreateTask({
+              title: taskData.title,
+              description: taskData.description,
+              leaderId: taskData.leaderId ?? "",
+              assignedUsers: taskData.assignedUsers ?? [],
+            });
           }
         }}
         volunteers={volunteers}
@@ -435,15 +469,14 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           if (
             selectedTask &&
             selectedUserId &&
-            taskData.evaluation &&
-            taskData.staffComment
+            taskData.score &&
+            taskData.comment
           ) {
-            handleReviewTask(
+            handleStaffReviewTask(
               selectedTask._id,
-              selectedUserId,
-              taskData.status || "approved",
-              taskData.evaluation,
-              taskData.staffComment
+              JSON.parse(localStorage.getItem("user") || "{}").id,
+              taskData.score,
+              taskData.comment
             );
           }
         }}
@@ -476,18 +509,24 @@ interface TaskListProps {
   departments: Record<string, Department[]>;
   onAssign?: (task: Task) => void;
   onReview?: (task: Task, userId: string) => void;
+  onUpdate?: (task: Task) => void;
+  onDelete?: (taskId: string) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
   volunteers,
-  departments,
   onAssign,
   onReview,
+  onUpdate,
+  onDelete,
 }) => {
   if (!tasks || tasks.length === 0) {
     return (
-      <Typography variant="body1" sx={{ p: 2, textAlign: "center" }}>
+      <Typography
+        variant="body1"
+        sx={{ p: 2, textAlign: "center", color: "#666" }}
+      >
         No tasks found
       </Typography>
     );
@@ -502,29 +541,50 @@ const TaskList: React.FC<TaskListProps> = ({
           sx={{
             "&:hover": { backgroundColor: "action.hover" },
             display: "flex",
-            alignItems: "flex-start",
-            minHeight: "56px",
+            alignItems: "center",
+            minHeight: "80px",
+            borderRadius: 1,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            backgroundColor: "#fff",
+            transition: "all 0.3s ease",
           }}
         >
           <ListItemText
-            primary={<Typography fontWeight="bold">{task.title}</Typography>}
-            secondary={task.description}
+            primary={
+              <Typography fontWeight="bold" color="#333">
+                {task.title}
+              </Typography>
+            }
+            secondary={
+              <>
+                <Typography variant="body2" color="#666">
+                  {task.description}
+                </Typography>
+                <Typography variant="caption" color="#999">
+                  Leader:{" "}
+                  {volunteers.find((v) => v.user._id === task.leaderId)?.user
+                    .fullName || "Unknown"}
+                </Typography>
+              </>
+            }
             sx={{
               flex: 2,
               minWidth: 0,
               overflow: "hidden",
               textOverflow: "ellipsis",
-              mr: 1,
+              mr: 2,
+              padding: 1,
             }}
           />
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row",
               gap: 1,
               flex: 0,
               alignItems: "center",
-              height: "56px",
+              height: "100%",
+              padding: 1,
             }}
           >
             {onAssign && (
@@ -534,21 +594,59 @@ const TaskList: React.FC<TaskListProps> = ({
                 startIcon={<Assignment />}
                 onClick={() => onAssign(task)}
                 sx={{
-                  mb: 1,
-                  padding: "6px 16px",
+                  padding: "6px 12px",
+                  borderColor: "#1976d2",
+                  color: "#1976d2",
+                  "&:hover": { backgroundColor: "rgba(25, 118, 210, 0.1)" },
                 }}
               >
                 Assign Volunteers
               </Button>
             )}
+            {onUpdate && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Edit />}
+                onClick={() => onUpdate(task)}
+                sx={{
+                  padding: "6px 12px",
+                  borderColor: "#1976d2",
+                  color: "#1976d2",
+                  "&:hover": { backgroundColor: "rgba(25, 118, 210, 0.1)" },
+                }}
+              >
+                Update
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Delete />}
+                onClick={() => onDelete(task._id)}
+                sx={{
+                  padding: "6px 12px",
+                  borderColor: "#d32f2f",
+                  color: "#d32f2f",
+                  "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.1)" },
+                }}
+              >
+                Delete
+              </Button>
+            )}
           </Box>
-          <Box sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2 }}>
+          <Box
+            sx={{ flex: 1, minWidth: 200, maxWidth: 250, ml: 2, padding: 1 }}
+          >
             {task.assignedUsers && task.assignedUsers.length > 0 ? (
               <>
-                <Typography variant="subtitle2">
+                <Typography variant="subtitle2" color="#333" fontWeight="bold">
                   Volunteers ({task.assignedUsers.length})
                 </Typography>
-                <TableContainer>
+                <TableContainer
+                  sx={{ mt: 1, borderRadius: 4, overflow: "hidden" }}
+                >
                   <Table>
                     <TableBody>
                       {task.assignedUsers.map((au) => {
@@ -556,21 +654,47 @@ const TaskList: React.FC<TaskListProps> = ({
                           (v) => v.user._id === au.userId
                         );
                         return (
-                          <TableRow key={au.userId}>
-                            <TableCell>
+                          <TableRow
+                            key={au.userId}
+                            sx={{
+                              "&:hover": {
+                                backgroundColor: "rgba(0,0,0,0.04)",
+                              },
+                            }}
+                          >
+                            <TableCell
+                              sx={{
+                                padding: "8px",
+                                borderBottom: "1px solid #eee",
+                              }}
+                            >
                               {volunteer?.user.fullName || "Unknown"}
                             </TableCell>
-                            <TableCell>
+                            <TableCell
+                              sx={{
+                                padding: "8px",
+                                borderBottom: "1px solid #eee",
+                              }}
+                            >
                               {onReview && (
                                 <Button
                                   variant="contained"
                                   size="small"
                                   startIcon={<RateReview />}
                                   onClick={() => onReview(task, au.userId)}
-                                  sx={{ padding: "4px 8px" }}
+                                  sx={{
+                                    padding: "4px 8px",
+                                    backgroundColor: "#1976d2",
+                                    "&:hover": { backgroundColor: "#1565c0" },
+                                    "&:disabled": {
+                                      backgroundColor: "#ccc",
+                                      color: "#fff",
+                                    },
+                                  }}
                                   disabled={
-                                    !au.submission ||
-                                    au.review?.status !== "pending"
+                                    (task.status !== "submitted" &&
+                                      task.status !== "completed") ||
+                                    !task.submission
                                   }
                                 >
                                   Review
@@ -585,7 +709,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 </TableContainer>
               </>
             ) : (
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="#999">
                 No volunteers assigned
               </Typography>
             )}

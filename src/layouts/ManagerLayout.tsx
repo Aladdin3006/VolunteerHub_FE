@@ -1,7 +1,6 @@
 // src/layouts/ManagerLayout.tsx
-import React from 'react';
-import ManagerSidebar from '../components/manager/ManagerSidebar';
-import AdminHeader from '../components/admin/AdminHeader';
+import React from "react";
+import ManagerHeader from "@/components/manager/ManagerHeader";
 
 interface ManagerLayoutProps {
   children: React.ReactNode;
@@ -9,14 +8,11 @@ interface ManagerLayoutProps {
 
 const ManagerLayout: React.FC<ManagerLayoutProps> = ({ children }) => {
   return (
-    <div className="manager-layout min-h-screen bg-gray-50">
-      <AdminHeader />
+    <div className="staff-layout min-h-screen bg-background text-foreground">
+      <ManagerHeader />
       <div className="flex">
-        <ManagerSidebar />
-        <main className="flex-1 ml-64 p-6">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
+        <main className="flex-1 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
     </div>

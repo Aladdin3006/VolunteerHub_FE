@@ -1,5 +1,3 @@
-// Header.tsx with slide-down dropdown, mobile responsive, and glassmorphism
-
 import React, { useState, useEffect } from "react";
 import {
   AppBar,
@@ -97,7 +95,7 @@ const Header: React.FC = () => {
     { label: "Thông báo", icon: <FaBell />, action: () => { } },
     { label: "Cài đặt & bảo mật", icon: <FaCog />, action: () => navigate("/settings") },
     { label: "Trợ giúp & hỗ trợ", icon: <FaQuestionCircle />, action: () => navigate("/help") },
-    { label: "Hiển thị & trợ năng", icon: <FaDesktop />, action: () => navigate("/accessibility") },
+    { label: "Chiến Dịch của tôi", icon: <FaDesktop />, action: () => navigate("/myCampaign") },
     { label: "Đăng xuất", icon: <FaSignOutAlt />, action: handleLogout },
   ];
 

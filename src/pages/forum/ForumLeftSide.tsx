@@ -76,7 +76,7 @@ const ForumLeftSide = ({ shortcuts, onOpenShortcut }: IProps) => {
           return (
             <SidebarItem
               key={save._id}
-              avatarSrc={save.createdBy.avatar}
+              avatarSrc={save.createdBy.avatar || save.images[0]}
               label={save.content.slice(0, 15)}
               onClick={() => {
                 onOpenShortcut && onOpenShortcut(save);

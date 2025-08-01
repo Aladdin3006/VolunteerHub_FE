@@ -1,6 +1,11 @@
 const API_BASE = "http://localhost:4000";
 import axios from "axios";
-import { getAccessToken, handleResponse, IDataResponse, toBase64 } from "./utils";
+import {
+  axiosInstance,
+  IAxiosExtraConfigOptions,
+  IDataResponseSuccess,
+  toBase64,
+} from "./utils";
 
 /* ---------- Kiểu dữ liệu ---------- */
 export interface Campaign {
@@ -38,7 +43,7 @@ export interface CampaignDetailResponse {
 /** ✅ Đổi tên từ Campaign2 thành CampaignVolunteer */
 /** Thông tin mỗi tình nguyện viên đã đăng ký */
 export interface VolunteerRecord {
-  user: { _id: string };                // Có thể bổ sung fullName, avatar...
+  user: { _id: string }; // Có thể bổ sung fullName, avatar...
   status: "pending" | "approved" | "rejected";
   registeredAt?: string;
 }
@@ -59,12 +64,33 @@ export interface CampaignVolunteer {
   phases?: {
     _id: string;
     name: string;
-    start: string;
-    end: string;
+    startDate: string;
+    endDate: string;
     description?: string;
+    phaseDays?: {
+      _id: string;
+      date: string;
+      name?: string;
+      description?: string;
+      tasks?: {
+        _id: string;
+        phaseDayId: string;
+        title: string;
+        description?: string;
+        status: {
+          status: string;
+        };
+        assignedUsers: {
+          _id: string;
+          userId: string;
+          checkinTime: string | null;
+          checkoutTime: string | null;
+        }[];
+      }[];
+    }[];
   }[];
   status?: "upcoming" | "in-progress" | "completed";
-  
+  acceptStatus?: ECampaignAcceptStatus;
 
   /** 👇 mảng tình nguyện viên */
   volunteers?: VolunteerRecord[];
@@ -76,7 +102,6 @@ export interface Category {
   color: string;
   icon: string;
 }
-
 
 export interface ILocation {
   /**
@@ -126,7 +151,7 @@ export interface ICampaignDataItem {
   /**
    * Image (one)
    */
-  campaignImg: string;
+  image: string;
   /**
    * Images (up to 10)
    */
@@ -160,27 +185,29 @@ export interface ICampaignDataUpload {
    * categories ids
    */
   categories: string[];
-  phases: IPhaseData[];
 }
 
 export const CAMPAIGN_API = {
-  async searchCategories(name: string, skip = 0, limit = 20) {
-    const response = await fetch(
-      `${API_BASE}/category?q=${name}&skip=${skip}&limit=${limit}`,
+  async searchCategories(
+    name: string,
+    skip = 0,
+    limit = 20,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<ICategory[]>> {
+    return axiosInstance.get(
+      `/category?q=${name}&skip=${skip}&limit=${limit}`,
       {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${getAccessToken() || ""}`,
+        extraOptions: {
+          ...options,
         },
       }
     );
-    return handleResponse<
-      IDataResponse<ICategory[]>,
-      IDataResponse<ICategory[]>
-    >(response);
   },
 
-  async createCampaign(data: ICampaignDataUpload) {
+  async createCampaign(
+    data: ICampaignDataUpload,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
     const campaignImg =
       typeof data.campaignImg === "string"
         ? data.campaignImg
@@ -195,18 +222,19 @@ export const CAMPAIGN_API = {
       campaignImg: campaignImg,
       gallery: gallery,
     };
-    const response = await fetch(`${API_BASE}/campaigns`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
+
+    return axiosInstance.post(`/campaigns`, submitData, {
+      extraOptions: {
+        ...options,
       },
-      body: JSON.stringify(submitData),
     });
-    return handleResponse<unknown, unknown>(response);
   },
 
-  async updateCampaign(id: string, data: ICampaignDataUpload) {
+  async updateCampaign(
+    id: string,
+    data: ICampaignDataUpload,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
     const campaignImg =
       typeof data.campaignImg === "string"
         ? data.campaignImg
@@ -221,33 +249,24 @@ export const CAMPAIGN_API = {
       campaignImg: campaignImg,
       gallery: gallery,
     };
-    const response = await fetch(`${API_BASE}/campaigns/${id}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
+    return axiosInstance.put(`/campaigns/${id}`, submitData, {
+      extraOptions: {
+        ...options,
       },
-      body: JSON.stringify(submitData),
     });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
   },
 
-  async getById(id: string) {
-    const response = await fetch(`${API_BASE}/campaigns/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
+  async getById(
+    id: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<ICampaignDataItem> {
+    return axiosInstance.get(`/campaigns/${id}`, {
+      extraOptions: {
+        ...options,
       },
     });
-    return handleResponse<
-      IDataResponse<ICampaignDataItem>,
-      IDataResponse<ICampaignDataItem>
-    >(response);
   },
 } as const;
-
 
 export const getCampaigns = async (): Promise<Campaign[]> => {
   try {
@@ -282,18 +301,15 @@ const getCampaignDetail = async (
 export const getCampaignVolunteer = async (): Promise<CampaignVolunteer[]> => {
   const res = await axios.get(`${API_BASE}/campaigns`);
 
-  // Lấy đúng mảng campaigns trong result
   const campaigns = res.data?.result?.campaigns;
 
   if (Array.isArray(campaigns)) {
     return campaigns;
   }
 
-  // Nếu backend lỗi cấu trúc, trả mảng rỗng để tránh crash
   console.error("Unexpected volunteer campaigns payload:", res.data);
   return [];
 };
-
 
 export const getCampaignVolunteerDetail = async (
   campaignId: string
@@ -304,12 +320,8 @@ export const getCampaignVolunteerDetail = async (
   }
 
   const raw = await res.json();
-  console.log("Kết quả từ API:", raw); // ✅ in ra full response
 
-  // Cách 1: nếu backend trả về { data: {...} }
   if (raw.data) return raw.data;
-
-  // Cách 2: nếu backend trả về {...} trực tiếp
   return raw;
 };
 
@@ -330,7 +342,7 @@ export const joinCampaign = async (campaignId: string): Promise<string> => {
     throw new Error(err.error?.message || "Đã có lỗi xảy ra");
   }
 
-  const data = await res.json();     // { message: "Registration submitted, waiting for admin approval" }
+  const data = await res.json(); // { message: "Registration submitted, waiting for admin approval" }
   return data.message as string;
 };
 
@@ -349,6 +361,5 @@ export const getCategories = async (): Promise<Category[]> => {
     throw error;
   }
 };
-
 
 export default getCampaignDetail;

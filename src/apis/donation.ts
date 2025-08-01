@@ -1,8 +1,8 @@
 import { ICategory } from "./campaign";
 import {
-  getAccessToken,
-  handleResponse,
-  IDataResponse,
+  axiosInstance,
+  IAxiosExtraConfigOptions,
+  IDataResponseSuccess,
   toBase64,
 } from "./utils";
 
@@ -37,9 +37,11 @@ export interface IDonationDataItem {
   tags: ICategory[];
 }
 
-const API_BASE = "http://localhost:4000";
 export const DONATION_API = {
-  async createDonation(data: IDonationDataUpload) {
+  async createDonation(
+    data: IDonationDataUpload,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
     const campaignImg =
       typeof data.thumbnail === "string"
         ? data.thumbnail
@@ -54,20 +56,18 @@ export const DONATION_API = {
       thumbnail: campaignImg,
       images: gallery,
     };
-    const response = await fetch(`${API_BASE}/donate`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
+    return axiosInstance.post(`/donate`, submitData, {
+      extraOptions: {
+        ...options,
       },
-      body: JSON.stringify(submitData),
     });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
   },
 
-  async updateDonation(id: string, data: IDonationDataUpload) {
+  async updateDonation(
+    id: string,
+    data: IDonationDataUpload,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<unknown>> {
     const campaignImg =
       typeof data.thumbnail === "string"
         ? data.thumbnail
@@ -82,29 +82,21 @@ export const DONATION_API = {
       thumbnail: campaignImg,
       images: gallery,
     };
-    const response = await fetch(`${API_BASE}/donate/${id}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
-        "Content-Type": "application/json",
+    return axiosInstance.put(`/donate/${id}`, submitData, {
+      extraOptions: {
+        ...options,
       },
-      body: JSON.stringify(submitData),
     });
-    return handleResponse<IDataResponse<unknown>, IDataResponse<unknown>>(
-      response
-    );
   },
 
-  async getById(id: string) {
-    const response = await fetch(`${API_BASE}/donate/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${getAccessToken() || ""}`,
+  async getById(
+    id: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<IDonationDataItem>> {
+    return axiosInstance.get(`/donate/${id}`, {
+      extraOptions: {
+        ...options,
       },
     });
-    return handleResponse<
-      IDataResponse<IDonationDataItem>,
-      IDataResponse<IDonationDataItem>
-    >(response);
   },
 } as const;

@@ -41,7 +41,7 @@ interface IProps extends StackProps {
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 500;
 const MIN_AMOUNT = 1000000;
-const MAX_IMAGES = 10;
+const MAX_IMAGES = 5;
 
 const initialValue: IDonationFormData = {
   title: "",
