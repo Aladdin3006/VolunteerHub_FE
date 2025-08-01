@@ -43,6 +43,7 @@ interface ReliefPoint {
   needs?: SupplyNeedItem[];
   surplus?: SupplyNeedItem[];
   verified?: boolean;
+  contact?:String;
 }
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -124,6 +125,7 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
             note: s.note,
           })),
           verified: p.verified,
+          contact: p.contact
         }));
 
         setPoints(formatted);
@@ -464,6 +466,10 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
             <Typography variant="caption" color={selectedPoint.verified ? "green" : "gray"}>
               {selectedPoint.verified ? "✅ Đã xác minh" : "⚠️ Chưa xác minh"}
             </Typography>
+            <Typography variant="body2">
+             📝 Thông tin liên hệ:  <strong>{selectedPoint.contact}</strong>
+            </Typography>
+
           </Box>
         )}
       </Box>
