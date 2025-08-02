@@ -21,6 +21,10 @@ import {
   Checkbox,
   Alert,
   CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
   LocationOn,
@@ -31,6 +35,7 @@ import {
   PlayCircle,
   StopCircle,
   Image as ImageIcon,
+  WarningAmber,
 } from "@mui/icons-material";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import { managerCampaignService } from "../../apis/manager";
@@ -43,6 +48,33 @@ const mapContainerStyle = {
   width: "100%",
   height: "200px",
 };
+
+interface Volunteer {
+  user: {
+    _id: string;
+    fullName: string;
+    email: string;
+    avatar?: string;
+  };
+  status: "pending" | "approved" | "rejected";
+  evaluation?: string;
+  feedback?: string;
+}
+
+interface Task {
+  _id: string;
+  assignedUsers: { userId: string }[];
+  staffReview?: { finalScore: number };
+  peerReviews: { reviewer: string; reviewee: string; score: number }[];
+}
+
+interface PhaseDay {
+  tasks: Task[];
+}
+
+interface Phase {
+  phaseDays: PhaseDay[];
+}
 
 interface Campaign {
   _id: string;
@@ -60,6 +92,8 @@ interface Campaign {
   categories: Category[];
   status: "upcoming" | "in-progress" | "completed";
   acceptStatus: "pending" | "approved" | "rejected";
+  volunteers?: Volunteer[];
+  phases?: Phase[];
 }
 
 const ManagerCampaign: React.FC = () => {
@@ -85,6 +119,7 @@ const ManagerCampaign: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [openStartDialog, setOpenStartDialog] = useState(false);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+  const [openEvaluateDialog, setOpenEvaluateDialog] = useState(false);
   const [generateCertificate, setGenerateCertificate] = useState(true);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(
     null
@@ -95,6 +130,10 @@ const ManagerCampaign: React.FC = () => {
   });
   const [isStartingCampaign, setIsStartingCampaign] = useState(false);
   const [isEndingCampaign, setIsEndingCampaign] = useState(false);
+  const [volunteerEvaluations, setVolunteerEvaluations] = useState<{
+    [userId: string]: { evaluation: string; feedback: string };
+  }>({});
+  const [hasEvaluated, setHasEvaluated] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -168,12 +207,29 @@ const ManagerCampaign: React.FC = () => {
     setFilteredCampaigns(filtered);
   }, [allCampaigns, activeTab]);
 
-  const fetchCampaigns = async () => {
+  const fetchAllCampaigns = async () => {
     try {
       const data = await managerCampaignService.getListCampaigns();
       setAllCampaigns(data);
     } catch (error) {
       console.error("Error refreshing campaigns:", error);
+    }
+  };
+
+  const fetchCampaignDetails = async (campaignId: string) => {
+    try {
+      const data = await managerCampaignService.getCampaignById(campaignId);
+      setSelectedCampaign({
+        ...data,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+      });
+      return data;
+    } catch (error) {
+      console.error("Error fetching campaign details:", error);
+      setAlertMessage("Failed to load campaign details.");
+      setTimeout(() => setAlertMessage(null), 5000);
+      return null;
     }
   };
 
@@ -183,7 +239,6 @@ const ManagerCampaign: React.FC = () => {
     generateCert?: boolean
   ) => {
     try {
-      // Set loading state before the async call
       if (action === managerCampaignService.startCampaign) {
         setIsStartingCampaign(true);
       } else if (action === managerCampaignService.endCampaign) {
@@ -191,7 +246,7 @@ const ManagerCampaign: React.FC = () => {
       }
 
       const response = await action(id, generateCert);
-      await fetchCampaigns();
+      await fetchAllCampaigns();
       setAlertMessage(response.message);
       setTimeout(() => setAlertMessage(null), 5000);
     } catch (error) {
@@ -199,16 +254,54 @@ const ManagerCampaign: React.FC = () => {
       setAlertMessage("Action failed. Please try again.");
       setTimeout(() => setAlertMessage(null), 5000);
     } finally {
-      // Reset loading states
       setIsStartingCampaign(false);
       setIsEndingCampaign(false);
     }
   };
 
-  const handleEndCampaign = (campaignId: string) => {
+  const handleEvaluateVolunteer = async (
+    campaignId: string,
+    userId: string,
+    evaluation: string,
+    feedback: string
+  ) => {
+    try {
+      const response = await managerCampaignService.evaluateVolunteer(
+        campaignId,
+        userId,
+        evaluation,
+        feedback
+      );
+      setHasEvaluated(true);
+      setAlertMessage(response.message);
+      setTimeout(() => setAlertMessage(null), 5000);
+      await fetchCampaignDetails(campaignId);
+    } catch (error) {
+      console.error("Evaluation failed:", error);
+      setAlertMessage("Evaluation failed. Please try again.");
+      setTimeout(() => setAlertMessage(null), 5000);
+    }
+  };
+
+  const handleEndCampaign = async (campaignId: string) => {
     setCurrentCampaignId(campaignId);
-    setGenerateCertificate(true);
-    setOpenConfirmDialog(true);
+    const campaign = await fetchCampaignDetails(campaignId);
+    if (campaign) {
+      setVolunteerEvaluations(
+        campaign.volunteers?.reduce((acc, volunteer) => {
+          if (volunteer.status === "approved") {
+            acc[volunteer.user._id] = {
+              evaluation: volunteer.evaluation || "average",
+              feedback: volunteer.feedback || "",
+            };
+          }
+          return acc;
+        }, {} as { [userId: string]: { evaluation: string; feedback: string } }) ||
+          {}
+      );
+      setHasEvaluated(campaign.volunteers?.some((v) => v.evaluation) || false);
+      setOpenEvaluateDialog(true);
+    }
   };
 
   const confirmEndCampaign = async () => {
@@ -257,7 +350,7 @@ const ManagerCampaign: React.FC = () => {
   };
 
   const openCampaignDetail = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
+    fetchCampaignDetails(campaign._id);
     setIsDialogOpen(true);
   };
 
@@ -276,6 +369,49 @@ const ManagerCampaign: React.FC = () => {
     }
     setOpenStartDialog(false);
     setCurrentCampaignId(null);
+  };
+
+  const calculateVolunteerStats = (volunteerId: string, campaign: Campaign) => {
+    let taskCount = 0;
+    let totalTaskScore = 0;
+    let taskScoreCount = 0;
+    let totalPeerScore = 0;
+    let peerScoreCount = 0;
+
+    campaign.phases?.forEach((phase) => {
+      phase.phaseDays.forEach((phaseDay) => {
+        phaseDay.tasks.forEach((task) => {
+          // Count tasks participated
+          if (task.assignedUsers.some((user) => user.userId === volunteerId)) {
+            taskCount++;
+            // Calculate average task score
+            if (task.staffReview?.finalScore) {
+              totalTaskScore += task.staffReview.finalScore;
+              taskScoreCount++;
+            }
+            // Calculate average peer review score
+            task.peerReviews.forEach((review) => {
+              if (review.reviewee === volunteerId) {
+                totalPeerScore += review.score;
+                peerScoreCount++;
+              }
+            });
+          }
+        });
+      });
+    });
+
+    return {
+      taskCount,
+      avgTaskScore:
+        taskScoreCount > 0
+          ? (totalTaskScore / taskScoreCount).toFixed(1)
+          : "___ ",
+      avgPeerScore:
+        peerScoreCount > 0
+          ? (totalPeerScore / peerScoreCount).toFixed(1)
+          : "___ ",
+    };
   };
 
   const renderActionButtons = (campaign: Campaign) => {
@@ -387,7 +523,159 @@ const ManagerCampaign: React.FC = () => {
     );
   }
 
-  // Dialog for Starting Campaign
+  const evaluationOptions = [
+    { value: "excellent", label: "Xuất sắc" },
+    { value: "good", label: "Tốt" },
+    { value: "average", label: "Trung bình" },
+    { value: "poor", label: "Kém" },
+  ];
+
+  const renderEvaluateDialog = () => (
+    <Dialog
+      open={openEvaluateDialog}
+      onClose={() => setOpenEvaluateDialog(false)}
+      maxWidth="lg"
+      fullWidth
+    >
+      <DialogTitle fontWeight="bold">
+        Đánh giá tình nguyện viên trong chiến dịch
+      </DialogTitle>
+      <DialogContent>
+        {!hasEvaluated && (
+          <Alert severity="warning" icon={<WarningAmber />} sx={{ mb: 2 }}>
+            Bạn chưa đánh giá chiến dịch
+          </Alert>
+        )}
+        {selectedCampaign?.volunteers?.filter((v) => v.status === "approved")
+          .length === 0 ? (
+          <Typography>
+            Không có tình nguyện viên được phê duyệt trong chiến dịch này.
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            {selectedCampaign?.volunteers
+              ?.filter((v) => v.status === "approved")
+              .map((volunteer) => {
+                const stats = calculateVolunteerStats(
+                  volunteer.user._id,
+                  selectedCampaign
+                );
+                return (
+                  <Box
+                    key={volunteer.user._id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      borderBottom: 1,
+                      borderColor: "divider",
+                      pb: 2,
+                    }}
+                  >
+                    <Avatar
+                      src={volunteer.user.avatar || ""}
+                      alt={volunteer.user.fullName}
+                      sx={{ width: 40, height: 40, mr: 1 }}
+                    />
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ minWidth: 100, mr: 2 }}
+                    >
+                      {volunteer.user.fullName}
+                    </Typography>
+                    <Typography variant="body2" sx={{ minWidth: 120, mr: 2 }}>
+                      Nhiệm vụ đã tham gia: {stats.taskCount}
+                    </Typography>
+                    <Typography variant="body2" sx={{ minWidth: 120, mr: 2 }}>
+                      Điểm nhiệm vụ TB: {stats.avgTaskScore}
+                    </Typography>
+                    <Typography variant="body2" sx={{ minWidth: 120, mr: 2 }}>
+                      Điểm đồng nghiệp TB: {stats.avgPeerScore}
+                    </Typography>
+                    <FormControl sx={{ minWidth: 200, mr: 2, mt: 1 }}>
+                      <InputLabel>Đánh giá</InputLabel>
+                      <Select
+                        value={
+                          volunteerEvaluations[volunteer.user._id]
+                            ?.evaluation || "average"
+                        }
+                        onChange={(e) => {
+                          setVolunteerEvaluations({
+                            ...volunteerEvaluations,
+                            [volunteer.user._id]: {
+                              ...volunteerEvaluations[volunteer.user._id],
+                              evaluation: e.target.value,
+                            },
+                          });
+                        }}
+                      >
+                        {evaluationOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() =>
+                        handleEvaluateVolunteer(
+                          selectedCampaign._id,
+                          volunteer.user._id,
+                          volunteerEvaluations[volunteer.user._id]
+                            ?.evaluation || "average",
+                          volunteerEvaluations[volunteer.user._id]?.feedback ||
+                            ""
+                        )
+                      }
+                    >
+                      Lưu đánh giá
+                    </Button>
+                  </Box>
+                );
+              })}
+          </Stack>
+        )}
+        {isEndingCampaign && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              mt: 2,
+            }}
+          >
+            <CircularProgress size={30} thickness={5} color="primary" />
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button
+          onClick={() => setOpenEvaluateDialog(false)}
+          disabled={isEndingCampaign}
+        >
+          Đóng
+        </Button>
+        <Button
+          onClick={() => {
+            setOpenEvaluateDialog(false);
+            setOpenConfirmDialog(true);
+          }}
+          color="secondary"
+          disabled={isEndingCampaign}
+          startIcon={
+            isEndingCampaign ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : null
+          }
+        >
+          Kết thúc chiến dịch
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   const renderStartDialog = () => (
     <Dialog open={openStartDialog} onClose={() => setOpenStartDialog(false)}>
       <DialogTitle fontWeight="bold">Xác nhận bắt đầu chiến dịch</DialogTitle>
@@ -431,7 +719,6 @@ const ManagerCampaign: React.FC = () => {
     </Dialog>
   );
 
-  // Dialog for Ending Campaign
   const renderEndDialog = () => (
     <Dialog
       open={openConfirmDialog}
@@ -525,7 +812,6 @@ const ManagerCampaign: React.FC = () => {
           </li>
         </ul>
       </div>
-      {/* Header and Filter */}
       <Paper
         sx={{
           mb: 3,
@@ -639,7 +925,6 @@ const ManagerCampaign: React.FC = () => {
         </Tabs>
       </Paper>
 
-      {/* Campaign Cards */}
       <Grid
         container
         spacing={3}
@@ -709,7 +994,6 @@ const ManagerCampaign: React.FC = () => {
                 }}
                 onClick={() => openCampaignDetail(campaign)}
               >
-                {/* Accept Status Tag */}
                 <Chip
                   label={campaign.acceptStatus.toUpperCase()}
                   color={getStatusColor(campaign.acceptStatus) as any}
@@ -723,7 +1007,6 @@ const ManagerCampaign: React.FC = () => {
                   }}
                 />
 
-                {/* Campaign Image */}
                 {campaign.image?.length > 0 ? (
                   <Box
                     sx={{
@@ -880,11 +1163,10 @@ const ManagerCampaign: React.FC = () => {
         )}
       </Grid>
 
-      {/* Render Dialogs */}
       {renderStartDialog()}
+      {renderEvaluateDialog()}
       {renderEndDialog()}
 
-      {/* Campaign Detail Dialog */}
       <CampaignModal
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
