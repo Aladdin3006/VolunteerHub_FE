@@ -12,11 +12,13 @@ import {
     Badge,
     LinearProgress,
     Chip,
+    Button,
 } from "@mui/material";
 
 import { useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../apis/campaign";
 import DonationDetailDialog, { CampaignDetailResponse } from "../../components/manager/DonationDetailDialog";
+import { approveDonationCampaign, rejectDonationCampaign } from "@/apis/donation";
 
 interface Campaign {
     _id: string;
@@ -60,6 +62,55 @@ const ManagerDonationStaff: React.FC = () => {
 
         fetchCampaigns();
     }, []);
+
+    const handleApproveCampaign = async (id: string) => {
+        try {
+            const userStr = localStorage.getItem("user");
+            const token = userStr ? JSON.parse(userStr).token : "";
+
+            if (!token) {
+                alert("Không tìm thấy token");
+                return;
+            }
+
+            await approveDonationCampaign(id, token);
+
+            alert("Chiến dịch đã được duyệt");
+
+            const updated = campaigns.map((c) =>
+                c._id === id ? { ...c, approvalStatus: "approved" } : c
+            );
+            setCampaigns(updated);
+        } catch (err: any) {
+            alert(err.message || "Lỗi khi duyệt chiến dịch");
+        }
+    };
+
+    const handleRejectCampaign = async (id: string) => {
+        try {
+            const confirm = window.confirm("Bạn có chắc chắn muốn từ chối chiến dịch này?");
+            if (!confirm) return;
+
+            const userStr = localStorage.getItem("user");
+            const token = userStr ? JSON.parse(userStr).token : "";
+
+            if (!token) {
+                alert("Không tìm thấy token");
+                return;
+            }
+
+            await rejectDonationCampaign(id);
+
+            alert("Chiến dịch đã bị từ chối");
+
+            const updated = campaigns.map((c) =>
+                c._id === id ? { ...c, approvalStatus: "rejected" } : c
+            );
+            setCampaigns(updated);
+        } catch (err: any) {
+            alert(err.message || "Lỗi khi từ chối chiến dịch");
+        }
+    };
 
     const handleCardClick = (campaign: Campaign) => {
         setSelectedCampaign(campaign);
@@ -193,13 +244,16 @@ const ManagerDonationStaff: React.FC = () => {
                     </Typography>
                 </Paper>
             ) : (
-                <Grid container spacing={3}>
+                <Grid container spacing={3} sx={{ justifyContent: "flex-start" }}>
                     {filteredCampaigns.map((campaign) => (
-                        <Grid item key={campaign._id}>
+                        <Grid item key={campaign._id} xs={12} sm={6} md={4} lg={3}>
                             <Card
                                 onClick={() => handleCardClick(campaign)}
                                 sx={{
-                                    width: 300,
+                                    width: 360,
+                                    height: 400,
+                                    display: "flex",
+                                    flexDirection: "column",
                                     cursor: "pointer",
                                     transition: "0.3s",
                                     "&:hover": {
@@ -207,11 +261,11 @@ const ManagerDonationStaff: React.FC = () => {
                                     },
                                 }}
                             >
-                                <CardContent sx={{ p: 0, display: "flex", flexDirection: "column" }}>
-                                    <Box sx={{ position: "relative", width: "100%", height: 150 }}>
+                                <CardContent sx={{ p: 0, display: "flex", flexDirection: "column", flex: 1 }}>
+                                    <Box sx={{ position: "relative", width: "100%", height: 200 }}>
                                         <Box
                                             component="img"
-                                            src={campaign.thumbnail || "https://via.placeholder.com/300x150?text=No+Image"}
+                                            src={campaign.thumbnail || "https://via.placeholder.com/360x200?text=No+Image"}
                                             alt={campaign.title}
                                             sx={{
                                                 width: "100%",
@@ -224,7 +278,7 @@ const ManagerDonationStaff: React.FC = () => {
                                         {campaign.approvalStatus && (
                                             <Chip
                                                 label={campaign.approvalStatus.toUpperCase()}
-                                                color={campaign.approvalStatus === "approved" ? "success" : "warning"}
+                                                color={campaign.approvalStatus === "approved" ? "success" : campaign.approvalStatus === "rejected" ? "error" : "warning"}
                                                 size="small"
                                                 sx={{
                                                     position: "absolute",
@@ -237,31 +291,72 @@ const ManagerDonationStaff: React.FC = () => {
                                         )}
                                     </Box>
 
-                                    <Box sx={{ p: 2 }}>
-                                        <Typography variant="body1" fontWeight="bold" noWrap>
-                                            {campaign.title}
-                                        </Typography>
-                                        <Typography variant="body2" color="textSecondary">
-                                            {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
-                                            {new Date(campaign.updatedAt).toLocaleDateString()}
-                                        </Typography>
-                                        {mapStatus(campaign.approvalStatus) !== "approved" && (
-                                            <>
-                                                <Typography variant="body2" mt={1}>
-                                                    Tiến độ quyên góp
-                                                </Typography>
-                                                <LinearProgress
-                                                    variant="determinate"
-                                                    value={(campaign.currentAmount / campaign.goalAmount) * 100}
-                                                    sx={{ mb: 1 }}
-                                                />
-                                                <Typography variant="caption" color="textSecondary">
-                                                    {campaign.currentAmount.toLocaleString()} /{" "}
-                                                    {campaign.goalAmount.toLocaleString()} VNĐ
-                                                </Typography>
-                                            </>
-                                        )}
-                                        
+                                    <Box sx={{ p: 3, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                                        <Box>
+                                            <Typography variant="h6" fontWeight="bold" noWrap>
+                                                {campaign.title}
+                                            </Typography>
+                                            <Typography variant="body2" color="textSecondary">
+                                                {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
+                                                {new Date(campaign.updatedAt).toLocaleDateString()}
+                                            </Typography>
+                                            {mapStatus(campaign.approvalStatus) !== "approved" && (
+                                                <>
+                                                    <Typography variant="body2" mt={1}>
+                                                        Tiến độ quyên góp
+                                                    </Typography>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={(campaign.currentAmount / campaign.goalAmount) * 100}
+                                                        sx={{ mb: 1 }}
+                                                    />
+                                                    <Typography variant="caption" color="textSecondary">
+                                                        {campaign.currentAmount.toLocaleString()} /{" "}
+                                                        {campaign.goalAmount.toLocaleString()} VNĐ
+                                                    </Typography>
+                                                </>
+                                            )}
+                                        </Box>
+                                        <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                                            {campaign.approvalStatus === "approved" ? (
+                                                <Button
+                                                    variant="outlined"
+                                                    color="error"
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // handleEndCampaign(campaign._id);
+                                                    }}
+                                                >
+                                                    Kết thúc chiến dịch
+                                                </Button>
+                                            ) : campaign.approvalStatus === "rejected" ? null : (
+                                                <>
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleApproveCampaign(campaign._id);
+                                                        }}
+                                                    >
+                                                        Duyệt chiến dịch
+                                                    </Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="error"
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRejectCampaign(campaign._id);
+                                                        }}
+                                                    >
+                                                        Từ chối chiến dịch
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </Box>
                                     </Box>
                                 </CardContent>
                             </Card>

@@ -105,7 +105,7 @@ const MyCampaignList: React.FC = () => {
           const registrationDate = registeredAt ? new Date(registeredAt) : null;
 
           return {
-            id: item.campaignId || item._id, // ✅ sửa chỗ này
+            id: item.campaignId || item._id,
             name: item.name || 'Không có tên',
             description: item.description || 'Không có mô tả',
             startDate: startDate && !isNaN(startDate.getTime()) ? startDate : null,
@@ -114,9 +114,9 @@ const MyCampaignList: React.FC = () => {
               item.status === 'in-progress'
                 ? 'ongoing'
                 : item.status === 'ended'
-                  ? 'completed' // ✅ Thay 'ended' thành 'completed'
+                  ? 'completed'
                   : item.status,
-            imageUrl: item.image || 'https://via.placeholder.com/400x200', // Fallback image
+            imageUrl: item.image || 'https://via.placeholder.com/400x200',
             category: item.categories || [],
             registrationDate:
               registrationDate && !isNaN(registrationDate.getTime()) ? registrationDate : null,
@@ -145,7 +145,6 @@ const MyCampaignList: React.FC = () => {
       navigate(`/campaigns/${campaign.id}/tasks`);
     }
   };
-
 
   // Phân loại campaigns theo trạng thái
   const categorizedCampaigns = useMemo(() => {
@@ -218,7 +217,7 @@ const MyCampaignList: React.FC = () => {
   return (
     <>
       <Header />
-      <Container sx={{ maxWidth: '90vw', mt: '100px', py: 4 }}>
+      <Container maxWidth="lg" sx={{ px: 6, mt: '100px', py: 4 }}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 2 }}>
             Danh sách Campaign đã đăng ký
@@ -282,7 +281,7 @@ const MyCampaignList: React.FC = () => {
                   </Box>
                   <Grid container spacing={2} sx={{ px: 1 }}>
                     {tab.campaigns.map((campaign) => (
-                      <Grid item xs={12} sm={6} md={3} lg={2.4} key={campaign.id}>
+                      <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={campaign.id}>
                         <CampaignCard campaign={campaign} onClick={() => handleCardClick(campaign)} />
                       </Grid>
                     ))}
@@ -293,8 +292,6 @@ const MyCampaignList: React.FC = () => {
           ))}
         </Paper>
       </Container>
-
-
     </>
   );
 };

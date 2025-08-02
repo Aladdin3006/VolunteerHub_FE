@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Chip,
 } from "@mui/material";
 import {
   FiberManualRecord as FiberManualRecordIcon,
@@ -23,7 +24,7 @@ import {
 } from "@mui/icons-material";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useNavigate } from "react-router-dom";
-import { getCampaigns } from "../../apis/campaign"; // Giả sử API ở đây
+import { getCampaigns } from "../../apis/campaign";
 
 interface Campaign {
   _id: string;
@@ -40,9 +41,7 @@ interface Campaign {
   approvalStatus?: string;
 }
 
-interface CampaignDetailResponse extends Campaign {
-  // Thêm các trường bổ sung nếu API trả về thêm
-}
+interface CampaignDetailResponse extends Campaign {}
 
 const ManagerDonationStaff: React.FC = () => {
   const [activeLink, setActiveLink] = useState<"ongoing" | "finished">("finished");
@@ -54,7 +53,6 @@ const ManagerDonationStaff: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // Gọi API getCampaigns khi component mount
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
@@ -71,11 +69,9 @@ const ManagerDonationStaff: React.FC = () => {
     fetchCampaigns();
   }, []);
 
-  // Gọi API getCampaignDetail khi click vào campaign
   const handleCardClick = (campaignId: string) => {
-  navigate(`/staff/donation/${campaignId}`);
-};
-
+    navigate(`/staff/donation/${campaignId}`);
+  };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
@@ -90,21 +86,25 @@ const ManagerDonationStaff: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>("");
 
   const getStatusCount = (status: string) => {
-    return campaigns.filter((campaign) => mapStatus(campaign.status) === status).length;
+    return campaigns.filter((campaign) => mapStatus(campaign.approvalStatus) === status).length;
   };
 
-  // Ánh xạ trạng thái API sang trạng thái hiển thị
-  const mapStatus = (status: string) => {
-    switch (status) {
+  const mapStatus = (approvalStatus?: string) => {
+    switch (approvalStatus) {
       case "draft":
+      case "pending":
         return "upcoming";
+      case "approved":
+        return "in-progress";
+      case "rejected":
+        return "completed";
       default:
-        return status;
+        return approvalStatus || "upcoming";
     }
   };
 
   const filteredCampaigns = campaigns.filter((campaign) =>
-    filterStatus ? mapStatus(campaign.status) === filterStatus : true
+    filterStatus ? mapStatus(campaign.approvalStatus) === filterStatus : true
   );
 
   return (
@@ -257,15 +257,14 @@ const ManagerDonationStaff: React.FC = () => {
       ) : (
         <Grid container spacing={3} justifyContent="flex-start">
           {filteredCampaigns.map((campaign) => (
-            <Grid item key={campaign._id}>
+            <Grid item key={campaign._id} xs={12} sm={6} md={4} lg={3}>
               <Card
                 sx={{
                   transition: "box-shadow 0.3s ease",
-                  height: "100%",
+                  height: 350,
+                  width: 300,
                   display: "flex",
                   flexDirection: "column",
-                  width: 300,
-                  mx: "auto",
                   cursor: "pointer",
                   "&:hover": {
                     boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
@@ -281,24 +280,44 @@ const ManagerDonationStaff: React.FC = () => {
                     flexDirection: "column",
                   }}
                 >
-                  {/* Image section */}
-                  <Box
-                    component="img"
-                    src={
-                      campaign.thumbnail ||
-                      "https://via.placeholder.com/300x150?text=No+Image"
-                    }
-                    alt={campaign.title}
-                    sx={{
-                      width: "100%",
-                      height: 150,
-                      objectFit: "cover",
-                      backgroundColor: campaign.thumbnail
-                        ? "transparent"
-                        : "#f5f5f5",
-                    }}
-                  />
-                  {/* Content section */}
+                  <Box sx={{ position: "relative", width: "100%", height: 150 }}>
+                    <Box
+                      component="img"
+                      src={
+                        campaign.thumbnail ||
+                        "https://via.placeholder.com/300x150?text=No+Image"
+                      }
+                      alt={campaign.title}
+                      sx={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderTopLeftRadius: 4,
+                        borderTopRightRadius: 4,
+                        backgroundColor: campaign.thumbnail ? "transparent" : "#f5f5f5",
+                      }}
+                    />
+                    {campaign.approvalStatus && (
+                      <Chip
+                        label={campaign.approvalStatus.toUpperCase()}
+                        color={
+                          campaign.approvalStatus === "approved"
+                            ? "success"
+                            : campaign.approvalStatus === "rejected"
+                            ? "error"
+                            : "warning"
+                        }
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          fontWeight: "bold",
+                          color: "#fff",
+                        }}
+                      />
+                    )}
+                  </Box>
                   <Box sx={{ p: 2, flex: 1 }}>
                     <Typography
                       variant="body1"
@@ -318,33 +337,17 @@ const ManagerDonationStaff: React.FC = () => {
                       {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
                       {new Date(campaign.updatedAt).toLocaleDateString()}
                     </Typography>
-                    {mapStatus(campaign.status) !== "completed" && (
-                      <>
-                        <Typography
-                          variant="body2"
-                          color="textSecondary"
-                          mt={1}
-                        >
-                          Tiến độ quyên góp
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={(campaign.currentAmount / campaign.goalAmount) * 100}
-                          sx={{ mb: 1 }}
-                        />
-                        <Typography variant="caption" color="textSecondary">
-                          {campaign.currentAmount.toLocaleString()} /{" "}
-                          {campaign.goalAmount.toLocaleString()} VNĐ
-                        </Typography>
-                      </>
-                    )}
                     <Typography variant="body2" color="textSecondary" mt={1}>
-                      Trạng thái:{" "}
-                      {mapStatus(campaign.status) === "in-progress"
-                        ? "Đang diễn ra"
-                        : mapStatus(campaign.status) === "upcoming"
-                        ? "Chưa diễn ra"
-                        : "Đã kết thúc"}
+                      Tiến độ quyên góp
+                    </Typography>
+                    <LinearProgress
+                      variant="determinate"
+                      value={(campaign.currentAmount / campaign.goalAmount) * 100}
+                      sx={{ mb: 1 }}
+                    />
+                    <Typography variant="caption" color="textSecondary">
+                      {campaign.currentAmount.toLocaleString()} /{" "}
+                      {campaign.goalAmount.toLocaleString()} VNĐ
                     </Typography>
                   </Box>
                 </CardContent>
@@ -390,13 +393,6 @@ const ManagerDonationStaff: React.FC = () => {
               <Typography variant="body2" color="textSecondary">
                 Thời gian: {new Date(selectedCampaign.createdAt).toLocaleDateString()} -{" "}
                 {new Date(selectedCampaign.updatedAt).toLocaleDateString()}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Trạng thái: {mapStatus(selectedCampaign.status) === "in-progress"
-                  ? "Đang diễn ra"
-                  : mapStatus(selectedCampaign.status) === "upcoming"
-                  ? "Chưa diễn ra"
-                  : "Đã kết thúc"}
               </Typography>
               <Typography variant="body2" color="textSecondary">
                 Tiến độ quyên góp: {selectedCampaign.currentAmount.toLocaleString()} /{" "}
