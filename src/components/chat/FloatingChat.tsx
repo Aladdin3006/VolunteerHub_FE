@@ -14,36 +14,51 @@ import ChatIcon from "@mui/icons-material/Chat";
 import CloseIcon from "@mui/icons-material/Close";
 import { motion, AnimatePresence } from "framer-motion";
 import FancyChatButton from "./FancyChatButton";
+import authService from "@/services/Authentication.service";
 
 const FloatingChat = () => {
     const [open, setOpen] = useState(false);
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<{ type: "user" | "bot"; text: string }[]>([]);
     const [loading, setLoading] = useState(false);
+    const user = authService.getUser();
 
     const handleSend = async () => {
         if (!message.trim()) return;
+
+        const userId = user?._id || user?.id;
+        const accessToken = authService.getToken();
 
         setMessages((prev) => [...prev, { type: "user", text: message }]);
         setMessage("");
         setLoading(true);
 
-        // Fake delay loading typing
-        setTimeout(async () => {
-            try {
-                const res = await fetch("http://localhost:8000/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
-                });
-                const data = await res.json();
-                setMessages((prev) => [...prev, { type: "bot", text: data.reply }]);
-            } catch {
-                setMessages((prev) => [...prev, { type: "bot", text: "🚨 Lỗi kết nối rồi đóa!" }]);
-            }
-            setLoading(false);
-        }, 1000);
+        try {
+            const res = await fetch("http://localhost:8000/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`, // 🛡️ Gửi token
+                },
+                body: JSON.stringify({
+                    message,
+                    userId: userId || null,
+                }),
+            });
+
+            console.log("📤 Sending to backend:", { message, userId });
+
+            const data = await res.json();
+            setMessages((prev) => [...prev, { type: "bot", text: data.reply }]);
+        } catch (err) {
+            console.error("❌ Lỗi gửi chat:", err);
+            setMessages((prev) => [...prev, { type: "bot", text: "🚨 Lỗi kết nối rồi đóa!" }]);
+        }
+
+        setLoading(false);
     };
+
+
 
     const toggleChat = () => setOpen(!open);
 
@@ -85,7 +100,7 @@ const FloatingChat = () => {
     return (
         <>
             {/* Nút mở chat ở góc phải */}
-           <FancyChatButton onClick={toggleChat} />
+            <FancyChatButton onClick={toggleChat} />
 
             {/* Khung chat */}
             <AnimatePresence>
@@ -128,6 +143,7 @@ const FloatingChat = () => {
                                     p: 1.5,
                                     overflowY: "auto",
                                     backgroundColor: "#fffefc",
+                                    zIndex: 999
                                 }}
                             >
                                 {messages.map((msg, i) => (
@@ -163,10 +179,11 @@ const FloatingChat = () => {
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                 />
-                                
-                                <FancyChatButton onClick={toggleChat} />
-
+                                <IconButton onClick={handleSend} disabled={loading}>
+                                    <SendIcon />
+                                </IconButton>
                             </Box>
+
                         </Box>
                     </motion.div>
                 )}

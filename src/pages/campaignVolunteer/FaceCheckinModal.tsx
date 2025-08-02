@@ -83,7 +83,19 @@ export const FaceCheckinModal: React.FC<Props> = ({
       return;
     }
 
-    const [targetLat, targetLng] = checkinLocation.coordinates;
+
+    // In tọa độ gốc của checkinLocation.coordinates
+    console.log("📍 Raw PhaseDay Coordinates:", checkinLocation.coordinates);
+    // In thông tin địa chỉ và tọa độ của phaseDay
+    console.log("📍 PhaseDay Location:", {
+      address: checkinLocation.address,
+      coordinates: { longitude: checkinLocation.coordinates[0], latitude: checkinLocation.coordinates[1] },
+    });
+
+    const [targetLng, targetLat] = checkinLocation.coordinates;
+
+    
+
 
     const fetchLocationAndCompare = () => {
       setLoadingLocation(true);
@@ -94,12 +106,14 @@ export const FaceCheckinModal: React.FC<Props> = ({
           const userLng = pos.coords.longitude;
           setUserLocation([userLng, userLat]);
 
-          const distance = haversineDistance(
-            userLat,
-            userLng,
-            targetLat,
-            targetLng
-          );
+
+          // In tọa độ GPS của người dùng
+          console.log("📍 User GPS Coordinates:", { latitude: userLat, longitude: userLng });
+
+          // Tính khoảng cách Haversine
+          const distance = haversineDistance(userLat, userLng, targetLat, targetLng);
+
+          console.log("📍 Calculated distance:", distance.toFixed(2), "meters");
           setDistanceToCheckpoint(distance);
           setIsWithinRange(distance <= 150);
           setLoadingLocation(false);
@@ -247,7 +261,6 @@ export const FaceCheckinModal: React.FC<Props> = ({
       alert(res.data.status || "✅ Check-in thành công!");
 
       if (typeof onCheckinSuccess === "function") {
-        console.log("✔️ Calling onCheckinSuccess with phaseDayId:", phaseDayId);
         onCheckinSuccess(phaseDayId);
       }
       onClose();

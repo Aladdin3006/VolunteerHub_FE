@@ -269,7 +269,7 @@ const OverViewCampaign: React.FC = () => {
         </Typography>
         <Button
           variant="contained"
-          onClick={() => navigate("/staff")}
+          onClick={() => navigate("/staff/campaigns")}
           sx={{ mt: 2 }}
           className="action-button"
         >
