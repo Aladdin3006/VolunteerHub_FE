@@ -47,26 +47,39 @@ export const UpdateDonationDialog = forwardRef<
         setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
         return;
       }
-      const data = res.data;
+      const data = res.data?.campaign;
+
+
       setDonation({
         description: data.description,
         goalAmount: data.goalAmount,
-        images: data.images.map((img) => ({
-          url: img,
-          type: "image",
-        })),
-        tags: data.tags,
+        images: Array.isArray(data.images)
+          ? data.images.map((img) => ({
+            url: img,
+            type: "image",
+          }))
+          : [],
+        tags: Array.isArray(data.tags) ? data.tags : [],
         thumbnail: {
-          url: data.thumbnail,
+          url: data.thumbnail ?? "", // nếu bị null
           type: "image",
         },
         title: data.title,
       });
+
+
       setState("success");
-    } catch (error) {
-      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+    } catch (error: any) {
+      console.error("❌ Lỗi trong fetchData:", error);
+      if (error.response) {
+        console.error("📛 Lỗi từ backend:", error.response.data);
+      } else if (error.request) {
+        console.error("📛 Không nhận được phản hồi từ backend:", error.request);
+      } else {
+        console.error("📛 Lỗi khác:", error.message);
+      }
+      setSnackbarMessage("Có lỗi xảy ra khi tải dữ liệu");
       setState("error");
-      return;
     }
   };
 
@@ -85,28 +98,40 @@ export const UpdateDonationDialog = forwardRef<
 
   const handleSubmitUpdateDonation = async (data: IDonationDataUpload) => {
     try {
-      const res = await DONATION_API.updateDonation(
-        donationIdRef.current!,
-        data
-      );
-      if (typeof res === "object" && (res as any).error != null) {
+      const res = await DONATION_API.updateDonation(donationIdRef.current!, data);
+      if (!res || !res.data) {
+        console.error("❌ Không có dữ liệu từ API:", res);
+        console.log("✅ Response từ update API:", res);
         setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+        return;
       } else {
         afterSubmit && afterSubmit(data);
         if (closeAfterSubmit !== false) {
           close();
         }
       }
-    } catch (error) {
-      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      console.log(error);
+    } catch (error: any) {
+      console.error("LỖI THỰC TẾ:", error);
+      const axiosError = error.origin || error;
+
+      if (axiosError.response) {
+        console.error("❌ Backend trả về lỗi:", axiosError.response.data);
+        setSnackbarMessage(axiosError.response.data.message || "Có lỗi xảy ra (backend)");
+      } else if (axiosError.request) {
+        console.error("❌ Không nhận được phản hồi từ backend:", axiosError.request);
+        setSnackbarMessage("Không nhận được phản hồi từ server");
+      } else {
+        console.error("❌ Lỗi khác:", axiosError.message);
+        setSnackbarMessage("Lỗi không xác định: " + axiosError.message);
+      }
     }
   };
+
 
   return (
     <Dialog
       open={open}
-      onClose={() => {}}
+      onClose={() => { }}
       fullWidth
       maxWidth="sm"
       keepMounted={false}

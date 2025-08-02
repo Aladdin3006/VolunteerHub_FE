@@ -19,6 +19,11 @@ interface Props {
 const FundraisingCard: React.FC<Props> = ({ campaign }) => {
   const navigate = useNavigate();
 
+  // Chỉ render Card nếu approvalStatus là "approved"
+  if (campaign.approvalStatus !== "approved") {
+    return null;
+  }
+
   const raised = campaign.currentAmount ?? 0;
   const target = campaign.goalAmount ?? 1;
   const progress = (raised / target) * 100;
@@ -29,8 +34,8 @@ const FundraisingCard: React.FC<Props> = ({ campaign }) => {
       sx={{
         borderRadius: 3,
         transition: "transform .2s, box-shadow .2s",
-        width: 450, // Thay đổi chiều rộng tại đây
-        height: 400, // Chiều cao tự động
+        width: 450,
+        height: 400,
         "&:hover": { transform: "translateY(-4px)", boxShadow: 20 },
       }}
     >
@@ -38,15 +43,13 @@ const FundraisingCard: React.FC<Props> = ({ campaign }) => {
         {/* Ảnh */}
         <CardMedia
           component="img"
-          height="200" // Thay đổi chiều cao ảnh nếu cần
+          height="200"
           image={campaign.thumbnail || "https://via.placeholder.com/300x200"}
           alt={campaign.title}
           sx={{ borderTopLeftRadius: 3, borderTopRightRadius: 3 }}
         />
 
         <CardContent sx={{ padding: 2 }}>
-          {" "}
-          {/* Tăng padding nếu cần */}
           {/* Tổ chức */}
           <Typography variant="caption" color="text.secondary">
             {campaign.createdBy?.fullName || "Tổ chức ẩn danh"}
@@ -69,7 +72,6 @@ const FundraisingCard: React.FC<Props> = ({ campaign }) => {
                 height: 8,
                 borderRadius: 5,
                 backgroundColor: "#BBDEFB",
-                /* 🎨 màu thanh tiến độ (bar) xanh đậm */
                 "& .MuiLinearProgress-bar": {
                   backgroundColor: "#1976D2",
                 },

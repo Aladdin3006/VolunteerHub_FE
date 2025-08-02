@@ -14,10 +14,26 @@ import { Close } from "@mui/icons-material";
 import { DONATION_API, IDonationDataUpload } from "../../apis/donation";
 import { DonationForm } from "../donation/DonationForm";
 
+// Định nghĩa interface cho response từ createDonation
+interface DonationCampaign {
+  _id: string;
+  title: string;
+  description: string;
+  goalAmount: number;
+  currentAmount: number;
+  thumbnail?: string;
+  images?: string[];
+  tags?: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface IProps extends Omit<DialogProps, "open"> {
   afterSubmit?: (data: IDonationDataUpload) => void;
   closeAfterSubmit?: boolean;
 }
+
 export interface INewDonationDialogRef {
   open: () => void;
 }
@@ -27,6 +43,7 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
     const { afterSubmit, closeAfterSubmit, ...rest } = props;
     const [open, setOpen] = useState<boolean>(false);
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+    const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("error");
 
     const close = () => {
       setOpen(false);
@@ -41,17 +58,21 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
     const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
       try {
         const res = await DONATION_API.createDonation(data);
-        if (typeof res === "object" && (res as any).error != null) {
-          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-        } else {
+        if (res.status === 201 && res.data?.message && res.data?.campaign) {
+          setSnackbarSeverity("success");
+          setSnackbarMessage(res.data.message || "Tạo chiến dịch thành công");
           afterSubmit && afterSubmit(data);
           if (closeAfterSubmit !== false) {
             close();
           }
+        } else {
+          setSnackbarSeverity("error");
+          setSnackbarMessage(res.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau");
         }
-      } catch (error) {
-        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-        console.log(error);
+      } catch (error: any) {
+        setSnackbarSeverity("error");
+        setSnackbarMessage(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau");
+        console.error(error);
       }
     };
 
@@ -72,7 +93,6 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
             justifyContent="center"
           >
             <Typography variant="h6">Tạo chiến dịch quyên góp</Typography>
-
             <IconButton
               onClick={close}
               sx={{ position: "absolute", right: 0 }}
@@ -121,7 +141,6 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
           />
         </DialogContent>
 
-        {/* Error message */}
         <Snackbar
           open={Boolean(snackbarMessage)}
           autoHideDuration={6000}
@@ -129,7 +148,7 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
         >
           <Alert
             onClose={() => setSnackbarMessage(null)}
-            severity="error"
+            severity={snackbarSeverity}
             variant="filled"
             sx={{ width: "100%" }}
           >
