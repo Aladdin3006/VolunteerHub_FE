@@ -10,7 +10,6 @@ import {
     Tab,
     Paper,
     Badge,
-    LinearProgress,
     Chip,
     Button,
 } from "@mui/material";
@@ -250,113 +249,241 @@ const ManagerDonationStaff: React.FC = () => {
                             <Card
                                 onClick={() => handleCardClick(campaign)}
                                 sx={{
-                                    width: 360,
-                                    height: 400,
+                                    width: 360, // Fixed width for all cards
+                                    height: 440, // Fixed height for all cards
+                                    borderRadius: 3,
+                                    boxShadow: 3,
+                                    cursor: "pointer",
                                     display: "flex",
                                     flexDirection: "column",
-                                    cursor: "pointer",
                                     transition: "0.3s",
                                     "&:hover": {
-                                        boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                                        boxShadow: 6,
                                     },
+                                    overflow: "hidden",
+                                    boxSizing: "border-box", // Ensure padding/border included in dimensions
                                 }}
                             >
-                                <CardContent sx={{ p: 0, display: "flex", flexDirection: "column", flex: 1 }}>
-                                    <Box sx={{ position: "relative", width: "100%", height: 200 }}>
-                                        <Box
-                                            component="img"
-                                            src={campaign.thumbnail || "https://via.placeholder.com/360x200?text=No+Image"}
-                                            alt={campaign.title}
+                                {/* Thumbnail + Status Chip */}
+                                <Box sx={{ position: "relative", height: 180, minHeight: 180, flexShrink: 0 }}>
+                                    <Box
+                                        component="img"
+                                        src={campaign.thumbnail || "https://via.placeholder.com/360x200?text=No+Image"}
+                                        alt={campaign.title}
+                                        sx={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                            borderTopLeftRadius: 12,
+                                            borderTopRightRadius: 12,
+                                        }}
+                                    />
+                                    {campaign.approvalStatus === "approved" ? (
+                                        <Chip
+                                            label="APPROVED"
+                                            color="success"
+                                            size="small"
                                             sx={{
-                                                width: "100%",
-                                                height: "100%",
-                                                objectFit: "cover",
-                                                borderTopLeftRadius: 4,
-                                                borderTopRightRadius: 4,
+                                                position: "absolute",
+                                                top: 10,
+                                                right: 10,
+                                                fontWeight: "bold",
+                                                color: "#fff",
                                             }}
                                         />
-                                        {campaign.approvalStatus && (
-                                            <Chip
-                                                label={campaign.approvalStatus.toUpperCase()}
-                                                color={campaign.approvalStatus === "approved" ? "success" : campaign.approvalStatus === "rejected" ? "error" : "warning"}
-                                                size="small"
-                                                sx={{
-                                                    position: "absolute",
-                                                    top: 8,
-                                                    right: 8,
-                                                    fontWeight: "bold",
-                                                    color: "#fff",
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
+                                    ) : campaign.approvalStatus === "rejected" ? (
+                                        <Chip
+                                            label="REJECTED"
+                                            color="error"
+                                            size="small"
+                                            sx={{
+                                                position: "absolute",
+                                                top: 10,
+                                                right: 10,
+                                                fontWeight: "bold",
+                                                color: "#fff",
+                                            }}
+                                        />
+                                    ) : (
+                                        <Chip
+                                            label="PENDING"
+                                            color="warning"
+                                            size="small"
+                                            sx={{
+                                                position: "absolute",
+                                                top: 10,
+                                                right: 10,
+                                                fontWeight: "bold",
+                                                color: "#fff",
+                                            }}
+                                        />
+                                    )}
+                                </Box>
 
-                                    <Box sx={{ p: 3, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h6" fontWeight="bold" noWrap>
-                                                {campaign.title}
+                                {/* Status Bar */}
+                                {campaign.approvalStatus !== "rejected" && (
+                                    <Box
+                                        sx={{
+                                            backgroundColor:
+                                                campaign.status === "draft"
+                                                    ? "#f57c00"
+                                                    : campaign.status === "active"
+                                                    ? "#2e7d32"
+                                                    : campaign.status === "completed"
+                                                    ? "#0288d1"
+                                                    : "#2e7d32", // Default to in-progress color
+                                            py: 0.5,
+                                            textAlign: "center",
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <Typography variant="caption" color="white" fontWeight="bold">
+                                            {campaign.status === "draft"
+                                                ? "WAITING"
+                                                : campaign.status === "active"
+                                                ? "IN-PROGRESS"
+                                                : campaign.status === "completed"
+                                                ? "COMPLETED"
+                                                : "IN-PROGRESS"}
+                                        </Typography>
+                                    </Box>
+                                )}
+
+                                {/* Nội dung thẻ */}
+                                <CardContent
+                                    sx={{
+                                        flexGrow: 1,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "space-between",
+                                        padding: 2,
+                                        height: "100%", // Ensure it takes remaining space
+                                        boxSizing: "border-box",
+                                    }}
+                                >
+                                    <Box>
+                                        <Typography
+                                            variant="subtitle1"
+                                            fontWeight="bold"
+                                            gutterBottom
+                                            sx={{
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                display: "-webkit-box",
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: "vertical",
+                                                minHeight: 48, // Reserve space for 2 lines
+                                            }}
+                                        >
+                                            {campaign.title}
+                                        </Typography>
+
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                                            <Typography variant="body2" color="text.secondary">📍</Typography>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    display: "-webkit-box",
+                                                    WebkitLineClamp: 1,
+                                                    WebkitBoxOrient: "vertical",
+                                                    minHeight: 20, // Reserve space for 1 line
+                                                }}
+                                            >
+                                                {campaign.description || "Địa điểm không rõ"}
                                             </Typography>
-                                            <Typography variant="body2" color="textSecondary">
+                                        </Box>
+
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                            <Typography variant="body2" color="text.secondary">📅</Typography>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
                                                 {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
                                                 {new Date(campaign.updatedAt).toLocaleDateString()}
                                             </Typography>
-                                            {mapStatus(campaign.approvalStatus) !== "approved" && (
-                                                <>
-                                                    <Typography variant="body2" mt={1}>
-                                                        Tiến độ quyên góp
-                                                    </Typography>
-                                                    <LinearProgress
-                                                        variant="determinate"
-                                                        value={(campaign.currentAmount / campaign.goalAmount) * 100}
-                                                        sx={{ mb: 1 }}
-                                                    />
-                                                    <Typography variant="caption" color="textSecondary">
-                                                        {campaign.currentAmount.toLocaleString()} /{" "}
-                                                        {campaign.goalAmount.toLocaleString()} VNĐ
-                                                    </Typography>
-                                                </>
-                                            )}
                                         </Box>
-                                        <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                                            {campaign.approvalStatus === "approved" ? (
+
+                                        {/* Tags */}
+                                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1, minHeight: 24 }}>
+                                            {campaign.tags?.slice(0, 3).map((tag) => (
+                                                <Chip
+                                                    key={tag._id}
+                                                    label={tag.name}
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: tag.color || "#e0e0e0",
+                                                        color: "#fff",
+                                                        fontWeight: "bold",
+                                                    }}
+                                                />
+                                            ))}
+                                        </Box>
+                                    </Box>
+
+                                    {/* Nút hành động */}
+                                    <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
+                                        {campaign.approvalStatus !== "approved" && campaign.approvalStatus !== "rejected" && (
+                                            <>
                                                 <Button
-                                                    variant="outlined"
+                                                    variant="contained"
+                                                    color="success"
+                                                    size="small"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleApproveCampaign(campaign._id);
+                                                    }}
+                                                    sx={{
+                                                        flex: 1,
+                                                        textTransform: "none",
+                                                    }}
+                                                >
+                                                    ACCEPT
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
                                                     color="error"
                                                     size="small"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        // handleEndCampaign(campaign._id);
+                                                        handleRejectCampaign(campaign._id);
+                                                    }}
+                                                    sx={{
+                                                        flex: 1,
+                                                        textTransform: "none",
                                                     }}
                                                 >
-                                                    Kết thúc chiến dịch
+                                                    REJECT
                                                 </Button>
-                                            ) : campaign.approvalStatus === "rejected" ? null : (
-                                                <>
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        size="small"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleApproveCampaign(campaign._id);
-                                                        }}
-                                                    >
-                                                        Duyệt chiến dịch
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
-                                                        color="error"
-                                                        size="small"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRejectCampaign(campaign._id);
-                                                        }}
-                                                    >
-                                                        Từ chối chiến dịch
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </Box>
+                                            </>
+                                        )}
+                                        {campaign.approvalStatus === "approved" && (
+                                            <Button
+                                                variant="contained"
+                                                color="secondary"
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // handleEndCampaign(campaign._id);
+                                                }}
+                                                sx={{
+                                                    flex: 1,
+                                                    backgroundColor: "#9c27b0",
+                                                    color: "#fff",
+                                                    textTransform: "none",
+                                                }}
+                                            >
+                                                END CAMPAIGN
+                                            </Button>
+                                        )}
                                     </Box>
                                 </CardContent>
                             </Card>

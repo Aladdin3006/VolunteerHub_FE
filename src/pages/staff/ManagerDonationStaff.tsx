@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -25,6 +25,8 @@ import {
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import { useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../apis/campaign";
+import { NewDonationDialog, INewDonationDialogRef } from "../../components/staff/NewDonationDialog";
+import { IDonationDataUpload } from "../../apis/donation";
 
 interface Campaign {
   _id: string;
@@ -52,6 +54,7 @@ const ManagerDonationStaff: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignDetailResponse | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const navigate = useNavigate();
+  const dialogRef = useRef<INewDonationDialogRef>(null); // Di chuyển vào trong component
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -106,6 +109,19 @@ const ManagerDonationStaff: React.FC = () => {
   const filteredCampaigns = campaigns.filter((campaign) =>
     filterStatus ? mapStatus(campaign.approvalStatus) === filterStatus : true
   );
+
+  const handleAfterSubmit = async (data: IDonationDataUpload) => {
+    try {
+      setLoading(true);
+      const data = await getCampaigns();
+      setCampaigns(data);
+      setError(null); // Xóa lỗi cũ nếu có
+    } catch (err) {
+      setError("Không thể làm mới danh sách chiến dịch");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box
@@ -227,7 +243,7 @@ const ManagerDonationStaff: React.FC = () => {
         <Button
           variant="contained"
           onClick={() => {
-            console.log("Create new donation campaign");
+            dialogRef.current?.open();
           }}
         >
           Tạo Chiến dịch Quyên góp Mới
@@ -455,6 +471,12 @@ const ManagerDonationStaff: React.FC = () => {
           </DialogActions>
         </Dialog>
       )}
+
+      <NewDonationDialog
+        ref={dialogRef}
+        afterSubmit={handleAfterSubmit}
+        closeAfterSubmit={true} // Thêm prop
+      />
     </Box>
   );
 };
