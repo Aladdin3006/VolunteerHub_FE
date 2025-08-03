@@ -535,7 +535,7 @@ const ManagerCampaign: React.FC = () => {
     <Dialog
       open={openEvaluateDialog}
       onClose={() => setOpenEvaluateDialog(false)}
-      maxWidth="lg"
+      maxWidth="xl"
       fullWidth
     >
       <DialogTitle fontWeight="bold">
@@ -573,58 +573,50 @@ const ManagerCampaign: React.FC = () => {
                       pb: 2,
                     }}
                   >
-                    <Avatar
-                      src={volunteer.user.avatar || ""}
-                      alt={volunteer.user.fullName}
-                      sx={{ width: 40, height: 40, mr: 1 }}
-                    />
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ minWidth: 100, mr: 2 }}
-                    >
+                    {/* Avatar - Fixed width */}
+                    <Box sx={{ width: 60 }}>
+                      <Avatar
+                        src={volunteer.user.avatar || ""}
+                        alt={volunteer.user.fullName}
+                        sx={{ width: 40, height: 40 }}
+                      />
+                    </Box>
+
+                    {/* Name - Fixed width */}
+                    <Typography variant="subtitle1" sx={{ width: 150 }}>
                       {volunteer.user.fullName}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        minWidth: 120,
-                        mr: 2,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+
+                    {/* Tasks count - Fixed width */}
+                    <Box
+                      sx={{ width: 300, display: "flex", alignItems: "center" }}
                     >
                       <TaskIcon sx={{ fontSize: "1rem", mr: 1 }} />
-                      Nhiệm vụ đã tham gia: {stats.taskCount}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        minWidth: 120,
-                        mr: 2,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+                      <span>Nhiệm vụ đã tham gia: {stats.taskCount}</span>
+                    </Box>
+
+                    {/* Average task score - Fixed width */}
+                    <Box
+                      sx={{ width: 300, display: "flex", alignItems: "center" }}
                     >
-                      Điểm nhiệm vụ TB: {stats.avgTaskScore}
-                      <Box component="span" sx={{ color: "yellow" }}>
+                      <span>Điểm nhiệm vụ TB: {stats.avgTaskScore}</span>
+                      <Box component="span" sx={{ color: "yellow", ml: 0.5 }}>
                         ★
                       </Box>
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        minWidth: 120,
-                        mr: 2,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+                    </Box>
+
+                    {/* Average peer score - Fixed width */}
+                    <Box
+                      sx={{ width: 300, display: "flex", alignItems: "center" }}
                     >
-                      Điểm đồng nghiệp TB: {stats.avgPeerScore}
-                      <Box component="span" sx={{ color: "yellow" }}>
+                      <span>Điểm đồng nghiệp TB: {stats.avgPeerScore}</span>
+                      <Box component="span" sx={{ color: "yellow", ml: 0.5 }}>
                         ★
                       </Box>
-                    </Typography>
-                    <FormControl sx={{ minWidth: 200, mr: 2, mt: 1 }}>
+                    </Box>
+
+                    {/* Evaluation dropdown - Fixed width */}
+                    <FormControl sx={{ width: 200, mr: 2 }}>
                       <InputLabel>Đánh giá</InputLabel>
                       <Select
                         value={
@@ -648,9 +640,12 @@ const ManagerCampaign: React.FC = () => {
                         ))}
                       </Select>
                     </FormControl>
+
+                    {/* Save button - Fixed width */}
                     <Button
                       variant="contained"
                       size="small"
+                      sx={{ width: 140 }}
                       onClick={() =>
                         handleEvaluateVolunteer(
                           selectedCampaign._id,

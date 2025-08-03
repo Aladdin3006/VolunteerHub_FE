@@ -4,153 +4,112 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Box,
   Button,
-  Typography,
   CircularProgress,
-  Alert,
+  Typography,
+  Box,
 } from "@mui/material";
 import Webcam from "react-webcam";
-import authService from "../../../services/Authentication.service";
+import axios from "axios";
 
-const CheckinFaceModal = () => {
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  campaignId: string;
+  phaseId: string;
+  phaseDayId: string;
+  onSuccess: () => void;
+}
+
+const CheckinFaceModal: React.FC<Props> = ({
+  open,
+  onClose,
+  campaignId,
+  phaseId,
+  phaseDayId,
+  onSuccess,
+}) => {
   const webcamRef = useRef<Webcam>(null);
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ status?: string; distance?: number; error?: string }>({});
 
-  const handleOpen = () => {
-    setResult({});
-    setOpen(true);
-  };
+  const handleCheckin = async () => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    const userString = localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+    const userId = user?.id;
+    const token = user?.token;
 
-  const handleClose = () => {
-    setResult({});
-    setOpen(false);
-  };
-
-  const captureAndCheckin = async () => {
-    const user = authService.getUser();
-    const userId = user?._id || user?.id;
-    const hasDescriptor = user?.faceDescriptor !== null;
-
-    if (!userId) {
-      setResult({ error: "Không tìm thấy user ID, vui lòng đăng nhập lại." });
+    if (!imageSrc || !userId || !token) {
+      alert("❌ Thiếu ảnh, thông tin người dùng hoặc token");
       return;
     }
 
-    if (!hasDescriptor) {
-      setResult({ error: "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trước khi check-in." });
+    const base64Image = imageSrc.split(",")[1];
+    if (!base64Image || base64Image.length < 10000) {
+      alert("❌ Ảnh chụp quá mờ hoặc không hợp lệ, vui lòng thử lại!");
       return;
     }
 
-    if (!webcamRef.current || !webcamRef.current.video) {
-      setResult({ error: "Webcam không hoạt động hoặc không có hình ảnh." });
-      return;
-    }
-
-    const video = webcamRef.current.video;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.translate(video.videoWidth, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-
-    const imageBase64 = canvas.toDataURL("image/jpeg");
-
-    const body = {
+    const payload = {
+      image: base64Image,
       user_id: userId,
-      image: imageBase64,
+      campaignId,
+      phaseId,
+      phasedayId: phaseDayId,
+      method: "face",
     };
 
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/checkin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const res = await axios.post("http://localhost:8000/checkin", payload, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Check-in thất bại");
-
-      setResult({ status: data.status, distance: data.distance });
+      alert(res.data.status || "✅ Check-in thành công!");
+      onSuccess();
     } catch (err: any) {
-      setResult({ error: err.message });
+      const msg =
+        err?.response?.data?.detail || "❌ Lỗi khi check-in bằng khuôn mặt";
+      alert(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box sx={{ mt: 4 }}>
-      <Button variant="contained" color="primary" onClick={handleOpen}>
-        Check-in bằng khuôn mặt
-      </Button>
-
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Check-in bằng khuôn mặt</DialogTitle>
-        <DialogContent>
-          <Box sx={{ position: "relative", width: "100%", aspectRatio: "4 / 3", mt: 1 }}>
-            <Webcam
-              ref={webcamRef}
-              screenshotFormat="image/jpeg"
-              videoConstraints={{ facingMode: "user" }}
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: 8,
-                transform: "scaleX(-1)",
-                objectFit: "cover",
-              }}
-            />
-            <Box
-              component="img"
-              src="/image/overlay/sucucu.png"
-              alt="face frame"
-              sx={{
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                width: 220,
-                height: 300,
-                transform: "translate(-50%, -50%)",
-                pointerEvents: "none",
-                opacity: 0.9,
-              }}
-            />
-          </Box>
-
-          {result.status && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              ✅ {result.status} <br />
-              📏 Khoảng cách: {result.distance?.toFixed(4)}
-            </Alert>
-          )}
-
-          {result.error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              ❌ {result.error}
-            </Alert>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleClose}>Đóng</Button>
-          <Button
-            variant="contained"
-            onClick={captureAndCheckin}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={20} /> : "Chụp và Check-in"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>🧍‍♂️ Xác nhận khuôn mặt</DialogTitle>
+      <DialogContent>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Webcam
+            ref={webcamRef}
+            audio={false}
+            screenshotFormat="image/jpeg"
+            videoConstraints={{ width: 480, height: 360 }}
+            style={{ borderRadius: 8 }}
+          />
+          <Typography variant="body2" mt={1} color="text.secondary">
+            Đảm bảo mặt bạn rõ nét và không bị ngược sáng nhé 😎
+          </Typography>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Hủy</Button>
+        <Button
+          onClick={handleCheckin}
+          variant="contained"
+          disabled={loading}
+          startIcon={loading && <CircularProgress size={20} />}
+        >
+          Xác nhận
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

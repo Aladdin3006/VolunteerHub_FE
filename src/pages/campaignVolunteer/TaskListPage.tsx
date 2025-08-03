@@ -26,6 +26,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CardMedia,
+  Menu,
 } from "@mui/material";
 import {
   ExpandMore,
@@ -36,6 +38,7 @@ import {
   Schedule,
   Info,
   KeyboardArrowLeft,
+  Group as GroupIcon,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header";
@@ -138,6 +141,9 @@ const TaskListPage: React.FC = () => {
   const [viewReviewModalOpen, setViewReviewModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [tabValue, setTabValue] = useState(0);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedTaskForMembers, setSelectedTaskForMembers] =
+    useState<Task | null>(null);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id || user?._id;
@@ -315,6 +321,19 @@ const TaskListPage: React.FC = () => {
     setTabValue(0);
   };
 
+  const handleMembersClick = (
+    event: React.MouseEvent<HTMLElement>,
+    task: Task
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedTaskForMembers(task);
+  };
+
+  const handleMembersClose = () => {
+    setAnchorEl(null);
+    setSelectedTaskForMembers(null);
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       const userString = localStorage.getItem("user");
@@ -379,103 +398,155 @@ const TaskListPage: React.FC = () => {
           zIndex: -1,
         },
       }}
+      className="bg-gradient-to-br from-blue-50 to-indigo-100"
     >
       <Header />
-
-      <Container maxWidth="lg" sx={{ pt: 12, pb: 5 }}>
-        <Paper
-          elevation={10}
+      <Card sx={{ borderRadius: 0, boxShadow: "none" }}>
+        <CardMedia
+          component="img"
+          image={
+            campaignImageUrl ||
+            "https://via.placeholder.com/1200x400?text=Chiến+Dịch+Tình+Nguyện"
+          }
+          height="400"
+          alt={campaignName}
+          className="object-cover w-full"
+        />
+      </Card>
+      <Paper
+        elevation={10}
+        sx={{
+          p: 4,
+          mb: 4,
+          borderRadius: 4,
+          background: `rgba(255, 255, 255, 0.95), url(${
+            campaignImageUrl ||
+            "https://via.placeholder.com/1200x400?text=Chiến+Dịch+Tình+Nguyện"
+          })`,
+          backgroundBlendMode: "overlay",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backdropFilter: "blur(5px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          position: "relative",
+          zIndex: 1,
+          minHeight: "200px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+        className="shadow-2xl"
+      >
+        <Box
           sx={{
-            p: 4,
-            mb: 4,
-            borderRadius: 4,
-            background: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            mb: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-            <Button
-              variant="outlined"
-              startIcon={<KeyboardArrowLeft />}
-              onClick={() => navigate(-1)}
-              sx={{
-                borderRadius: 3,
-                textTransform: "none",
-                fontWeight: 600,
-              }}
-            >
-              Quay lại
-            </Button>
-          </Stack>
-
-          <Box textAlign="center">
-            <Typography
-              variant="h2"
-              sx={{
-                fontWeight: 700,
-                mb: 2,
-                textAlign: "center",
-                fontSize: { xs: "2.2rem", sm: "3.2rem", md: "3.8rem" },
-                fontFamily:
-                  '"Nunito Sans", "Roboto", "Helvetica Neue", sans-serif',
-                background: "linear-gradient(45deg, #1976d2, #00b4d8)",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                textShadow: "0 2px 6px rgba(25, 118, 210, 0.25)",
-                letterSpacing: "0.3px",
-                lineHeight: 1.25,
-              }}
-            >
-              {campaignName}
-            </Typography>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 500,
-                mb: 2,
-                color: "text.primary",
-                textAlign: "center",
-              }}
-            >
-              {startDate && endDate
-                ? `Thời gian diễn ra: ${formatDate(startDate)} - ${formatDate(
-                    endDate
-                  )}`
-                : "Thời gian diễn ra: Đang cập nhật"}
-            </Typography>
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ fontWeight: 500 }}
-            >
-              Danh sách nhiệm vụ chiến dịch
-            </Typography>
-          </Box>
-        </Paper>
-
-        {loading && (
-          <Paper sx={{ p: 3, textAlign: "center", borderRadius: 3 }}>
-            <Typography variant="h6">Đang tải dữ liệu...</Typography>
-          </Paper>
-        )}
-
-        {error && (
-          <Paper
+          <Button
+            variant="outlined"
+            startIcon={<KeyboardArrowLeft />}
+            onClick={() => navigate(-1)}
             sx={{
-              p: 3,
-              textAlign: "center",
               borderRadius: 3,
-              bgcolor: "error.light",
+              textTransform: "none",
+              fontWeight: 600,
+              ml: 1,
+              zIndex: 1,
+              borderColor: "white",
+              color: "white",
+              "&:hover": {
+                borderColor: "white",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              },
             }}
+            className="hover:bg-blue-700 hover:text-white transition-colors duration-200"
           >
-            <Typography color="error" variant="h6">
-              {error}
-            </Typography>
-          </Paper>
-        )}
+            Quay lại
+          </Button>
 
+          <Typography
+            variant="h2"
+            sx={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              fontWeight: 700,
+              textAlign: "center",
+              fontSize: { xs: "2.2rem", sm: "3.2rem", md: "3.8rem" },
+              fontFamily:
+                '"Nunito Sans", "Roboto", "Helvetica Neue", sans-serif',
+              background: "linear-gradient(45deg, #1976d2, #00b4d8)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              textShadow: "0 2px 6px rgba(25, 118, 210, 0.25)",
+              letterSpacing: "0.3px",
+              lineHeight: 1.25,
+            }}
+            className="animate-pulse"
+          >
+            {campaignName}
+          </Typography>
+        </Box>
+
+        <Box textAlign="center">
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 500,
+              mb: 2,
+              color: "text.primary",
+              textAlign: "center",
+            }}
+            className="text-gray-800"
+          >
+            {startDate && endDate
+              ? `Thời gian diễn ra: ${formatDate(startDate)} - ${formatDate(
+                  endDate
+                )}`
+              : "Thời gian diễn ra: Đang cập nhật"}
+          </Typography>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ fontWeight: 500 }}
+            className="text-gray-600"
+          >
+            Danh sách nhiệm vụ chiến dịch
+          </Typography>
+        </Box>
+      </Paper>
+      {loading && (
+        <Paper
+          sx={{ p: 3, textAlign: "center", borderRadius: 3 }}
+          className="shadow-md"
+        >
+          <Typography variant="h6" className="text-blue-600">
+            Đang tải dữ liệu...
+          </Typography>
+        </Paper>
+      )}
+      {error && (
+        <Paper
+          sx={{
+            p: 3,
+            textAlign: "center",
+            borderRadius: 3,
+            bgcolor: "error.light",
+          }}
+          className="shadow-md"
+        >
+          <Typography color="error" variant="h6" className="text-red-600">
+            {error}
+          </Typography>
+        </Paper>
+      )}
+      <Container maxWidth="lg" sx={{ pb: 5 }} className="space-y-6">
         <Stack spacing={3}>
           {phases.map((phase) => (
             <Paper
@@ -488,6 +559,7 @@ const TaskListPage: React.FC = () => {
                 backdropFilter: "blur(10px)",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
               }}
+              className="shadow-xl hover:shadow-2xl transition-shadow duration-300"
             >
               <ListItem
                 button
@@ -507,6 +579,7 @@ const TaskListPage: React.FC = () => {
                       "linear-gradient(135deg, #e8f4fd 0%, #d1e7dd 100%)",
                   },
                 }}
+                className="hover:bg-blue-50 transition-colors duration-200"
               >
                 <Avatar
                   sx={{
@@ -515,22 +588,36 @@ const TaskListPage: React.FC = () => {
                     width: 56,
                     height: 56,
                   }}
+                  className="bg-blue-500"
                 >
                   {phase.name.charAt(0)}
                 </Avatar>
                 <ListItemText
                   primary={
-                    <Typography variant="h5" fontWeight="bold" color="primary">
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      color="primary"
+                      className="text-blue-700"
+                    >
                       {phase.name}
                     </Typography>
                   }
                   secondary={
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
+                      className="text-gray-500"
+                    >
                       {phase.phaseDays.length} ngày hoạt động
                     </Typography>
                   }
                 />
-                {expandedPhase === phase._id ? <ExpandLess /> : <ExpandMore />}
+                {expandedPhase === phase._id ? (
+                  <ExpandLess className="text-blue-500" />
+                ) : (
+                  <ExpandMore className="text-gray-500" />
+                )}
               </ListItem>
 
               <Collapse
@@ -538,7 +625,10 @@ const TaskListPage: React.FC = () => {
                 timeout="auto"
                 unmountOnExit
               >
-                <Box sx={{ p: 2, bgcolor: "rgba(248, 250, 252, 0.8)" }}>
+                <Box
+                  sx={{ p: 2, bgcolor: "rgba(248, 250, 252, 0.8)" }}
+                  className="bg-gray-50"
+                >
                   <Stack spacing={3}>
                     {phase.phaseDays.map((day) => (
                       <Paper
@@ -549,6 +639,7 @@ const TaskListPage: React.FC = () => {
                           overflow: "hidden",
                           background: "white",
                         }}
+                        className="shadow-md"
                       >
                         <ListItem
                           button
@@ -564,16 +655,22 @@ const TaskListPage: React.FC = () => {
                             background:
                               "linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%)",
                           }}
+                          className="hover:bg-gray-100 transition-colors duration-200"
                         >
                           <Box sx={{ flex: 1 }}>
                             <Typography
                               variant="h6"
                               fontWeight="bold"
                               gutterBottom
+                              className="text-gray-800"
                             >
                               {formatDate(day.date)}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              className="text-gray-500"
+                            >
                               {day.tasks.length} nhiệm vụ
                             </Typography>
                           </Box>
@@ -609,15 +706,20 @@ const TaskListPage: React.FC = () => {
                                 fontWeight: 600,
                                 px: 3,
                               }}
+                              className={
+                                day.checkinStatus?.hasCheckedIn
+                                  ? "bg-green-500 text-white"
+                                  : "border-blue-500 text-blue-500 hover:bg-blue-50"
+                              }
                             >
                               {day.checkinStatus?.hasCheckedIn
                                 ? "✅ Đã điểm danh"
                                 : "Điểm danh"}
                             </Button>
                             {expandedPhaseDay === day._id ? (
-                              <ExpandLess />
+                              <ExpandLess className="text-blue-500" />
                             ) : (
-                              <ExpandMore />
+                              <ExpandMore className="text-gray-500" />
                             )}
                           </Stack>
                         </ListItem>
@@ -629,12 +731,14 @@ const TaskListPage: React.FC = () => {
                         >
                           <Box
                             sx={{ p: 3, bgcolor: "rgba(248, 250, 252, 0.5)" }}
+                            className="bg-gray-100"
                           >
                             {day.tasks.length === 0 ? (
                               <Typography
                                 variant="body1"
                                 textAlign="center"
                                 color="text.secondary"
+                                className="text-gray-500"
                               >
                                 Không có nhiệm vụ nào.
                               </Typography>
@@ -649,133 +753,242 @@ const TaskListPage: React.FC = () => {
                                       background: "white",
                                       border: "1px solid rgba(0, 0, 0, 0.08)",
                                     }}
+                                    className="shadow-lg hover:shadow-xl transition-shadow duration-200"
                                   >
-                                    <CardContent sx={{ p: 3 }}>
-                                      <Stack spacing={2}>
+                                    <CardContent
+                                      sx={{ p: 3 }}
+                                      className="space-y-4"
+                                    >
+                                      <Stack
+                                        direction="row"
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                      >
                                         <Box>
                                           <Typography
                                             variant="h6"
                                             fontWeight="bold"
                                             gutterBottom
                                             color="primary"
+                                            className="text-blue-600"
+                                            sx={{ mb: 0.5 }}
                                           >
                                             {task.title}
                                           </Typography>
                                           <Typography
                                             variant="body1"
                                             color="text.secondary"
-                                            sx={{ lineHeight: 1.6 }}
+                                            sx={{
+                                              lineHeight: 1.4,
+                                            }}
+                                            className="text-gray-600"
                                           >
                                             {task.description}
                                           </Typography>
                                         </Box>
-
-                                        <Box
+                                        <Button
+                                          variant="outlined"
+                                          startIcon={<GroupIcon />}
+                                          onClick={(e) =>
+                                            handleMembersClick(e, task)
+                                          }
                                           sx={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            flexWrap: "wrap",
-                                            gap: 2,
+                                            borderRadius: 3,
+                                            textTransform: "none",
+                                            fontWeight: 600,
+                                            px: 3,
                                           }}
+                                          className="border-blue-500 text-blue-500 hover:bg-blue-50"
                                         >
-                                          <Chip
-                                            icon={getStatusIcon(task.status)}
-                                            label={getStatusLabel(task.status)}
-                                            color={getStatusColor(task.status)}
-                                            variant="filled"
-                                            sx={{
-                                              fontWeight: 600,
-                                              px: 2,
-                                              py: 1,
-                                            }}
-                                          />
-
-                                          <Stack direction="row" spacing={2}>
-                                            {task.leaderId === userId && (
-                                              <Button
-                                                variant={
-                                                  task.status === "in_progress"
-                                                    ? "contained"
-                                                    : "outlined"
-                                                }
-                                                color="success"
-                                                onClick={() =>
-                                                  openModalWithTaskId(
-                                                    task._id,
-                                                    "complete"
-                                                  )
-                                                }
-                                                disabled={
-                                                  task.status === "submitted" ||
-                                                  task.status === "completed"
-                                                }
-                                                sx={{
-                                                  borderRadius: 3,
-                                                  textTransform: "none",
-                                                  fontWeight: 600,
-                                                  px: 3,
-                                                }}
-                                              >
-                                                {task.status === "in_progress"
-                                                  ? "Nộp báo cáo"
-                                                  : "Đã nộp"}
-                                              </Button>
-                                            )}
-                                            <Button
-                                              variant="outlined"
-                                              color="error"
-                                              onClick={() =>
-                                                openModalWithTaskId(
-                                                  task._id,
-                                                  "report"
-                                                )
-                                              }
-                                              sx={{
-                                                borderRadius: 3,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                px: 3,
-                                              }}
-                                            >
-                                              Sự cố
-                                            </Button>
-                                            <Button
-                                              variant="outlined"
-                                              color="primary"
-                                              onClick={() =>
-                                                openModalWithTaskId(
-                                                  task._id,
-                                                  "review"
-                                                )
-                                              }
-                                              sx={{
-                                                borderRadius: 3,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                px: 3,
-                                              }}
-                                            >
-                                              Đánh giá đồng nghiệp
-                                            </Button>
-                                            <Button
-                                              variant="outlined"
-                                              color="info"
-                                              onClick={() =>
-                                                handleViewReviews(task)
-                                              }
-                                              sx={{
-                                                borderRadius: 3,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                px: 3,
-                                              }}
-                                            >
-                                              Xem đánh giá nhiệm vụ
-                                            </Button>
-                                          </Stack>
-                                        </Box>
+                                          Thành viên
+                                        </Button>
                                       </Stack>
+
+                                      <Menu
+                                        anchorEl={anchorEl}
+                                        open={
+                                          Boolean(anchorEl) &&
+                                          selectedTaskForMembers?._id ===
+                                            task._id
+                                        }
+                                        onClose={handleMembersClose}
+                                        anchorOrigin={{
+                                          vertical: "bottom",
+                                          horizontal: "right",
+                                        }}
+                                        transformOrigin={{
+                                          vertical: "top",
+                                          horizontal: "right",
+                                        }}
+                                        PaperProps={{
+                                          style: {
+                                            maxHeight: 400,
+                                            width: 300,
+                                            borderRadius: 12,
+                                            boxShadow:
+                                              "0 4px 20px rgba(0, 0, 0, 0.15)",
+                                          },
+                                        }}
+                                      >
+                                        {task.assignedUsers.map((user) => (
+                                          <MenuItem
+                                            key={user.userId._id}
+                                            sx={{ py: 1.5 }}
+                                            className="hover:bg-blue-50"
+                                          >
+                                            <Stack
+                                              direction="row"
+                                              alignItems="center"
+                                              spacing={2}
+                                            >
+                                              <Avatar
+                                                src={
+                                                  user.avatar ||
+                                                  user.userId.avatar ||
+                                                  undefined
+                                                }
+                                                alt={
+                                                  user.userName ||
+                                                  user.userId.fullName
+                                                }
+                                                sx={{ width: 36, height: 36 }}
+                                              />
+                                              <Typography
+                                                variant="body2"
+                                                className="text-gray-800"
+                                              >
+                                                {user.userId.fullName ||
+                                                  user.userName}
+                                                {task.leaderId ===
+                                                  user.userId._id && (
+                                                  <StarIcon
+                                                    fontSize="small"
+                                                    sx={{
+                                                      color: "gold",
+                                                      ml: 1,
+                                                    }}
+                                                  />
+                                                )}
+                                              </Typography>
+                                            </Stack>
+                                          </MenuItem>
+                                        ))}
+                                      </Menu>
+
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                          flexWrap: "wrap",
+                                          gap: 2,
+                                        }}
+                                      >
+                                        <Chip
+                                          icon={getStatusIcon(task.status)}
+                                          label={getStatusLabel(task.status)}
+                                          color={getStatusColor(task.status)}
+                                          variant="filled"
+                                          sx={{
+                                            fontWeight: 600,
+                                            px: 2,
+                                            py: 1,
+                                          }}
+                                          className="shadow-sm"
+                                        />
+
+                                        <Stack direction="row" spacing={2}>
+                                          {task.leaderId === userId && (
+                                            <Button
+                                              variant={
+                                                task.status === "in_progress"
+                                                  ? "contained"
+                                                  : "outlined"
+                                              }
+                                              color="success"
+                                              onClick={() =>
+                                                openModalWithTaskId(
+                                                  task._id,
+                                                  "complete"
+                                                )
+                                              }
+                                              disabled={
+                                                task.status === "submitted" ||
+                                                task.status === "completed"
+                                              }
+                                              sx={{
+                                                borderRadius: 3,
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                px: 3,
+                                              }}
+                                              className={
+                                                task.status === "in_progress"
+                                                  ? "bg-green-500 text-white hover:bg-green-600"
+                                                  : "border-gray-300 text-gray-500"
+                                              }
+                                            >
+                                              {task.status === "in_progress"
+                                                ? "Nộp báo cáo"
+                                                : "Đã nộp"}
+                                            </Button>
+                                          )}
+                                          <Button
+                                            variant="outlined"
+                                            color="error"
+                                            onClick={() =>
+                                              openModalWithTaskId(
+                                                task._id,
+                                                "report"
+                                              )
+                                            }
+                                            sx={{
+                                              borderRadius: 3,
+                                              textTransform: "none",
+                                              fontWeight: 600,
+                                              px: 3,
+                                            }}
+                                            className="border-red-500 text-red-500 hover:bg-red-50"
+                                          >
+                                            Sự cố
+                                          </Button>
+                                          <Button
+                                            variant="outlined"
+                                            color="primary"
+                                            onClick={() =>
+                                              openModalWithTaskId(
+                                                task._id,
+                                                "review"
+                                              )
+                                            }
+                                            sx={{
+                                              borderRadius: 3,
+                                              textTransform: "none",
+                                              fontWeight: 600,
+                                              px: 3,
+                                            }}
+                                            className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                                          >
+                                            Đánh giá đồng nghiệp
+                                          </Button>
+                                          <Button
+                                            variant="outlined"
+                                            color="info"
+                                            onClick={() =>
+                                              handleViewReviews(task)
+                                            }
+                                            sx={{
+                                              borderRadius: 3,
+                                              textTransform: "none",
+                                              fontWeight: 600,
+                                              px: 3,
+                                            }}
+                                            className="border-teal-500 text-teal-500 hover:bg-teal-50"
+                                          >
+                                            Xem đánh giá nhiệm vụ
+                                          </Button>
+                                        </Stack>
+                                      </Box>
                                     </CardContent>
                                   </Card>
                                 ))}
@@ -811,6 +1024,7 @@ const TaskListPage: React.FC = () => {
               transition: "all 0.3s ease",
               zIndex: 1300,
             }}
+            className="bg-blue-500 hover:bg-blue-600"
           >
             <ChatIcon sx={{ fontSize: 28 }} />
           </IconButton>
@@ -834,6 +1048,7 @@ const TaskListPage: React.FC = () => {
               flexDirection: "column",
               overflow: "hidden",
             }}
+            className="shadow-2xl"
           >
             <Box
               sx={{
@@ -844,6 +1059,7 @@ const TaskListPage: React.FC = () => {
                 alignItems: "center",
                 justifyContent: "space-between",
               }}
+              className="bg-gradient-to-r from-blue-600 to-blue-400"
             >
               <Typography variant="h6" fontWeight="bold">
                 Chat: {campaignName}
@@ -927,29 +1143,32 @@ const TaskListPage: React.FC = () => {
           onClose={() => setViewReviewModalOpen(false)}
           fullWidth
           maxWidth="md"
+          className="backdrop-blur-sm"
         >
-          <DialogTitle>
+          <DialogTitle className="bg-blue-50">
             Xem đánh giá nhiệm vụ:{" "}
-            <strong style={{ color: "#1976d2" }}>{selectedTask?.title}</strong>
+            <strong className="text-blue-600">{selectedTask?.title}</strong>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent className="bg-gray-50">
             <Tabs
               value={tabValue}
               onChange={(e, newValue) => setTabValue(newValue)}
               centered
+              className="bg-white rounded-lg shadow-sm"
             >
-              <Tab label="Đánh giá của VHHT" />
-              <Tab label="Đánh giá của mọi người" />
-              <Tab label="Báo cáo đã nộp" />
+              <Tab label="Đánh giá của VHHT" className="text-blue-600" />
+              <Tab label="Đánh giá của mọi người" className="text-blue-600" />
+              <Tab label="Báo cáo đã nộp" className="text-blue-600" />
             </Tabs>
-            <Box sx={{ mt: 2 }}>
+            <Box sx={{ mt: 2 }} className="space-y-4">
               {tabValue === 0 && (
-                <Box>
+                <Box className="p-4 bg-white rounded-lg shadow-sm">
                   {selectedTask?.staffReview ? (
                     <>
                       <Typography
                         variant="body1"
                         sx={{ display: "flex", alignItems: "center" }}
+                        className="text-gray-800"
                       >
                         <strong>Điểm số:</strong>&nbsp;
                         {selectedTask.staffReview.finalScore}
@@ -958,11 +1177,11 @@ const TaskListPage: React.FC = () => {
                           sx={{ color: "gold", ml: 0.5 }}
                         />
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography variant="body1" className="text-gray-800">
                         <strong>Bình luận:</strong>{" "}
                         {selectedTask.staffReview.overallComment}
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography variant="body1" className="text-gray-800">
                         <strong>Thời gian:</strong>{" "}
                         {new Date(
                           selectedTask.staffReview.reviewedAt
@@ -970,12 +1189,14 @@ const TaskListPage: React.FC = () => {
                       </Typography>
                     </>
                   ) : (
-                    <Typography>Chưa có đánh giá từ staff.</Typography>
+                    <Typography className="text-gray-600">
+                      Chưa có đánh giá từ staff.
+                    </Typography>
                   )}
                 </Box>
               )}
               {tabValue === 1 && (
-                <Box>
+                <Box className="p-4 bg-white rounded-lg shadow-sm">
                   {selectedTask?.peerReviews &&
                   selectedTask.peerReviews.length > 0 ? (
                     selectedTask.peerReviews.map((review, index) => {
@@ -994,10 +1215,12 @@ const TaskListPage: React.FC = () => {
                         <Box
                           key={index}
                           sx={{ mb: 2, borderBottom: "1px solid #eee", pb: 1 }}
+                          className="hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200"
                         >
                           <Typography
                             variant="body1"
                             sx={{ display: "flex", alignItems: "center" }}
+                            className="text-gray-800"
                           >
                             <strong>Người đánh giá:</strong>&nbsp;
                             <Avatar
@@ -1022,6 +1245,7 @@ const TaskListPage: React.FC = () => {
                           <Typography
                             variant="body1"
                             sx={{ display: "flex", alignItems: "center" }}
+                            className="text-gray-800"
                           >
                             <strong>Người được đánh giá:</strong>&nbsp;
                             <Avatar
@@ -1045,6 +1269,7 @@ const TaskListPage: React.FC = () => {
                           <Typography
                             variant="body1"
                             sx={{ display: "flex", alignItems: "center" }}
+                            className="text-gray-800"
                           >
                             <strong>Điểm số:</strong>&nbsp;
                             {review.score}
@@ -1053,28 +1278,31 @@ const TaskListPage: React.FC = () => {
                               sx={{ color: "gold", ml: 0.5 }}
                             />
                           </Typography>
-                          <Typography variant="body1">
+                          <Typography variant="body1" className="text-gray-800">
                             <strong>Bình luận:</strong> {review.comment}
                           </Typography>
                         </Box>
                       );
                     })
                   ) : (
-                    <Typography>Chưa có đánh giá từ đồng nghiệp.</Typography>
+                    <Typography className="text-gray-600">
+                      Chưa có đánh giá từ đồng nghiệp.
+                    </Typography>
                   )}
                 </Box>
               )}
               {tabValue === 2 && (
-                <Box>
+                <Box className="p-4 bg-white rounded-lg shadow-sm">
                   {selectedTask?.submission ? (
                     <>
-                      <Typography variant="body1">
+                      <Typography variant="body1" className="text-gray-800">
                         <strong>Nội dung:</strong>{" "}
                         {selectedTask.submission.content}
                       </Typography>
                       <Typography
                         variant="body1"
                         sx={{ display: "flex", alignItems: "center" }}
+                        className="text-gray-800"
                       >
                         <strong>Người nộp:</strong>&nbsp;
                         <Avatar
@@ -1118,42 +1346,48 @@ const TaskListPage: React.FC = () => {
                           />
                         </Box>
                       </Typography>
-                      <Typography variant="body1">
+                      <Typography variant="body1" className="text-gray-800">
                         <strong>Thời gian nộp:</strong>{" "}
                         {new Date(
                           selectedTask.submission.submittedAt
                         ).toLocaleString("vi-VN")}
                       </Typography>
                       {selectedTask.submission.images.length > 0 && (
-                        <Box>
-                          <Typography variant="body1">
+                        <Box className="mt-4">
+                          <Typography variant="body1" className="text-gray-800">
                             <strong>Hình ảnh:</strong>
                           </Typography>
-                          {selectedTask.submission.images.map((img, index) => (
-                            <img
-                              key={index}
-                              src={img}
-                              alt={`Submission ${index}`}
-                              style={{
-                                maxWidth: "200px",
-                                margin: "10px",
-                                maxHeight: "200px",
-                                objectFit: "contain",
-                              }}
-                            />
-                          ))}
+                          <Box className="flex flex-wrap gap-2">
+                            {selectedTask.submission.images.map(
+                              (img, index) => (
+                                <img
+                                  key={index}
+                                  src={img}
+                                  alt={`Submission ${index}`}
+                                  className="max-w-[200px] max-h-[200px] object-contain rounded-lg shadow-sm"
+                                />
+                              )
+                            )}
+                          </Box>
                         </Box>
                       )}
                     </>
                   ) : (
-                    <Typography>Chưa có báo cáo được nộp.</Typography>
+                    <Typography className="text-gray-600">
+                      Chưa có báo cáo được nộp.
+                    </Typography>
                   )}
                 </Box>
               )}
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setViewReviewModalOpen(false)}>Đóng</Button>
+          <DialogActions className="bg-gray-50">
+            <Button
+              onClick={() => setViewReviewModalOpen(false)}
+              className="text-blue-600 hover:bg-blue-50"
+            >
+              Đóng
+            </Button>
           </DialogActions>
         </Dialog>
       </Container>

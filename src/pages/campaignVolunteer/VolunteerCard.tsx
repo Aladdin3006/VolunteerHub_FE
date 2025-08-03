@@ -69,7 +69,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign }) => {
               sx={{ borderRadius: 2, textTransform: "none" }}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/volunteer/${campaign._id}`);
+                navigate(`/campaigns/${campaign._id}`);
               }}
             >
               Tham gia ngay

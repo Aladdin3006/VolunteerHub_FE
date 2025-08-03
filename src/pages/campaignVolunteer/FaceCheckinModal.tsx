@@ -9,9 +9,9 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import CheckinFaceModal from "@/components/image/uploadFaceRecognize/CheckinFace";
 
 // Fix for Leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -43,7 +43,7 @@ const haversineDistance = (
   lon2: number
 ) => {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const R = 6371e3; // Bán kính Trái Đất (mét)
+  const R = 6371e3;
   const φ1 = toRad(lat1);
   const φ2 = toRad(lat2);
   const Δφ = toRad(lat2 - lat1);
@@ -64,7 +64,6 @@ export const FaceCheckinModal: React.FC<Props> = ({
   checkinLocation,
   onCheckinSuccess,
 }) => {
-  const webcamRef = useRef<Webcam>(null);
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [distanceToCheckpoint, setDistanceToCheckpoint] = useState<
@@ -72,10 +71,10 @@ export const FaceCheckinModal: React.FC<Props> = ({
   >(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [isWithinRange, setIsWithinRange] = useState(false);
-  const [loadingCheckin, setLoadingCheckin] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   );
+  const [showCheckinModal, setShowCheckinModal] = useState(false);
 
   useEffect(() => {
     if (!open || !checkinLocation?.coordinates) {
@@ -83,19 +82,7 @@ export const FaceCheckinModal: React.FC<Props> = ({
       return;
     }
 
-
-    // In tọa độ gốc của checkinLocation.coordinates
-    console.log("📍 Raw PhaseDay Coordinates:", checkinLocation.coordinates);
-    // In thông tin địa chỉ và tọa độ của phaseDay
-    console.log("📍 PhaseDay Location:", {
-      address: checkinLocation.address,
-      coordinates: { longitude: checkinLocation.coordinates[0], latitude: checkinLocation.coordinates[1] },
-    });
-
     const [targetLng, targetLat] = checkinLocation.coordinates;
-
-    
-
 
     const fetchLocationAndCompare = () => {
       setLoadingLocation(true);
@@ -106,24 +93,20 @@ export const FaceCheckinModal: React.FC<Props> = ({
           const userLng = pos.coords.longitude;
           setUserLocation([userLng, userLat]);
 
-
-          // In tọa độ GPS của người dùng
-          console.log("📍 User GPS Coordinates:", { latitude: userLat, longitude: userLng });
-
-          // Tính khoảng cách Haversine
-          const distance = haversineDistance(userLat, userLng, targetLat, targetLng);
-
-          console.log("📍 Calculated distance:", distance.toFixed(2), "meters");
+          const distance = haversineDistance(
+            userLat,
+            userLng,
+            targetLat,
+            targetLng
+          );
           setDistanceToCheckpoint(distance);
           setIsWithinRange(distance <= 150);
           setLoadingLocation(false);
         },
         (err) => {
-          console.error("❌ Failed to get location:", err);
+          console.error("❌ Lỗi định vị:", err);
           setLoadingLocation(false);
-          alert(
-            "Không thể lấy vị trí, vui lòng kiểm tra quyền truy cập vị trí."
-          );
+          alert("Không thể lấy vị trí. Hãy bật quyền định vị nhé 🧭");
         }
       );
     };
@@ -132,9 +115,8 @@ export const FaceCheckinModal: React.FC<Props> = ({
   }, [open, checkinLocation?.coordinates]);
 
   useEffect(() => {
-    if (!open || !checkinLocation?.coordinates || !mapContainerRef.current) {
+    if (!open || !checkinLocation?.coordinates || !mapContainerRef.current)
       return;
-    }
 
     const [targetLat, targetLng] = checkinLocation.coordinates;
 
@@ -146,7 +128,7 @@ export const FaceCheckinModal: React.FC<Props> = ({
     mapRef.current = L.map(mapContainerRef.current, {
       center: [targetLat, targetLng],
       zoom: 15,
-      scrollWheelZoom: true, // Enable ctrl+scroll zooming
+      scrollWheelZoom: true,
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -154,25 +136,13 @@ export const FaceCheckinModal: React.FC<Props> = ({
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(mapRef.current);
 
-    // Add phase day location marker (blue)
-    L.marker([targetLat, targetLng], {
-      icon: L.icon({
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-      }),
-    })
+    // Marker cho điểm check-in
+    L.marker([targetLat, targetLng])
       .addTo(mapRef.current)
       .bindPopup("Điểm check-in")
       .openPopup();
 
-    // Add range circle (green, 100m radius)
+    // Vòng tròn 100m
     L.circle([targetLat, targetLng], {
       color: "green",
       fillColor: "#00ff00",
@@ -180,31 +150,24 @@ export const FaceCheckinModal: React.FC<Props> = ({
       radius: 100,
     }).addTo(mapRef.current);
 
-    // Add user location marker (red) if available
+    // Vị trí người dùng
     if (userLocation) {
       const [userLng, userLat] = userLocation;
       L.marker([userLat, userLng], {
         icon: L.icon({
           iconUrl:
             "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-          iconRetinaUrl:
-            "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
           shadowUrl:
             "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
           iconSize: [25, 41],
           iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41],
         }),
       })
         .addTo(mapRef.current)
         .bindPopup("Vị trí của bạn")
         .openPopup();
-    }
 
-    // Adjust map bounds if user location exists
-    if (userLocation) {
-      const [userLng, userLat] = userLocation;
+      // Fit map
       const bounds = L.latLngBounds([
         [targetLat, targetLng],
         [userLat, userLng],
@@ -213,130 +176,81 @@ export const FaceCheckinModal: React.FC<Props> = ({
     }
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      mapRef.current?.remove();
+      mapRef.current = null;
     };
   }, [open, checkinLocation?.coordinates, userLocation]);
 
-  const handleCapture = async () => {
-    const imageSrc = webcamRef.current?.getScreenshot();
-    const userString = localStorage.getItem("user");
-    const user = userString ? JSON.parse(userString) : null;
-    const userId = user?.id;
-    const token = user?.token;
-
-    if (!imageSrc || !userId || !token) {
-      alert("❌ Thiếu ảnh, thông tin người dùng hoặc token");
-      return;
-    }
-
-    const base64Image = imageSrc.split(",")[1];
-
-    if (!base64Image || base64Image.length < 10000) {
-      alert("❌ Ảnh chụp quá mờ hoặc không hợp lệ, vui lòng thử lại!");
-      return;
-    }
-
-    const payload = {
-      image: base64Image,
-      user_id: userId,
-      campaignId,
-      phaseId,
-      phasedayId: phaseDayId,
-      method: "face",
-    };
-
-    setLoadingCheckin(true);
-
-    try {
-      console.log("🚀 Sending check-in data:", {
-        ...payload,
-        image: "[base64 data]",
-      });
-      const res = await axios.post("http://localhost:8000/checkin", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert(res.data.status || "✅ Check-in thành công!");
-
-      if (typeof onCheckinSuccess === "function") {
-        onCheckinSuccess(phaseDayId);
-      }
-      onClose();
-    } catch (err: any) {
-      console.error("❌ Error during check-in:", err);
-      const msg =
-        err?.response?.data?.detail || "❌ Lỗi khi check-in bằng khuôn mặt";
-      alert(msg);
-    } finally {
-      setLoadingCheckin(false);
-    }
+  const handleOpenCheckinFace = () => {
+    setShowCheckinModal(true);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>📸 Check-in khuôn mặt</DialogTitle>
-      <DialogContent
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        {loadingLocation ? (
-          <CircularProgress />
-        ) : (
-          <>
-            <div
-              ref={mapContainerRef}
-              id="map"
-              style={{
-                width: "100%",
-                height: "800px", // Increased height to 800px
-                marginBottom: "0", // Remove bottom margin
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                position: "relative",
-                zIndex: 1,
-              }}
-            />
-            <Typography mt={0} mb={1}>
-              📍 Khoảng cách đến điểm check-in:{" "}
-              <strong>{distanceToCheckpoint?.toFixed(2)}m</strong>
-            </Typography>
-            {!isWithinRange && (
-              <Typography color="error" fontStyle="italic" mb={2}>
-                ⚠️ Bạn đang ở quá xa điểm check-in. Vui lòng di chuyển gần hơn
-                (≤ 150m).
-              </Typography>
-            )}
-            <Typography fontStyle="italic">
-              Vòng tròn bán kính 100m xung quanh điểm chiến dịch.
-            </Typography>
-            <Webcam
-              audio={false}
-              ref={webcamRef}
-              screenshotFormat="image/jpeg"
-              videoConstraints={{ width: 480, height: 360 }}
-            />
-          </>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
-        <Button
-          onClick={handleCapture}
-          variant="contained"
-          color="primary"
-          disabled={!isWithinRange || loadingLocation || loadingCheckin}
-          startIcon={loadingCheckin ? <CircularProgress size={20} /> : null}
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>📍 Check-in khuôn mặt</DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "8px",
+          }}
         >
-          Check-in
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {loadingLocation ? (
+            <CircularProgress />
+          ) : (
+            <>
+              <div
+                ref={mapContainerRef}
+                style={{
+                  width: "100%",
+                  height: "800px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                }}
+              />
+              <Typography mt={0} mb={1}>
+                📏 Khoảng cách:{" "}
+                <strong>{distanceToCheckpoint?.toFixed(2)}m</strong>
+              </Typography>
+              {!isWithinRange && (
+                <Typography color="error" fontStyle="italic" mb={2}>
+                  ⚠️ Bạn đang ở quá xa điểm check-in. Di chuyển gần hơn (≤ 150m)
+                </Typography>
+              )}
+              <Typography fontStyle="italic">
+                Vòng tròn xanh là bán kính 100m từ điểm chiến dịch 💚
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Hủy</Button>
+          <Button
+            onClick={handleOpenCheckinFace}
+            variant="contained"
+            disabled={!isWithinRange || loadingLocation}
+          >
+            Check-in
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal check-in bằng webcam */}
+      <CheckinFaceModal
+        open={showCheckinModal}
+        onClose={() => setShowCheckinModal(false)}
+        campaignId={campaignId}
+        phaseId={phaseId}
+        phaseDayId={phaseDayId}
+        onSuccess={() => {
+          setShowCheckinModal(false);
+          onCheckinSuccess?.(phaseDayId);
+          onClose();
+        }}
+      />
+    </>
   );
 };
 
