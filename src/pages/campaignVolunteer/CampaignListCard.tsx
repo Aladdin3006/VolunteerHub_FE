@@ -52,8 +52,7 @@ interface CampaignCardProps {
   onClick?: () => void;
 }
 
-
-const CampaignCard: React.FC<CampaignCardProps> = ({ campaign,onClick }) => {
+const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('vi-VN', {
       day: '2-digit',
@@ -123,30 +122,32 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign,onClick }) => {
   const progress = calculateProgress();
   const phaseProgress = calculatePhaseProgress();
 
-  
   return (
     <Card 
       onClick={onClick}
       sx={{ 
-        maxWidth: 400, 
-        margin: 2,
+        width: 360,
+        height: 450,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 3,
         transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
         '&:hover': {
           transform: 'translateY(-4px)',
           boxShadow: '0 8px 25px rgba(0,0,0,0.12)'
         }
       }}
-      
     >
       <CardMedia
         component="img"
-        height="200"
-        image={campaign.imageUrl}
+        height="250"
+        image={campaign.imageUrl || 'https://via.placeholder.com/450x250'}
         alt={campaign.name}
+        sx={{ borderTopLeftRadius: 3, borderTopRightRadius: 3 }}
       />
-      <CardContent>
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 2, minHeight: 0 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-          <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 600, maxWidth: '70%' }}>
             {campaign.name}
           </Typography>
           <Chip
@@ -158,10 +159,6 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign,onClick }) => {
             sx={{ ml: 1 }}
           />
         </Box>
-
-        <Typography variant="body2" color="text.secondary" mb={2}>
-          {campaign.description}
-        </Typography>
 
         <Box display="flex" alignItems="center" mb={1}>
           <Category sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
@@ -210,10 +207,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign,onClick }) => {
                   }}
                 >
                   <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                    {/* {campaign.phases} */}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                    {campaign.currentPhase.description}
+                    {campaign.currentPhase.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                     {formatDate(campaign.currentPhase.startDate)} - {formatDate(campaign.currentPhase.endDate)}

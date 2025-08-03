@@ -213,7 +213,7 @@ const CampaignDonationView: React.FC = () => {
                   "&:hover": { backgroundColor: "#574fd6" },
                 }}
               >
-                Tạo chi phí mới
+                Tạo chi tiêu
               </Button>
                <Button
                 variant="contained"
@@ -230,7 +230,7 @@ const CampaignDonationView: React.FC = () => {
                   "&:hover": { backgroundColor: "#574fd6" },
                 }}
               >
-                Quản lý chi phí
+                Quản lý chi tiêu
               </Button>
             </Box>
           </Box>
