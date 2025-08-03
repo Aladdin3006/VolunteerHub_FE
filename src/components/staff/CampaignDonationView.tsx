@@ -1,12 +1,9 @@
-// src/pages/staff/CampaignDonationView.tsx
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import getCampaignDetail, { CampaignDetailResponse } from "../../apis/campaign";
-
 import { UpdateDonationDialog, IUpdateDonationDialogRef } from "../../components/staff/UpdateDonationDialog";
 import { ExpenseDialog, IExpenseDialogRef } from "../../components/staff/ExpenseDialog";
 import { ExpenseListDialog, IExpenseListDialogRef } from "@/components/staff/ExpenseListDialog";
-
 import {
   Box,
   Typography,
@@ -18,6 +15,7 @@ import {
   ListItem,
   ListItemText,
   LinearProgress,
+  Snackbar,
 } from "@mui/material";
 import {
   Info as InfoIcon,
@@ -31,10 +29,10 @@ const CampaignDonationView: React.FC = () => {
   const navigate = useNavigate();
   const [campaignDetail, setCampaignDetail] = useState<CampaignDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const updateDialogRef = useRef<IUpdateDonationDialogRef | null>(null);
   const expenseDialogRef = useRef<IExpenseDialogRef | null>(null);
   const expenseListDialogRef = useRef<IExpenseListDialogRef | null>(null);
-
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -50,6 +48,19 @@ const CampaignDonationView: React.FC = () => {
 
     fetchDetail();
   }, [campaignId]);
+
+  const handleCreateExpenseClick = () => {
+    console.log("Button clicked, status:", campaignDetail?.campaign?.status);
+    if (campaignDetail?.campaign?.status !== 'completed') {
+      setSnackbarOpen(true);
+      return;
+    }
+    expenseDialogRef.current?.open(campaignDetail.campaign._id);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
 
   if (loading) {
     return (
@@ -121,7 +132,6 @@ const CampaignDonationView: React.FC = () => {
           flexDirection: { xs: "column", md: "row" },
         }}
       >
-
         {/* Left Column */}
         <Box className="campaign-column left-column" sx={{ flex: 1, minWidth: 280 }}>
           <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}>
@@ -168,74 +178,8 @@ const CampaignDonationView: React.FC = () => {
           </Box>
         </Box>
 
-        {/* Middle Column */}
+        {/* Middle Column - Recent Donations */}
         <Box className="campaign-column middle-column" sx={{ flex: 2, minWidth: 320 }}>
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2 }}>
-            <img
-              src={campaign.thumbnail || "https://via.placeholder.com/600x400"}
-              alt="Thumbnail"
-              style={{ width: "100%", borderRadius: 8, objectFit: "cover" }}
-            />
-          </Box>
-        </Box>
-
-        {/* Right Column */}
-        <Box className="campaign-column right-column" sx={{ flex: 1, minWidth: 280 }}>
-          {/* Hành động */}
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
-              Hành động
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => {
-
-                  updateDialogRef.current?.open(campaign._id);
-                }}
-                sx={{ textTransform: "none", fontWeight: "bold", borderRadius: 2 }}
-              >
-                Cập nhật chiến dịch
-              </Button>
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => {
-                  // Điều hướng quản lý quyên góp (nếu có route)
-                  expenseDialogRef.current?.open(campaign._id);
-                }}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: "bold",
-                  borderRadius: 2,
-                  backgroundColor: "#6c63ff",
-                  "&:hover": { backgroundColor: "#574fd6" },
-                }}
-              >
-                Tạo chi tiêu
-              </Button>
-               <Button
-                variant="contained"
-                fullWidth
-                onClick={() => {
-                  // Điều hướng quản lý quyên góp (nếu có route)
-                  expenseListDialogRef.current?.open(campaign._id);
-                }}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: "bold",
-                  borderRadius: 2,
-                  backgroundColor: "#6c63ff",
-                  "&:hover": { backgroundColor: "#574fd6" },
-                }}
-              >
-                Quản lý chi tiêu
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Gần đây quyên góp */}
           <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2 }}>
             <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
               Gần đây quyên góp
@@ -261,8 +205,71 @@ const CampaignDonationView: React.FC = () => {
             )}
           </Box>
         </Box>
-      </Box>
 
+        {/* Right Column */}
+        <Box className="campaign-column right-column" sx={{ flex: 1, minWidth: 280 }}>
+          {/* Hành động */}
+          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
+              Hành động
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => {
+                  updateDialogRef.current?.open(campaign._id);
+                }}
+                sx={{ textTransform: "none", fontWeight: "bold", borderRadius: 2 }}
+              >
+                Cập nhật chiến dịch
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleCreateExpenseClick}
+                disabled={campaign.status !== 'completed'}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  borderRadius: 2,
+                  backgroundColor: campaign.status === 'completed' ? "#6c63ff" : undefined,
+                  "&:hover": {
+                    backgroundColor: campaign.status === 'completed' ? "#574fd6" : undefined,
+                  },
+                }}
+              >
+                Tạo chi tiêu
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => {
+                  expenseListDialogRef.current?.open(campaign._id);
+                }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  borderRadius: 2,
+                  backgroundColor: "#6c63ff",
+                  "&:hover": { backgroundColor: "#574fd6" },
+                }}
+              >
+                Quản lý chi tiêu
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Thumbnail */}
+          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2 }}>
+            <img
+              src={campaign.thumbnail || "https://via.placeholder.com/600x400"}
+              alt="Thumbnail"
+              style={{ width: "100%", borderRadius: 8, objectFit: "cover" }}
+            />
+          </Box>
+        </Box>
+      </Box>
 
       <UpdateDonationDialog
         ref={updateDialogRef}
@@ -277,7 +284,6 @@ const CampaignDonationView: React.FC = () => {
       <ExpenseDialog
         ref={expenseDialogRef}
         afterSubmit={() => {
-          // reload nếu cần sau khi submit expense
           if (campaignId) {
             setLoading(true);
             getCampaignDetail(campaignId).then(setCampaignDetail).finally(() => setLoading(false));
@@ -286,10 +292,13 @@ const CampaignDonationView: React.FC = () => {
       />
       <ExpenseListDialog ref={expenseListDialogRef} />
 
-
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        message="Chiến dịch chưa hoàn thành, không thể tạo chi tiêu"
+      />
     </Box>
-
-
   );
 };
 
