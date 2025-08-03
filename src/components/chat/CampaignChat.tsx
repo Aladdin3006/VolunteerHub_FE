@@ -211,7 +211,22 @@ const ChatRoom: React.FC<{
             placeholder="Nhắn gì đó đi nè..."
             value={text}
             onChange={(e) => setText(e.target.value)}
+<<<<<<< Updated upstream
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+=======
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault(); 
+                sendMessage();
+              }
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 4,
+                bgcolor: "background.default",
+              },
+            }}
+>>>>>>> Stashed changes
           />
           <Button variant="contained" onClick={sendMessage}>
             Gửi
