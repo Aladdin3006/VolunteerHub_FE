@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import {
   DialogContentText,
   DialogActions,
   TextField,
+  InputAdornment,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useParams, useNavigate } from "react-router-dom";
@@ -26,6 +27,8 @@ import ShareIcon from "@mui/icons-material/Share";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import WarningIcon from "@mui/icons-material/Warning";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
+import DirectionsIcon from "@mui/icons-material/Directions";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -40,10 +43,22 @@ import {
 import { CreateIssueData, ISSUE_API } from "../../apis/issue";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
+import "leaflet-geosearch/dist/geosearch.css";
+import { SearchIcon } from "lucide-react";
 
 const CampaignVolunteerDetail: React.FC = () => {
   const { campaignId } = useParams();
   const navigate = useNavigate();
+  const mapRef = useRef<L.Map | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   /* -------------------- state -------------------- */
   const [campaign, setCampaign] = useState<CampaignVolunteer | null>(null);
@@ -57,29 +72,47 @@ const CampaignVolunteerDetail: React.FC = () => {
   const [withdrawalDescription, setWithdrawalDescription] = useState("");
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-
-  const mapContainerStyle = {
-    width: "100%",
-    height: "300px",
-    borderRadius: "8px",
-  };
+  const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
 
   const center = campaign?.location?.coordinates
     ? {
         lat: campaign.location.coordinates[0],
         lng: campaign.location.coordinates[1],
       }
-    : { lat: 10.7769, lng: 106.7009 }; // Default to Ho Chi Minh City if no coordinates
+    : { lat: 10.7769, lng: 106.7009 };
 
-  const mapEmbedUrl = campaign?.location?.coordinates
-    ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${
-        center.lng
-      }!3d${
-        center.lat
-      }!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z${encodeURIComponent(
-        `${center.lat},${center.lng}`
-      )}!5e0!3m2!1sen!2sus!4v1634567890123`
-    : "";
+  const campaignIcon = L.icon({
+    iconUrl:
+      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+    iconRetinaUrl:
+      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+    shadowUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+
+  const userIcon = L.icon({
+    iconUrl:
+      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+    iconRetinaUrl:
+      "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+    shadowUrl:
+      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+
+  const mapContainerStyle = {
+    width: "100%",
+    height: "300px",
+    borderRadius: "8px",
+    zIndex: 0, // Ensure map stays below other elements
+  };
 
   /* -------------------- user -------------------- */
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -98,6 +131,101 @@ const CampaignVolunteerDetail: React.FC = () => {
       }
     })();
   }, [campaignId]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !campaignId) return;
+
+    const checkPendingWithdrawal = async () => {
+      try {
+        const response = await ISSUE_API.getIssues({
+          type: "campaign_withdrawal",
+          status: "open",
+        });
+
+        const hasPending = response.data.some(
+          (issue) =>
+            issue.type === "campaign_withdrawal" &&
+            issue.relatedEntity.entityId === campaignId &&
+            issue.reportedBy._id === currentUserId
+        );
+
+        setHasPendingWithdrawal(hasPending);
+      } catch (error) {
+        console.error("Error checking pending withdrawals:", error);
+      }
+    };
+
+    checkPendingWithdrawal();
+  }, [campaignId, currentUserId, isLoggedIn]);
+
+  /* -------------------- map initialization -------------------- */
+  useEffect(() => {
+    if (!mapRef.current || !campaign?.location?.coordinates) return;
+
+    // Add search control
+    const provider = new OpenStreetMapProvider();
+    const searchControl = new (GeoSearchControl as any)({
+      provider,
+      style: "bar",
+      showMarker: true,
+      showPopup: false,
+      autoClose: true,
+      retainZoomLevel: false,
+      animateZoom: true,
+      keepResult: true,
+      searchLabel: "Tìm kiếm địa điểm",
+    });
+
+    mapRef.current.addControl(searchControl);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.removeControl(searchControl);
+      }
+    };
+  }, [campaign?.location?.coordinates]);
+
+  /* -------------------- get user location -------------------- */
+  const handleGetUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const newLocation = { lat: latitude, lng: longitude };
+          setUserLocation(newLocation);
+
+          // Fly to a point that shows both markers
+          if (mapRef.current) {
+            const bounds = L.latLngBounds(
+              [center.lat, center.lng],
+              [newLocation.lat, newLocation.lng]
+            );
+            mapRef.current.flyToBounds(bounds, { padding: [50, 50] });
+          }
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+          setJoinMessage(
+            "Không thể lấy vị trí hiện tại. Vui lòng kiểm tra quyền truy cập vị trí."
+          );
+        }
+      );
+    } else {
+      setJoinMessage("Trình duyệt không hỗ trợ định vị địa lý.");
+    }
+  };
+
+  /* -------------------- create route -------------------- */
+  const handleCreateRoute = () => {
+    if (!userLocation || !campaign?.location?.coordinates) {
+      setJoinMessage("Vui lòng lấy vị trí hiện tại trước khi tạo đường đi.");
+      return;
+    }
+
+    const campaignLatLng = campaign.location.coordinates;
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${campaignLatLng[0]},${campaignLatLng[1]}&travelmode=driving`;
+    window.open(url, "_blank");
+  };
 
   /* -------------------- volunteer & status -------------------- */
   const myVolunteer = campaign?.volunteers?.find(
@@ -168,6 +296,7 @@ const CampaignVolunteerDetail: React.FC = () => {
       };
       await ISSUE_API.createIssue(issueData);
       setJoinMessage("Yêu cầu rút lui đã được gửi, chờ quản lý duyệt.");
+      setHasPendingWithdrawal(true);
       handleCloseWithdrawalDialog();
     } catch (err) {
       setJoinMessage((err as Error).message);
@@ -214,37 +343,50 @@ const CampaignVolunteerDetail: React.FC = () => {
   let joinLabel = "Gửi yêu cầu tham gia";
   let joinDisabled = joinLoading;
   let isWithdrawalButton = false;
+
   if (myVolunteer?.status === "pending") {
     joinLabel = "Đã gửi yêu cầu (chờ duyệt)";
     joinDisabled = true;
   } else if (myVolunteer?.status === "approved") {
-    joinLabel = "Rút lui khỏi chiến dịch";
-    isWithdrawalButton = true;
-    joinDisabled = false;
+    if (hasPendingWithdrawal) {
+      joinLabel = "Đơn rút lui của bạn đang được duyệt";
+      joinDisabled = true;
+    } else {
+      joinLabel = "Rút lui khỏi chiến dịch";
+      isWithdrawalButton = true;
+      joinDisabled = false;
+    }
   }
 
+  /* -------------------- custom day rendering -------------------- */
   /* -------------------- custom day rendering -------------------- */
   const CustomDay = (
     props: PickersDayProps<Dayjs> & {
       startDate?: string | Date;
       endDate?: string | Date;
+      isToday?: boolean;
+      isStartDate?: boolean;
+      isEndDate?: boolean;
     }
   ) => {
-    const { day, startDate, endDate, ...other } = props;
+    const {
+      day,
+      startDate,
+      endDate,
+      isToday,
+      isStartDate,
+      isEndDate,
+      ...other
+    } = props;
 
     // Ensure day is a Dayjs instance
     const safeDay = day ? dayjs(day) : null;
 
-    // Default endDate to July 31, 2025, if not provided (based on UI intent)
-    const effectiveEndDate = endDate ? dayjs(endDate) : dayjs("2025-07-31");
-
     const isDisabled = () => {
-      if (!safeDay || !startDate) return false;
+      if (!safeDay || !startDate || !endDate) return false;
       const start = dayjs(startDate);
-      return (
-        safeDay.isBefore(start, "day") ||
-        safeDay.isAfter(effectiveEndDate, "day")
-      );
+      const end = dayjs(endDate);
+      return safeDay.isBefore(start, "day") || safeDay.isAfter(end, "day");
     };
 
     const isWithinRange = () => {
@@ -258,27 +400,63 @@ const CampaignVolunteerDetail: React.FC = () => {
     };
 
     return (
-      <PickersDay
-        {...other}
-        day={safeDay || dayjs()}
-        disabled={isDisabled()}
+      <Box
         sx={{
-          ...(isDisabled() && {
-            opacity: 0.5,
-            color: "text.disabled",
-          }),
-          ...(isWithinRange() && {
-            fontWeight: 500,
-            backgroundColor: safeDay?.isSame(dayjs(), "day")
-              ? "#e0f7fa"
-              : "transparent",
-            "&:hover": {
-              backgroundColor: "#e0f7fa",
-            },
-          }),
-          ...other.sx,
+          position: "relative",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
-      />
+      >
+        {(isStartDate || isToday || isEndDate) && (
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: "0.65rem",
+              lineHeight: 1,
+              mb: 0.5,
+              color: isStartDate
+                ? "primary.main"
+                : isToday
+                ? "success.main"
+                : "error.main",
+              fontWeight: "bold",
+            }}
+          >
+            {isStartDate ? "Bắt đầu" : isToday ? "Hôm nay" : "Kết thúc"}
+          </Typography>
+        )}
+        <PickersDay
+          {...other}
+          day={safeDay || dayjs()}
+          sx={{
+            ...(isDisabled() && {
+              opacity: 0.5,
+              color: "text.disabled",
+            }),
+            ...(isWithinRange() && {
+              fontWeight: 500,
+              backgroundColor: isToday
+                ? "#e0f7fa"
+                : isStartDate || isEndDate
+                ? "#bbdefb"
+                : "transparent",
+              "&:hover": {
+                backgroundColor: "#e0f7fa",
+              },
+            }),
+            ...(isToday && {
+              border: "2px solid #00acc1",
+            }),
+            margin: 0,
+            width: 36,
+            height: 36,
+            fontSize: "0.875rem",
+            ...other.sx,
+          }}
+        />
+      </Box>
     );
   };
 
@@ -345,17 +523,56 @@ const CampaignVolunteerDetail: React.FC = () => {
           <Typography variant="subtitle1" color="text.secondary" mt={2}>
             📍 {location?.address || "Không rõ địa điểm"}
           </Typography>
-          {campaign.location?.coordinates ? (
+          {/* Location Actions */}
+          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<MyLocationIcon />}
+              onClick={handleGetUserLocation}
+            >
+              Vị trí của tôi
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<DirectionsIcon />}
+              onClick={handleCreateRoute}
+              disabled={!userLocation}
+            >
+              Chỉ đường
+            </Button>
+          </Box>
+          {campaign?.location?.coordinates ? (
             <Box sx={mapContainerStyle}>
-              <iframe
-                src={mapEmbedUrl}
-                width="100%"
-                height="100%"
-                style={{ border: 0, borderRadius: "8px" }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
+              <MapContainer
+                center={[center.lat, center.lng]}
+                zoom={15}
+                style={mapContainerStyle}
+                scrollWheelZoom={false}
+                ref={mapRef}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <Marker position={[center.lat, center.lng]} icon={campaignIcon}>
+                  <Popup>
+                    <Typography variant="body2">{name}</Typography>
+                    <Typography variant="caption">
+                      {location?.address || "Campaign location"}
+                    </Typography>
+                  </Popup>
+                </Marker>
+                {userLocation && (
+                  <Marker
+                    position={[userLocation.lat, userLocation.lng]}
+                    icon={userIcon}
+                  >
+                    <Popup>
+                      <Typography variant="body2">Vị trí của bạn</Typography>
+                    </Popup>
+                  </Marker>
+                )}
+              </MapContainer>
             </Box>
           ) : (
             <Box className="no-data-container">
@@ -401,6 +618,26 @@ const CampaignVolunteerDetail: React.FC = () => {
             >
               {joinLoading ? "Đang gửi..." : joinLabel}
             </Button>
+
+            {myVolunteer?.status === "approved" && (
+              <Button
+                fullWidth
+                variant="contained"
+                color="success"
+                sx={{
+                  mt: 2,
+                  textTransform: "none",
+                  borderRadius: 2,
+                  bgcolor: "#4caf50", // Green color
+                  "&:hover": {
+                    bgcolor: "#388e3c", // Darker green on hover
+                  },
+                }}
+                onClick={() => navigate(`/campaigns/${campaignId}/tasks`)}
+              >
+                Xem nhiệm vụ
+              </Button>
+            )}
           </Paper>
 
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
@@ -417,7 +654,7 @@ const CampaignVolunteerDetail: React.FC = () => {
                 shouldDisableDate={(day: Dayjs) => {
                   if (!startDate || !endDate) return false;
                   const start = dayjs(startDate);
-                  const end = dayjs(endDate || "2025-07-31");
+                  const end = dayjs(endDate);
                   return day.isBefore(start, "day") || day.isAfter(end, "day");
                 }}
                 slots={{
@@ -426,6 +663,9 @@ const CampaignVolunteerDetail: React.FC = () => {
                       {...props}
                       startDate={startDate}
                       endDate={endDate}
+                      isToday={props.day.isSame(dayjs(), "day")}
+                      isStartDate={props.day.isSame(dayjs(startDate), "day")}
+                      isEndDate={props.day.isSame(dayjs(endDate), "day")}
                     />
                   ),
                 }}
