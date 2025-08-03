@@ -19,7 +19,6 @@ const DonationHome: React.FC = () => {
     []
   );
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   // Fetch fundraising campaigns
   useEffect(() => {
@@ -84,33 +83,6 @@ const DonationHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
-        {/* Tabs */}
-        <Tabs
-          value="donations"
-          onChange={(_, v) =>
-            navigate(v === "donations" ? "/donations" : "/campaigns")
-          }
-          centered
-          textColor="primary"
-          indicatorColor="primary"
-          sx={{
-            mb: 12,
-            borderBottom: "1px solid #ccc",
-            "& .MuiTabs-flexContainer": {
-              display: "flex",
-            },
-            "& .MuiTab-root": {
-              flex: 1,
-              fontSize: "18px",
-              fontWeight: 600,
-              textAlign: "center",
-            },
-          }}
-        >
-          <Tab value="donations" label="Dự án đang gây quỹ" />
-          <Tab value="campaigns" label="Dự án tuyển tình nguyện viên" />
-        </Tabs>
-
         {/* Section Title */}
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>

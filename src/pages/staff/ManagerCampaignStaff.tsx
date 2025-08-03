@@ -37,6 +37,7 @@ import ManageTask from "../../components/staff/ManageTask";
 import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import CheckInDialog from "@/components/staff/CheckInDialog";
+import IssueDialog from "@/components/staff/IssueDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -420,6 +421,7 @@ const ManagerCampaignStaff: React.FC = () => {
                 2: "CheckIn",
                 3: "Departments",
                 4: "Volunteers",
+                5: "Issues",
               }[activeTab]
             }
             "
@@ -435,6 +437,7 @@ const ManagerCampaignStaff: React.FC = () => {
               <Tab label="CheckIn" />
               <Tab label="Departments" />
               <Tab label="Volunteers" />
+              <Tab label="Issues" />
             </Tabs>
             <TabPanel value={activeTab} index={0}>
               <CreatePhaseModal
@@ -469,6 +472,17 @@ const ManagerCampaignStaff: React.FC = () => {
                 selectedCampaign={{
                   name: selectedCampaign?.name || "Campaign",
                 }}
+                onTabChange={(tabIndex) => {
+                  setActiveTab(tabIndex);
+                }}
+              />
+            </TabPanel>
+            <TabPanel value={activeTab} index={5}>
+              <IssueDialog
+                open={activeTab === 5}
+                onClose={handleCloseModal}
+                campaignId={selectedCampaign._id}
+                selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
                 onTabChange={(tabIndex) => {
                   setActiveTab(tabIndex);
                 }}

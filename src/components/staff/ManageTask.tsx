@@ -29,8 +29,6 @@ import {
   Delete,
 } from "@mui/icons-material";
 import {
-  Volunteer,
-  getCampaignVolunteers,
   Task,
   getTasksByPhaseDayId,
   createTask,
@@ -40,9 +38,11 @@ import {
   Phase,
   getPhasesByCampaignId,
   PhaseDay,
+  staffReviewTask,
+  getCampaignVolunteers,
+  Volunteer,
   Department,
   getDepartmentsByVolunteerId,
-  staffReviewTask,
 } from "../../apis/staff";
 import TaskCRUDModal from "./TaskCRUDModal";
 
@@ -58,10 +58,8 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     null
   );
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [departments, setDepartments] = useState<Record<string, Department[]>>(
-    {}
-  );
+  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [campaignVolunteers, setCampaignVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -71,6 +69,9 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
     "success"
+  );
+  const [departments, setDepartments] = useState<Record<string, Department[]>>(
+    {}
   );
 
   useEffect(() => {
@@ -89,6 +90,31 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   }, [campaignId]);
 
   useEffect(() => {
+    const fetchCampaignVolunteers = async () => {
+      try {
+        const volunteers = await getCampaignVolunteers(campaignId);
+        setCampaignVolunteers(volunteers);
+
+        // Fetch departments for all campaign volunteers
+        const departmentsMap: Record<string, Department[]> = {};
+        await Promise.all(
+          volunteers.map(async (volunteer) => {
+            const deptData = await getDepartmentsByVolunteerId(
+              volunteer.user._id,
+              campaignId
+            );
+            departmentsMap[volunteer.user._id] = deptData;
+          })
+        );
+        setDepartments(departmentsMap);
+      } catch (error) {
+        console.error("Error fetching campaign volunteers:", error);
+      }
+    };
+    fetchCampaignVolunteers();
+  }, [campaignId]);
+
+  useEffect(() => {
     if (selectedPhase) {
       setPhaseDays(selectedPhase.phaseDays);
       setSelectedPhaseDay(null);
@@ -100,24 +126,19 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       if (selectedPhaseDay) {
         try {
           setLoading(true);
-          const [tasksData, volunteersData] = await Promise.all([
-            getTasksByPhaseDayId(selectedPhaseDay._id),
-            getCampaignVolunteers(campaignId),
-          ]);
+          const tasksData = await getTasksByPhaseDayId(selectedPhaseDay._id);
           setTasks(tasksData);
-          setVolunteers(volunteersData);
 
-          const departmentsMap: Record<string, Department[]> = {};
-          await Promise.all(
-            volunteersData.map(async (volunteer) => {
-              const deptData = await getDepartmentsByVolunteerId(
-                volunteer.user._id,
-                campaignId
-              );
-              departmentsMap[volunteer.user._id] = deptData;
-            })
+          // Extract unique volunteers from assignedUsers.userId
+          const uniqueVolunteers = Array.from(
+            new Map(
+              tasksData
+                .flatMap((task) => task.assignedUsers.map((au) => au.userId))
+                .map((volunteer) => [volunteer._id, volunteer])
+            ).values()
           );
-          setDepartments(departmentsMap);
+          setVolunteers(uniqueVolunteers);
+          console.log("Unique volunteers:", uniqueVolunteers);
         } catch (error) {
           console.error("Error fetching data:", error);
         } finally {
@@ -126,7 +147,8 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       }
     };
     fetchData();
-  }, [selectedPhaseDay, campaignId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPhaseDay]);
 
   const handleCreateTask = async (taskData: {
     title: string;
@@ -408,7 +430,6 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           <TaskList
             tasks={tasks}
             volunteers={volunteers}
-            departments={departments}
             onAssign={(task) => {
               setSelectedTask(task);
               setTaskModalOpen(true);
@@ -437,8 +458,6 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         onSubmit={(taskData) => {
           if (selectedTask) {
             if (taskData.assignedUsers) {
-              handleAssignTask(selectedTask._id, taskData.assignedUsers);
-            } else {
               handleUpdateTask(selectedTask._id, {
                 title: taskData.title,
                 description: taskData.description,
@@ -455,10 +474,19 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
             });
           }
         }}
-        volunteers={volunteers}
+        volunteers={campaignVolunteers.map((v) => ({
+          _id: v.user._id,
+          fullName: v.user.fullName,
+          email: v.user.email,
+          phone: v.user.phone,
+          avatar: v.user.avatar,
+          skills: v.user.skills,
+          status: v.status,
+        }))}
         departments={departments}
         task={selectedTask}
       />
+
       <TaskCRUDModal
         open={reviewModalOpen}
         onClose={() => {
@@ -481,7 +509,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           }
         }}
         volunteers={volunteers}
-        departments={departments}
+        departments={{}}
         task={selectedTask}
         isReviewMode={true}
         selectedUserId={selectedUserId}
@@ -505,8 +533,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
 
 interface TaskListProps {
   tasks: Task[];
-  volunteers: Volunteer[];
-  departments: Record<string, Department[]>;
+  volunteers: any[];
   onAssign?: (task: Task) => void;
   onReview?: (task: Task, userId: string) => void;
   onUpdate?: (task: Task) => void;
@@ -516,7 +543,6 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({
   tasks,
   volunteers,
-  onAssign,
   onReview,
   onUpdate,
   onDelete,
@@ -560,11 +586,30 @@ const TaskList: React.FC<TaskListProps> = ({
                 <Typography variant="body2" color="#666">
                   {task.description}
                 </Typography>
-                <Typography variant="caption" color="#999">
-                  Leader:{" "}
-                  {volunteers.find((v) => v.user._id === task.leaderId)?.user
-                    .fullName || "Unknown"}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                  {task.leaderId && (
+                    <>
+                      <Box
+                        component="img"
+                        src={
+                          volunteers.find((v) => v._id === task.leaderId)
+                            ?.avatar || undefined
+                        }
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          mr: 1,
+                        }}
+                      />
+                      <Typography variant="caption" color="#999">
+                        Leader:{" "}
+                        {volunteers.find((v) => v._id === task.leaderId)
+                          ?.fullName || "Unknown"}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
               </>
             }
             sx={{
@@ -587,22 +632,6 @@ const TaskList: React.FC<TaskListProps> = ({
               padding: 1,
             }}
           >
-            {onAssign && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Assignment />}
-                onClick={() => onAssign(task)}
-                sx={{
-                  padding: "6px 12px",
-                  borderColor: "#1976d2",
-                  color: "#1976d2",
-                  "&:hover": { backgroundColor: "rgba(25, 118, 210, 0.1)" },
-                }}
-              >
-                Assign Volunteers
-              </Button>
-            )}
             {onUpdate && (
               <Button
                 variant="outlined"
@@ -651,11 +680,11 @@ const TaskList: React.FC<TaskListProps> = ({
                     <TableBody>
                       {task.assignedUsers.map((au) => {
                         const volunteer = volunteers.find(
-                          (v) => v.user._id === au.userId
+                          (v) => v._id === au.userId._id
                         );
                         return (
                           <TableRow
-                            key={au.userId}
+                            key={au.userId._id}
                             sx={{
                               "&:hover": {
                                 backgroundColor: "rgba(0,0,0,0.04)",
@@ -666,9 +695,21 @@ const TaskList: React.FC<TaskListProps> = ({
                               sx={{
                                 padding: "8px",
                                 borderBottom: "1px solid #eee",
+                                display: "flex",
+                                alignItems: "center",
                               }}
                             >
-                              {volunteer?.user.fullName || "Unknown"}
+                              <Box
+                                component="img"
+                                src={volunteer?.avatar || undefined}
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  mr: 1,
+                                }}
+                              />
+                              {volunteer?.fullName || "Unknown"}
                             </TableCell>
                             <TableCell
                               sx={{
@@ -676,12 +717,12 @@ const TaskList: React.FC<TaskListProps> = ({
                                 borderBottom: "1px solid #eee",
                               }}
                             >
-                              {onReview && (
+                              {onReview && task.leaderId === au.userId._id && (
                                 <Button
                                   variant="contained"
                                   size="small"
                                   startIcon={<RateReview />}
-                                  onClick={() => onReview(task, au.userId)}
+                                  onClick={() => onReview(task, au.userId._id)}
                                   sx={{
                                     padding: "4px 8px",
                                     backgroundColor: "#1976d2",

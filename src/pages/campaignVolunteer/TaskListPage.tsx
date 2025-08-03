@@ -44,10 +44,10 @@ import {
   submitTaskApi,
   reviewPeerTaskApi,
 } from "../../apis/task";
+import { ISSUE_API } from "../../apis/issue";
 import TaskActionModal from "./TaskActionModal";
 import { getCampaignVolunteerDetail } from "../../apis/campaign";
 import CampaignChatModal from "../../components/chat/CampaignChat";
-import { reportIssueApi } from "../../apis/issue";
 import FaceCheckinModal from "./FaceCheckinModal";
 import { Star as StarIcon } from "@mui/icons-material";
 
@@ -274,12 +274,16 @@ const TaskListPage: React.FC = () => {
       } else if (modalMode === "report") {
         const [title, ...descParts] = content.trim().split("\n");
         const description = descParts.join("\n") || "Không có mô tả chi tiết";
-        await reportIssueApi(
-          title || "Không có tiêu đề",
-          description,
-          taskId,
-          token
-        );
+        await ISSUE_API.createIssue({
+          type: "task_issue",
+          title: title || "Báo cáo sự cố nhiệm vụ",
+          relatedEntity: {
+            type: "Task",
+            entityId: taskId,
+          },
+          description: description,
+          status: "open",
+        });
         alert("Gửi báo cáo sự cố thành công");
       } else if (modalMode === "review" && revieweeId) {
         const [score, ...commentParts] = content.split("\n");
@@ -878,7 +882,7 @@ const TaskListPage: React.FC = () => {
           }
           onSubmit={handleSubmitTaskAction}
           reviewProps={
-            modalMode === "review"
+            modalMode === "report"
               ? {
                   score: reviewScore,
                   setScore: setReviewScore,

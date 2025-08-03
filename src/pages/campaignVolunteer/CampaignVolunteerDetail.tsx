@@ -16,6 +16,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  TextField,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useParams, useNavigate } from "react-router-dom";
@@ -23,16 +24,20 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ShareIcon from "@mui/icons-material/Share";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import WarningIcon from "@mui/icons-material/Warning";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
+import { PickersDay, PickersDayProps } from "@mui/x-date-pickers/PickersDay";
 
 import {
   CampaignVolunteer,
   getCampaignVolunteerDetail,
   joinCampaign,
 } from "../../apis/campaign";
+import { CreateIssueData, ISSUE_API } from "../../apis/issue";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 
@@ -47,6 +52,12 @@ const CampaignVolunteerDetail: React.FC = () => {
   const [joinLoading, setJoinLoading] = useState(false);
   const [joinMessage, setJoinMessage] = useState<string | null>(null);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
+  const [withdrawalTitle, setWithdrawalTitle] = useState("");
+  const [withdrawalDescription, setWithdrawalDescription] = useState("");
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
   const mapContainerStyle = {
     width: "100%",
     height: "300px",
@@ -121,6 +132,50 @@ const CampaignVolunteerDetail: React.FC = () => {
     }
   };
 
+  /* -------------------- withdrawal handler -------------------- */
+  const handleOpenWithdrawalDialog = () => {
+    setWithdrawalDialogOpen(true);
+  };
+
+  const handleCloseWithdrawalDialog = () => {
+    setWithdrawalDialogOpen(false);
+    setWithdrawalTitle("");
+    setWithdrawalDescription("");
+  };
+
+  const handleOpenConfirmDialog = () => {
+    if (!withdrawalTitle || !withdrawalDescription) return;
+    setConfirmDialogOpen(true);
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialogOpen(false);
+  };
+
+  const handleSubmitWithdrawal = async () => {
+    if (!campaignId || !withdrawalTitle || !withdrawalDescription) return;
+    try {
+      setWithdrawalLoading(true);
+      const issueData: CreateIssueData = {
+        type: "campaign_withdrawal",
+        title: withdrawalTitle,
+        relatedEntity: {
+          type: "Campaign",
+          entityId: campaignId,
+        },
+        description: withdrawalDescription,
+        status: "open",
+      };
+      await ISSUE_API.createIssue(issueData);
+      setJoinMessage("Yêu cầu rút lui đã được gửi, chờ quản lý duyệt.");
+      handleCloseWithdrawalDialog();
+    } catch (err) {
+      setJoinMessage((err as Error).message);
+    } finally {
+      setWithdrawalLoading(false);
+    }
+  };
+
   /* -------------------- loading & not-found -------------------- */
   if (loading)
     return (
@@ -158,13 +213,74 @@ const CampaignVolunteerDetail: React.FC = () => {
   /* ------------ nhãn & disable button tham gia ------------ */
   let joinLabel = "Gửi yêu cầu tham gia";
   let joinDisabled = joinLoading;
+  let isWithdrawalButton = false;
   if (myVolunteer?.status === "pending") {
     joinLabel = "Đã gửi yêu cầu (chờ duyệt)";
     joinDisabled = true;
   } else if (myVolunteer?.status === "approved") {
-    joinLabel = "Đã tham gia";
-    joinDisabled = true;
+    joinLabel = "Rút lui khỏi chiến dịch";
+    isWithdrawalButton = true;
+    joinDisabled = false;
   }
+
+  /* -------------------- custom day rendering -------------------- */
+  const CustomDay = (
+    props: PickersDayProps<Dayjs> & {
+      startDate?: string | Date;
+      endDate?: string | Date;
+    }
+  ) => {
+    const { day, startDate, endDate, ...other } = props;
+
+    // Ensure day is a Dayjs instance
+    const safeDay = day ? dayjs(day) : null;
+
+    // Default endDate to July 31, 2025, if not provided (based on UI intent)
+    const effectiveEndDate = endDate ? dayjs(endDate) : dayjs("2025-07-31");
+
+    const isDisabled = () => {
+      if (!safeDay || !startDate) return false;
+      const start = dayjs(startDate);
+      return (
+        safeDay.isBefore(start, "day") ||
+        safeDay.isAfter(effectiveEndDate, "day")
+      );
+    };
+
+    const isWithinRange = () => {
+      if (!safeDay || !startDate || !endDate) return false;
+      const start = dayjs(startDate);
+      const end = dayjs(endDate);
+      return (
+        (safeDay.isSame(start, "day") || safeDay.isAfter(start, "day")) &&
+        (safeDay.isSame(end, "day") || safeDay.isBefore(end, "day"))
+      );
+    };
+
+    return (
+      <PickersDay
+        {...other}
+        day={safeDay || dayjs()}
+        disabled={isDisabled()}
+        sx={{
+          ...(isDisabled() && {
+            opacity: 0.5,
+            color: "text.disabled",
+          }),
+          ...(isWithinRange() && {
+            fontWeight: 500,
+            backgroundColor: safeDay?.isSame(dayjs(), "day")
+              ? "#e0f7fa"
+              : "transparent",
+            "&:hover": {
+              backgroundColor: "#e0f7fa",
+            },
+          }),
+          ...other.sx,
+        }}
+      />
+    );
+  };
 
   return (
     <Box sx={{ bgcolor: "#f9f9f9", pb: 10 }}>
@@ -243,7 +359,7 @@ const CampaignVolunteerDetail: React.FC = () => {
             </Box>
           ) : (
             <Box className="no-data-container">
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" color="text.disabled">
                 No location coordinates available
               </Typography>
             </Box>
@@ -262,28 +378,29 @@ const CampaignVolunteerDetail: React.FC = () => {
         >
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
             <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: "primary.main" }}>ĐC</Avatar>
+              <Avatar sx={{ bgcolor: "primary.main", fontSize: "0.75rem" }}>
+                VHHT
+              </Avatar>
               <Box>
                 <Typography fontWeight={700}>Người đăng</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Ẩn danh
+                  Quản trị viên VHHT
                 </Typography>
               </Box>
             </Stack>
 
-            {/* Ẩn nút nếu đã approved */}
-            {myVolunteer?.status !== "approved" && (
-              <Button
-                disabled={joinDisabled}
-                onClick={handleJoin}
-                fullWidth
-                variant="contained"
-                color="success"
-                sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
-              >
-                {joinLoading ? "Đang gửi..." : joinLabel}
-              </Button>
-            )}
+            <Button
+              disabled={joinDisabled}
+              onClick={
+                isWithdrawalButton ? handleOpenWithdrawalDialog : handleJoin
+              }
+              fullWidth
+              variant="contained"
+              color={isWithdrawalButton ? "error" : "success"}
+              sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
+            >
+              {joinLoading ? "Đang gửi..." : joinLabel}
+            </Button>
           </Paper>
 
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
@@ -296,6 +413,25 @@ const CampaignVolunteerDetail: React.FC = () => {
                 defaultValue={dayjs(startDate)}
                 readOnly
                 views={["day"]}
+                onMonthChange={() => {}}
+                shouldDisableDate={(day: Dayjs) => {
+                  if (!startDate || !endDate) return false;
+                  const start = dayjs(startDate);
+                  const end = dayjs(endDate || "2025-07-31");
+                  return day.isBefore(start, "day") || day.isAfter(end, "day");
+                }}
+                slots={{
+                  day: (props) => (
+                    <CustomDay
+                      {...props}
+                      startDate={startDate}
+                      endDate={endDate}
+                    />
+                  ),
+                }}
+                slotProps={{
+                  day: { outsideCurrentMonth: false } as any,
+                }}
               />
             </LocalizationProvider>
           </Paper>
@@ -344,6 +480,99 @@ const CampaignVolunteerDetail: React.FC = () => {
             autoFocus
           >
             Có, đăng nhập ngay
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ---------- withdrawal dialog ---------- */}
+      <Dialog open={withdrawalDialogOpen} onClose={handleCloseWithdrawalDialog}>
+        <DialogTitle>Rút lui khỏi chiến dịch</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Vui lòng nhập tiêu đề và lý do bạn muốn rút lui khỏi chiến dịch. Yêu
+            cầu của bạn sẽ được gửi đến quản lý để duyệt.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Tiêu đề"
+            fullWidth
+            value={withdrawalTitle}
+            onChange={(e) => setWithdrawalTitle(e.target.value)}
+            variant="outlined"
+            required
+          />
+          <TextField
+            margin="dense"
+            label="Mô tả"
+            fullWidth
+            multiline
+            rows={4}
+            value={withdrawalDescription}
+            onChange={(e) => setWithdrawalDescription(e.target.value)}
+            variant="outlined"
+            required
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseWithdrawalDialog} color="primary">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleOpenConfirmDialog}
+            color="primary"
+            variant="contained"
+            disabled={
+              withdrawalLoading || !withdrawalTitle || !withdrawalDescription
+            }
+          >
+            {withdrawalLoading ? "Đang gửi..." : "Gửi yêu cầu"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ---------- confirmation dialog ---------- */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={handleCloseConfirmDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <WarningIcon color="warning" fontSize="large" />
+          <span>Xác nhận rút lui</span>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            <Typography variant="body1" gutterBottom>
+              Bạn chắc chắn muốn rời khỏi chiến dịch?
+            </Typography>
+            <Typography variant="body1" color="error" fontWeight="bold">
+              Các thành tựu nhiệm vụ đã hoàn thành của bạn sẽ không được ghi
+              nhận!!!
+            </Typography>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseConfirmDialog}
+            color="primary"
+            variant="outlined"
+            sx={{ minWidth: 100 }}
+          >
+            Thoát
+          </Button>
+          <Button
+            onClick={() => {
+              handleCloseConfirmDialog();
+              handleSubmitWithdrawal();
+            }}
+            color="error"
+            variant="contained"
+            sx={{ minWidth: 120 }}
+            startIcon={<ExitToAppIcon />}
+          >
+            Chắc chắn
           </Button>
         </DialogActions>
       </Dialog>

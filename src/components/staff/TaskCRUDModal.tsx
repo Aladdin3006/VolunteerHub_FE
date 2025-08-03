@@ -23,7 +23,22 @@ import {
   Rating,
   Paper,
 } from "@mui/material";
-import { Task, Volunteer, Department } from "../../apis/staff";
+import { Task } from "../../apis/staff";
+
+interface Volunteer {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  avatar?: string;
+  skills?: string[];
+}
+
+interface Department {
+  _id: string;
+  name: string;
+  description?: string;
+}
 
 interface TaskCRUDModalProps {
   open: boolean;
@@ -57,7 +72,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
   const [description, setDescription] = useState(task?.description || "");
   const [leaderId, setLeaderId] = useState(task?.leaderId || "");
   const [assignedUsers, setAssignedUsers] = useState<string[]>(
-    task?.assignedUsers?.map((au) => au.userId) || []
+    task?.assignedUsers?.map((au) => au.userId._id) || []
   );
   const [score, setScore] = useState<number | null>(null);
   const [comment, setComment] = useState<string>("");
@@ -70,14 +85,14 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
       setTitle(task.title || "");
       setDescription(task.description || "");
       setLeaderId(task.leaderId || "");
-      setAssignedUsers(task.assignedUsers?.map((au) => au.userId) || []);
+      setAssignedUsers(task.assignedUsers?.map((au) => au.userId._id) || []);
       setScore(peerReview?.score || null);
       setComment(peerReview?.comment || "");
     } else if (task) {
       setTitle(task.title || "");
       setDescription(task.description || "");
       setLeaderId(task.leaderId || "");
-      setAssignedUsers(task.assignedUsers?.map((au) => au.userId) || []);
+      setAssignedUsers(task.assignedUsers?.map((au) => au.userId._id) || []);
       setScore(null);
       setComment("");
     } else {
@@ -271,23 +286,21 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                   },
                 }}
               >
-                {volunteers
-                  .filter((v) => v.status === "approved")
-                  .map((volunteer) => (
-                    <MenuItem
-                      key={volunteer.user._id}
-                      value={volunteer.user._id}
-                      sx={{
+                {volunteers.map((volunteer) => (
+                  <MenuItem
+                    key={volunteer._id}
+                    value={volunteer._id}
+                    sx={{
+                      color: "black",
+                      "&.Mui-disabled": {
                         color: "black",
-                        "&.Mui-disabled": {
-                          color: "black",
-                          opacity: 1,
-                        },
-                      }}
-                    >
-                      {volunteer.user.fullName}
-                    </MenuItem>
-                  ))}
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    {volunteer.fullName}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Paper>
@@ -319,34 +332,30 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {volunteers
-                      .filter((v) => v.status === "approved")
-                      .map((volunteer) => {
-                        const deptList = departments[volunteer.user._id] || [];
-                        const deptNames =
-                          deptList.map((dept) => dept.name).join(", ") || "N/A";
-                        return (
-                          <TableRow
-                            key={volunteer.user._id}
-                            sx={{ "&:hover": { bgcolor: "#f5f5f5" } }}
-                          >
-                            <TableCell>{volunteer.user.fullName}</TableCell>
-                            <TableCell>{deptNames}</TableCell>
-                            <TableCell>
-                              <Checkbox
-                                checked={assignedUsers.includes(
-                                  volunteer.user._id
-                                )}
-                                onChange={() =>
-                                  handleToggleVolunteer(volunteer.user._id)
-                                }
-                                disabled={volunteer.user._id === leaderId}
-                                sx={{ color: "primary.main" }}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                    {volunteers.map((volunteer) => {
+                      const deptList = departments[volunteer._id] || [];
+                      const deptNames =
+                        deptList.map((dept) => dept.name).join(", ") || "N/A";
+                      return (
+                        <TableRow
+                          key={volunteer._id}
+                          sx={{ "&:hover": { bgcolor: "#f5f5f5" } }}
+                        >
+                          <TableCell>{volunteer.fullName}</TableCell>
+                          <TableCell>{deptNames}</TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={assignedUsers.includes(volunteer._id)}
+                              onChange={() =>
+                                handleToggleVolunteer(volunteer._id)
+                              }
+                              disabled={volunteer._id === leaderId}
+                              sx={{ color: "primary.main" }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -374,10 +383,26 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                         : "Not submitted"}
                     </Typography>
                     <Typography variant="body2">
-                      <strong>Submitted By:</strong>{" "}
-                      {volunteers.find(
-                        (v) => v.user._id === task.submission?.submittedBy
-                      )?.user.fullName || "Unknown"}
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <strong>Submitted By:</strong>
+                        <Box
+                          component="img"
+                          src={
+                            volunteers.find(
+                              (v) => v._id === task.submission?.submittedBy
+                            )?.avatar || "/default-avatar.png"
+                          }
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: "50%",
+                            mx: 1,
+                          }}
+                        />
+                        {volunteers.find(
+                          (v) => v._id === task.submission?.submittedBy
+                        )?.fullName || "Unknown"}
+                      </Box>
                     </Typography>
                     {task.submission.images?.length > 0 && (
                       <Box sx={{ mt: 2 }}>
@@ -422,20 +447,46 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                   Assigned Volunteers
                 </Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                  {task.assignedUsers?.map((au) => (
-                    <Chip
-                      key={au.userId}
-                      label={
-                        volunteers.find((v) => v.user._id === au.userId)?.user
-                          .fullName || "Unknown Volunteer"
-                      }
-                      sx={{
-                        bgcolor: "primary.light",
-                        color: "white",
-                        borderRadius: 1,
-                      }}
-                    />
-                  ))}
+                  {task.assignedUsers?.map((au) => {
+                    const volunteer = volunteers.find(
+                      (v) => v._id === au.userId._id
+                    );
+                    return (
+                      <Chip
+                        key={au.userId._id}
+                        label={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={volunteer?.avatar || "/default-avatar.png"}
+                              sx={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: "50%",
+                              }}
+                            />
+                            {volunteer?.fullName || "Unknown Volunteer"}
+                          </Box>
+                        }
+                        sx={{
+                          bgcolor: "primary.light",
+                          color: "white",
+                          borderRadius: 1,
+                          "& .MuiChip-label": {
+                            display: "flex",
+                            alignItems: "center",
+                            paddingLeft: "4px",
+                          },
+                        }}
+                      />
+                    );
+                  })}
                 </Box>
               </Paper>
 
@@ -447,7 +498,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                   task.assignedUsers.map((au) => {
                     const reviews =
                       task.peerReviews?.filter(
-                        (pr) => pr.reviewee.toString() === au.userId
+                        (pr) => pr.reviewee.toString() === au.userId._id
                       ) || [];
                     const avgScore =
                       reviews.length > 0
@@ -457,10 +508,30 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                           ).toFixed(1)
                         : "N/A";
                     return (
-                      <Box key={au.userId} sx={{ mb: 2 }}>
+                      <Box key={au.userId._id} sx={{ mb: 2 }}>
                         <Typography variant="subtitle2" fontWeight="bold">
-                          {volunteers.find((v) => v.user._id === au.userId)
-                            ?.user.fullName || "Unknown Volunteer"}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Box
+                              component="img"
+                              src={
+                                volunteers.find((v) => v._id === au.userId._id)
+                                  ?.avatar || "/default-avatar.png"
+                              }
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
+                            />
+                            {au.userId.fullName || "Unknown Volunteer"}
+                          </Box>
                         </Typography>
                         {reviews.length > 0 ? (
                           <>
@@ -486,9 +557,31 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                                   {reviews.map((pr, index) => (
                                     <TableRow key={index}>
                                       <TableCell>
-                                        {volunteers.find(
-                                          (v) => v.user._id === pr.reviewer
-                                        )?.user.fullName || "Unknown"}
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          <Box
+                                            component="img"
+                                            src={
+                                              volunteers.find(
+                                                (v) => v._id === pr.reviewer
+                                              )?.avatar || "/default-avatar.png"
+                                            }
+                                            sx={{
+                                              width: 24,
+                                              height: 24,
+                                              borderRadius: "50%",
+                                              objectFit: "cover",
+                                            }}
+                                          />
+                                          {volunteers.find(
+                                            (v) => v._id === pr.reviewer
+                                          )?.fullName || "Unknown"}
+                                        </Box>
                                       </TableCell>
                                       <TableCell>{pr.score}</TableCell>
                                       <TableCell>

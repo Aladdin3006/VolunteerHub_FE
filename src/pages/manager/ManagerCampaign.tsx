@@ -37,6 +37,7 @@ import {
   Image as ImageIcon,
   WarningAmber,
 } from "@mui/icons-material";
+import TaskIcon from "@mui/icons-material/Task";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import { managerCampaignService } from "../../apis/manager";
 import { Category } from "../../apis/campaign";
@@ -406,11 +407,11 @@ const ManagerCampaign: React.FC = () => {
       avgTaskScore:
         taskScoreCount > 0
           ? (totalTaskScore / taskScoreCount).toFixed(1)
-          : "___ ",
+          : "__",
       avgPeerScore:
         peerScoreCount > 0
           ? (totalPeerScore / peerScoreCount).toFixed(1)
-          : "___ ",
+          : "__",
     };
   };
 
@@ -583,14 +584,45 @@ const ManagerCampaign: React.FC = () => {
                     >
                       {volunteer.user.fullName}
                     </Typography>
-                    <Typography variant="body2" sx={{ minWidth: 120, mr: 2 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        minWidth: 120,
+                        mr: 2,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <TaskIcon sx={{ fontSize: "1rem", mr: 1 }} />
                       Nhiệm vụ đã tham gia: {stats.taskCount}
                     </Typography>
-                    <Typography variant="body2" sx={{ minWidth: 120, mr: 2 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        minWidth: 120,
+                        mr: 2,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
                       Điểm nhiệm vụ TB: {stats.avgTaskScore}
+                      <Box component="span" sx={{ color: "yellow" }}>
+                        ★
+                      </Box>
                     </Typography>
-                    <Typography variant="body2" sx={{ minWidth: 120, mr: 2 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        minWidth: 120,
+                        mr: 2,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
                       Điểm đồng nghiệp TB: {stats.avgPeerScore}
+                      <Box component="span" sx={{ color: "yellow" }}>
+                        ★
+                      </Box>
                     </Typography>
                     <FormControl sx={{ minWidth: 200, mr: 2, mt: 1 }}>
                       <InputLabel>Đánh giá</InputLabel>

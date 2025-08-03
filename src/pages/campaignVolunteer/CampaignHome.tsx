@@ -88,33 +88,6 @@ const CampaignHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
-        {/* Tabs */}
-        <Tabs
-          value="campaigns"
-          onChange={(_, v) =>
-            navigate(v === "campaigns" ? "/campaigns" : "/donations")
-          }
-          centered
-          textColor="primary"
-          indicatorColor="primary"
-          sx={{
-            mb: 12,
-            borderBottom: "1px solid #ccc",
-            "& .MuiTabs-flexContainer": {
-              display: "flex",
-            },
-            "& .MuiTab-root": {
-              flex: 1,
-              fontSize: "18px",
-              fontWeight: 600,
-              textAlign: "center",
-            },
-          }}
-        >
-          <Tab value="donations" label="Dự án đang gây quỹ" />
-          <Tab value="campaigns" label="Dự án tuyển tình nguyện viên" />
-        </Tabs>
-
         {/* Section Title */}
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>

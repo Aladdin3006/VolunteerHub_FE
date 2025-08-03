@@ -38,6 +38,7 @@ import {
 } from "../../apis/staff";
 import ImageGallery from "@/components/image/ImageGallery";
 import CheckInDialog from "@/components/staff/CheckInDialog";
+import IssueDialog from "@/components/staff/IssueDialog";
 import {
   IUpdateCampaignDialogRef,
   UpdateCampaignDialog,
@@ -81,6 +82,7 @@ const OverViewCampaign: React.FC = () => {
   const [loadingPhases, setLoadingPhases] = useState(false);
   const [loadingCampaign, setLoadingCampaign] = useState(true);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [issueDialogOpen, setIssueDialogOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
     null
@@ -188,6 +190,14 @@ const OverViewCampaign: React.FC = () => {
     setCheckInDialogOpen(false);
     setSelectedPhase(null);
     setSelectedPhaseDay(null);
+  };
+
+  const handleOpenIssueDialog = () => {
+    setIssueDialogOpen(true);
+  };
+
+  const handleCloseIssueDialog = () => {
+    setIssueDialogOpen(false);
   };
 
   const handleOpenManagement = (tabIndex: number = 0) => {
@@ -317,7 +327,7 @@ const OverViewCampaign: React.FC = () => {
         </Typography>
         <Button
           variant="contained"
-          onClick={() => navigate("/staff")}
+          onClick={() => navigate("/staff/campaigns")}
           startIcon={<ArrowBackIcon />}
           sx={{
             background: "rgba(255,255,255,0.2)",
@@ -866,6 +876,18 @@ const OverViewCampaign: React.FC = () => {
                 <Button
                   variant="contained"
                   fullWidth
+                  onClick={handleOpenIssueDialog}
+                  className="action-button"
+                  disabled={isCompleted}
+                  sx={{
+                    opacity: isCompleted ? 0.7 : 1,
+                  }}
+                >
+                  Quản lý Issues
+                </Button>
+                <Button
+                  variant="contained"
+                  fullWidth
                   onClick={() => handleOpenUpdateCampaign(campaign._id)}
                   className="action-button"
                   disabled={isCompleted}
@@ -940,7 +962,7 @@ const OverViewCampaign: React.FC = () => {
           fullWidth
         >
           <DialogTitle sx={{ textAlign: "center" }}>
-            Manage "{campaign.name}" - "
+            Quản lý "{campaign.name}" - "
             {
               {
                 0: "Phases",
@@ -948,6 +970,7 @@ const OverViewCampaign: React.FC = () => {
                 2: "CheckIn",
                 3: "Departments",
                 4: "Volunteers",
+                5: "Issues",
               }[activeTab]
             }
             "
@@ -963,6 +986,7 @@ const OverViewCampaign: React.FC = () => {
               <Tab label="CheckIn" />
               <Tab label="Departments" />
               <Tab label="Volunteers" />
+              <Tab label="Issues" />
             </Tabs>
             <TabPanel value={activeTab} index={0}>
               <CreatePhaseModal
@@ -1004,6 +1028,17 @@ const OverViewCampaign: React.FC = () => {
                 }}
               />
             </TabPanel>
+            <TabPanel value={activeTab} index={5}>
+              <IssueDialog
+                open={activeTab === 5}
+                onClose={handleCloseModal}
+                campaignId={campaign._id}
+                selectedCampaign={{ name: campaign.name || "Campaign" }}
+                onTabChange={(tabIndex) => {
+                  setActiveTab(tabIndex);
+                }}
+              />
+            </TabPanel>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseModal}>Close</Button>
@@ -1022,6 +1057,21 @@ const OverViewCampaign: React.FC = () => {
           onPhaseSelect={setSelectedPhase}
           onPhaseDaySelect={setSelectedPhaseDay}
           selectedCampaign={{ name: campaign.name || "Campaign" }}
+        />
+      )}
+
+      {/* Issue Dialog */}
+      {campaign && (
+        <IssueDialog
+          open={issueDialogOpen}
+          onClose={handleCloseIssueDialog}
+          campaignId={campaign._id}
+          selectedCampaign={{ name: campaign.name || "Campaign" }}
+          onTabChange={(tabIndex) => {
+            setActiveTab(tabIndex);
+            setModalOpen(true);
+            setIssueDialogOpen(false);
+          }}
         />
       )}
 

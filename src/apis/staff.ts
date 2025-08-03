@@ -91,6 +91,7 @@ export interface Volunteer {
     fullName: string;
     email: string;
     phone: string;
+    avatar?: string;
     skills?: string[];
   };
   status: "pending" | "approved" | "rejected";
@@ -132,7 +133,15 @@ export interface Task {
   description?: string;
   leaderId: string;
   assignedUsers: {
-    userId: string;
+    userId: {
+      _id: string;
+      fullName: string;
+      email: string;
+      phone: string;
+      avatar?: string;
+      skills?: string[];
+      // Add other fields from the userId object as needed
+    };
   }[];
   submission?: {
     content?: string;
@@ -789,7 +798,15 @@ export const getTasksByPhaseDayId = async (
       leaderId: task.leaderId,
       assignedUsers:
         task.assignedUsers?.map((au: any) => ({
-          userId: au.userId?._id || au.userId || au._id,
+          userId: {
+            _id: au.userId._id,
+            fullName: au.userId.fullName,
+            email: au.userId.email,
+            phone: au.userId.phone,
+            avatar: au.userId.avatar,
+            skills: au.userId.skills,
+            // Add other fields from userId as needed
+          },
         })) || [],
       submission: task.submission
         ? {

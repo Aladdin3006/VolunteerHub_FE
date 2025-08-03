@@ -51,6 +51,7 @@ import ManageTask from "../../components/staff/ManageTask";
 import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import CheckInDialog from "./CheckInDialog";
+import IssueDialog from "./IssueDialog";
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -507,6 +508,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             2: "CheckIn",
             3: "Departments",
             4: "Volunteers",
+            5: "Issues",
           }[activeTab]
         }
         "
@@ -527,6 +529,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           <Tab label="CheckIn" />
           <Tab label="Departments" />
           <Tab label="Volunteers" />
+          <Tab label="Issues" />
         </Tabs>
         <TabPanel value={activeTab} index={0}>
           <form onSubmit={handleSubmit}>
@@ -826,7 +829,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             selectedCampaign={{ name: selectedCampaign.name }}
           />
         </TabPanel>
+        <TabPanel value={activeTab} index={5}>
+          <IssueDialog
+            open={activeTab === 5}
+            onClose={onClose}
+            campaignId={campaignId}
+            selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
+          />
+        </TabPanel>
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose} color="secondary">
           Cancel
