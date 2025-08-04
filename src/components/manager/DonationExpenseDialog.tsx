@@ -20,7 +20,7 @@ import {
     Button,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { fetchExpensesByCampaignId , acceptExpense,denyExpense} from "../../apis/expense";
+import { fetchExpensesByCampaignId, acceptExpense, denyExpense } from "../../apis/expense";
 
 
 export interface ICampaignExpenseListDialogRef {
@@ -63,39 +63,39 @@ export const CampaignExpenseListDialog = forwardRef<ICampaignExpenseListDialogRe
 
 
     const handleAccept = async (expenseId: string) => {
-    try {
-        setLoading(true);
-        const userStr = localStorage.getItem("user");
-        const token = userStr ? JSON.parse(userStr).token : "";
+        try {
+            setLoading(true);
+            const userStr = localStorage.getItem("user");
+            const token = userStr ? JSON.parse(userStr).token : "";
 
-        await acceptExpense(expenseId, token); // ← Gọi API đã import
-        const res = await fetchExpensesByCampaignId(campaignId, token); // Refresh danh sách
-        setExpenses(res.data);
-    } catch (err) {
-        console.error("Lỗi khi chấp nhận chi tiêu", err);
-        alert("Không thể chấp nhận chi tiêu. Vui lòng thử lại.");
-    } finally {
-        setLoading(false);
-    }
+            await acceptExpense(expenseId, token); // ← Gọi API đã import
+            const res = await fetchExpensesByCampaignId(campaignId, token); // Refresh danh sách
+            setExpenses(res.data);
+        } catch (err) {
+            console.error("Lỗi khi chấp nhận chi tiêu", err);
+            alert("Không thể chấp nhận chi tiêu. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleDeny = async (expenseId: string) => {
-    try {
-        setLoading(true);
-        const userStr = localStorage.getItem("user");
-        const token = userStr ? JSON.parse(userStr).token : "";
+        try {
+            setLoading(true);
+            const userStr = localStorage.getItem("user");
+            const token = userStr ? JSON.parse(userStr).token : "";
 
-        await denyExpense(expenseId, token); // ← Gọi API từ chối
-        const res = await fetchExpensesByCampaignId(campaignId, token); 
-        setExpenses(res.data);
-    } catch (err) {
-        console.error("Lỗi khi từ chối chi tiêu", err);
-        alert("Không thể từ chối chi tiêu. Vui lòng thử lại.");
-    } finally {
-        setLoading(false);
-    }
+            await denyExpense(expenseId, token); // ← Gọi API từ chối
+            const res = await fetchExpensesByCampaignId(campaignId, token);
+            setExpenses(res.data);
+        } catch (err) {
+            console.error("Lỗi khi từ chối chi tiêu", err);
+            alert("Không thể từ chối chi tiêu. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
     };
-  
+
 
     return (
         <Dialog
@@ -130,6 +130,7 @@ export const CampaignExpenseListDialog = forwardRef<ICampaignExpenseListDialogRe
                                     <TableCell className="font-semibold text-gray-700">Ảnh</TableCell>
                                     <TableCell className="font-semibold text-gray-700">Mô tả</TableCell>
                                     <TableCell className="font-semibold text-gray-700">Số tiền</TableCell>
+                                    <TableCell className="font-semibold text-gray-700">Người tạo</TableCell>
                                     <TableCell className="font-semibold text-gray-700">Trạng thái</TableCell>
                                     <TableCell align="center" className="font-semibold text-gray-700">Hành động</TableCell>
                                 </TableRow>
@@ -149,6 +150,9 @@ export const CampaignExpenseListDialog = forwardRef<ICampaignExpenseListDialogRe
                                         </TableCell>
                                         <TableCell className="text-gray-600">{item.description}</TableCell>
                                         <TableCell className="text-gray-600">{item.amount.toLocaleString()} VNĐ</TableCell>
+                                        <TableCell className="text-gray-600">
+                                            {item.createdBy?.fullName || "Không xác định"}
+                                        </TableCell>
                                         <TableCell>
                                             <Chip
                                                 label={item.approvalStatus}
