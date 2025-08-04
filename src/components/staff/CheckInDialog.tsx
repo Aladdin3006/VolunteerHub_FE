@@ -20,11 +20,18 @@ import {
   Tab,
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
-import { createManualCheckin, getCheckinListByPhaseDay, getPhasesByCampaignId, Phase, PhaseDay } from "../../apis/staff";
+import {
+  createManualCheckin,
+  getCheckinListByPhaseDay,
+  getPhasesByCampaignId,
+  Phase,
+  PhaseDay,
+} from "../../apis/staff";
 import CreatePhaseModal from "./CreatePhaseModal";
 import ManageTask from "./ManageTask";
 import DepartmentManager from "./DepartmentManager";
 import VolunteerRequestsModal from "./VolunteerRequestsModal";
+import IssueDialog from "./IssueDialog";
 
 interface CheckInDialogProps {
   open: boolean;
@@ -168,6 +175,7 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
               2: "CheckIn",
               3: "Departments",
               4: "Volunteers",
+              5: "Issues",
             }[activeTab]
           }
           "
@@ -182,6 +190,7 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
             <Tab label="CheckIn" />
             <Tab label="Departments" />
             <Tab label="Volunteers" />
+            <Tab label="Issues" />
           </Tabs>
         </DialogTitle>
         <DialogContent>
@@ -212,7 +221,9 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
                     >
                       <ListItemText
                         primary={p.name}
-                        secondary={`${new Date(p.startDate).toLocaleDateString()} - ${new Date(
+                        secondary={`${new Date(
+                          p.startDate
+                        ).toLocaleDateString()} - ${new Date(
                           p.endDate
                         ).toLocaleDateString()}`}
                       />
@@ -238,6 +249,14 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
               selectedCampaign={selectedCampaign}
             />
           </TabPanel>
+          <TabPanel value={activeTab} index={5}>
+            <IssueDialog
+              open={activeTab === 5}
+              onClose={onClose}
+              campaignId={campaignId}
+              selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
+            />
+          </TabPanel>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Close</Button>
@@ -259,6 +278,7 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
               2: "CheckIn",
               3: "Departments",
               4: "Volunteers",
+              5: "Issues",
             }[activeTab]
           }
           "
@@ -273,6 +293,7 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
             <Tab label="CheckIn" />
             <Tab label="Departments" />
             <Tab label="Volunteers" />
+            <Tab label="Issues" />
           </Tabs>
         </DialogTitle>
         <DialogContent>
@@ -339,6 +360,17 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
               selectedCampaign={selectedCampaign}
             />
           </TabPanel>
+          <TabPanel value={activeTab} index={5}>
+            <IssueDialog
+              open={activeTab === 5}
+              onClose={onClose}
+              campaignId={campaignId}
+              selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
+              onTabChange={(tabIndex) => {
+                setActiveTab(tabIndex);
+              }}
+            />
+          </TabPanel>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Close</Button>
@@ -395,7 +427,9 @@ const CheckInDialog: React.FC<CheckInDialogProps> = ({
             <Link component="button" onClick={goBackToPhaseDays}>
               {phase.name}
             </Link>
-            <Typography>{new Date(phaseDay.date).toLocaleDateString()}</Typography>
+            <Typography>
+              {new Date(phaseDay.date).toLocaleDateString()}
+            </Typography>
           </Breadcrumbs>
           <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
             <IconButton onClick={goBackToPhaseDays} size="small" sx={{ mr: 1 }}>

@@ -40,8 +40,8 @@ interface IProps extends StackProps {
 
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 500;
-const MIN_AMOUNT = 1000000;
-const MAX_IMAGES = 10;
+const MIN_AMOUNT = 10000;
+const MAX_IMAGES = 5;
 
 const initialValue: IDonationFormData = {
   title: "",
@@ -70,26 +70,36 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const imageViewerDialogRef = useRef<IImageViewerDialogRef | null>(null);
 
   const submit = async (values: IDonationFormData) => {
-    if (onSubmitForm) {
-      await onSubmitForm({
-        thumbnail: values.thumbnail.file ?? values.thumbnail.url,
-        images: values.images.map((g) => g.file ?? g.url),
-        description: values.description,
-        title: values.title,
-        goalAmount: values.goalAmount,
-        tags: values.tags.map((cate) => cate._id),
-      });
-    }
+  if (!onSubmitForm) return;
+
+  const payload: IDonationDataUpload = {
+    thumbnail: values.thumbnail.file ?? values.thumbnail.url,
+    images: values.images.map((g) => g.file ?? g.url),
+    description: values.description,
+    title: values.title,
+    goalAmount: values.goalAmount,
+    tags: values.tags.map((cate) => cate._id),
   };
 
-  const formik = useFormik<IDonationFormData>({
-    initialValues: defaultData || initialValue,
-    validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
-      await submit(values);
-      setSubmitting(false);
-    },
-  });
+  console.log("📤 Payload gửi đi:", payload); // ⚠️ QUAN TRỌNG
+
+  await onSubmitForm(payload);
+};
+
+
+
+ const formik = useFormik<IDonationFormData>({
+  
+  initialValues: defaultData || initialValue,
+  enableReinitialize: true, // ← cần thêm
+  validationSchema,
+  onSubmit: async (values, { setSubmitting }) => {
+    await submit(values);
+    setSubmitting(false);
+  },
+});
+
+
 
   const handleThumbnailImageChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -257,7 +267,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             }}
             inputProps={{
               min: MIN_AMOUNT,
-              step: 100000,
+              step: 1,
             }}
           />
 

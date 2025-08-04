@@ -10,9 +10,16 @@ import {
   Edit2,
 } from "lucide-react";
 import Slider from "react-slick";
+import { Box, Paper, Typography, useTheme } from "@mui/material";
+import ImageIcon from "@mui/icons-material/Image";
 import "./Profile.css";
 import Header from "../../components/Header/Header";
-import { updateUserAvatar, addSkillsToUser, updateSkillsOfUser } from "../../apis/profile";
+import {
+  updateUserAvatar,
+  addSkillsToUser,
+  updateSkillsOfUser,
+} from "../../apis/profile";
+import { certificateService, Certificate } from "../../apis/certificate";
 import ImageGallery from "../../components/image/ImageGallery";
 import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js";
 import CheckinFaceModal from "../../components/image/uploadFaceRecognize/CheckinFace.js";
@@ -29,7 +36,7 @@ interface UserProfile {
   bio: string;
   avatar: string;
   skills: string[];
-  certificates: string[];
+  certificates: Certificate[];
 }
 
 interface ProfileProps {
@@ -37,11 +44,14 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ loginData }) => {
+  const theme = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingCertificates, setLoadingCertificates] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [newSkill, setNewSkill] = useState("");
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const sliderRef = useRef<Slider>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,29 +69,17 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       phone: apiData.phone || "",
       dateOfBirth: formatDate(apiData.date_of_birth) || "",
       address: apiData.address || "",
-      bio: apiData.bio || "Tình nguyện viên chăm chỉ vì một thế giới tốt đẹp hơn.",
+      bio:
+        apiData.bio || "Tình nguyện viên chăm chỉ vì một thế giới tốt đẹp hơn.",
       avatar: apiData.avatar || "user-default.png",
       skills: apiData.skills || [],
-      certificates: [
-        "https://marketplace.canva.com/EAFy42rCTA0/1/0/1600w/canva-blue-minimalist-certificate-of-achievement-_asVJz8YgJE.jpg",
-        "https://img.freepik.com/free-vector/gradient-elegant-certificate-template_23-2148973721.jpg?w=740",
-      ],
+      certificates: [],
     };
   };
 
-  const [profileData, setProfileData] = useState<UserProfile>({
-    id: "",
-    fullName: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
-    address: "",
-    bio: "",
-    avatar: "user-default.png",
-    skills: [],
-    certificates: [],
-  });
-
+  const [profileData, setProfileData] = useState<UserProfile>(
+    createProfileFromLoginData({})
+  );
   const [tempData, setTempData] = useState<UserProfile>(profileData);
 
   useEffect(() => {
@@ -89,6 +87,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       const userData = createProfileFromLoginData(loginData);
       setProfileData(userData);
       setTempData(userData);
+      setToken(loginData.token || null);
     } else {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
@@ -105,6 +104,34 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }
     }
   }, [loginData]);
+
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      if (token) {
+        try {
+          setLoadingCertificates(true);
+          const fetchedCertificates =
+            await certificateService.getCertificatesByUser();
+          setCertificates(fetchedCertificates);
+          setProfileData((prev) => ({
+            ...prev,
+            certificates: fetchedCertificates,
+          }));
+          setTempData((prev) => ({
+            ...prev,
+            certificates: fetchedCertificates,
+          }));
+        } catch (error) {
+          console.error("Error fetching certificates:", error);
+          alert("Failed to load certificates.");
+        } finally {
+          setLoadingCertificates(false);
+        }
+      }
+    };
+
+    fetchCertificates();
+  }, [token]);
 
   const handleAvatarChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -172,7 +199,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }
     } catch (error) {
       alert(
-        `Avatar upload failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Avatar upload failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
       setTempData((prev) => ({ ...prev, avatar: profileData.avatar }));
     } finally {
@@ -197,7 +226,11 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       const newSkills = [...tempData.skills, newSkill.trim()];
       try {
         setLoading(true);
-        const response = await addSkillsToUser(profileData.id, [newSkill.trim()], token!);
+        const response = await addSkillsToUser(
+          profileData.id,
+          [newSkill.trim()],
+          token!
+        );
         setTempData((prev) => ({
           ...prev,
           skills: response.data.skills,
@@ -209,7 +242,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
         setNewSkill("");
       } catch (error) {
         alert(
-          `Failed to add skill: ${error instanceof Error ? error.message : "Unknown error"}`
+          `Failed to add skill: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       } finally {
         setLoading(false);
@@ -218,10 +253,16 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
   };
 
   const removeSkill = async (skillToRemove: string) => {
-    const newSkills = tempData.skills.filter((skill) => skill !== skillToRemove);
+    const newSkills = tempData.skills.filter(
+      (skill) => skill !== skillToRemove
+    );
     try {
       setLoading(true);
-      const response = await updateSkillsOfUser(profileData.id, newSkills, token!);
+      const response = await updateSkillsOfUser(
+        profileData.id,
+        newSkills,
+        token!
+      );
       setTempData((prev) => ({
         ...prev,
         skills: response.data.skills,
@@ -232,7 +273,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }));
     } catch (error) {
       alert(
-        `Failed to remove skill: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to remove skill: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     } finally {
       setLoading(false);
@@ -276,13 +319,19 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
         skills: tempData.skills,
       };
 
-      const response = await updateSkillsOfUser(profileData.id, tempData.skills, token!);
+      const response = await updateSkillsOfUser(
+        profileData.id,
+        tempData.skills,
+        token!
+      );
       setProfileData(tempData);
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating profile:", error);
       alert(
-        `Failed to save profile: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to save profile: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     } finally {
       setLoading(false);
@@ -299,9 +348,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
 
   // Flatten suggested skills from all departments for the dropdown
   const allSuggestedSkills: string[] = Array.from(
-    new Set(
-      Object.values(suggestedSkills).flat() as string[]
-    )
+    new Set(Object.values(suggestedSkills).flat() as string[])
   );
 
   return (
@@ -380,8 +427,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
           </div>
         </div>
         <RegisterFaceModal />
-        <p>testcheckin: </p>
-        <CheckinFaceModal />
+        {/* <CheckinFaceModal /> */}
         <div className="profile-content">
           <div className="main-content">
             <div className="card">
@@ -513,18 +559,115 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
               </div>
             </div>
           </div>
-          <div className="card card-certificates">
-            <h2 className="card-title">Certificates</h2>
-            <div className="certificates-container">
-              {currentData.certificates.length > 0 ? (
-                <ImageGallery
-                  images={currentData.certificates}
-                />
+          <Box sx={{ mb: 4 }}>
+            <Paper
+              elevation={1}
+              sx={{
+                p: 3,
+                bgcolor: theme.palette.grey[50],
+                borderRadius: 2,
+                boxShadow: theme.shadows[2],
+              }}
+            >
+              {loadingCertificates ? (
+                <Typography variant="body1" color="text.secondary">
+                  Đang tải chứng chỉ...
+                </Typography>
+              ) : certificates.length > 0 ? (
+                <Box sx={{ maxWidth: "100%", margin: "0 auto" }}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center" }}
+                  >
+                    <ImageIcon
+                      sx={{ mr: 1, color: theme.palette.primary.main }}
+                    />{" "}
+                    Chứng chỉ
+                  </Typography>
+                  <Slider
+                    dots={certificates.length > 1}
+                    infinite={certificates.length > 1}
+                    speed={500}
+                    slidesToShow={Math.min(2, certificates.length)}
+                    slidesToScroll={1}
+                    centerMode={certificates.length > 1}
+                    centerPadding="30px"
+                    draggable={true}
+                    swipeToSlide={true}
+                    touchThreshold={10}
+                    responsive={[
+                      {
+                        breakpoint: 1024,
+                        settings: {
+                          slidesToShow: Math.min(1, certificates.length),
+                          centerMode: certificates.length > 1,
+                          centerPadding: "20px",
+                        },
+                      },
+                      {
+                        breakpoint: 600,
+                        settings: {
+                          slidesToShow: 1,
+                          centerMode: false,
+                          centerPadding: "0px",
+                        },
+                      },
+                    ]}
+                  >
+                    {certificates.map((cert, index) => (
+                      <Box
+                        key={cert._id}
+                        sx={{
+                          px: 1,
+                          textAlign: "center",
+                          minWidth: "400px",
+                        }}
+                      >
+                        <Paper
+                          elevation={3}
+                          sx={{
+                            p: 2,
+                            height: "350px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "100%",
+                            maxWidth: "380px",
+                            margin: "0 auto",
+                          }}
+                        >
+                          <Typography variant="subtitle2" gutterBottom>
+                            Chứng chỉ #{index + 1}
+                          </Typography>
+                          <Box
+                            component="iframe"
+                            src={cert.fileUrl}
+                            sx={{
+                              width: "100%",
+                              height: "250px",
+                              border: "none",
+                              borderRadius: "4px",
+                            }}
+                            title={`Certificate ${cert.verifyCode}`}
+                          />
+                          <Typography variant="caption" sx={{ mt: 1 }}>
+                            Mã xác thực: {cert.verifyCode}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    ))}
+                  </Slider>
+                </Box>
               ) : (
-                <p className="no-certificates">No certificates available</p>
+                <Typography variant="body1" color="text.secondary">
+                  Không chứng chỉ nào được tạo
+                </Typography>
               )}
-            </div>
-          </div>
+            </Paper>
+          </Box>
           <div className="card-half-row reduced-spacing">
             <div className="card card-half">
               <h3 className="card-subtitle">Skills</h3>
@@ -575,7 +718,11 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                     <button
                       onClick={addSkill}
                       className="add-tag-btn"
-                      disabled={loading || !newSkill.trim() || tempData.skills.length >= 5}
+                      disabled={
+                        loading ||
+                        !newSkill.trim() ||
+                        tempData.skills.length >= 5
+                      }
                     >
                       Add
                     </button>

@@ -1,25 +1,23 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
   TextField,
   Button,
   List,
   ListItem,
   ListItemText,
   Stack,
-  IconButton,
   Typography,
   Avatar,
   CircularProgress,
   Backdrop,
   ImageList,
   ImageListItem,
+  IconButton,
+  Box,
+  Paper,
 } from "@mui/material";
-import ChatIcon from "@mui/icons-material/Chat";
-import CloseIcon from "@mui/icons-material/Close";
 import PhotoIcon from "@mui/icons-material/Photo";
+import ChatIcon from "@mui/icons-material/Chat";
 import PubNub from "pubnub";
 import { PubNubProvider, usePubNub } from "pubnub-react";
 import dayjs from "dayjs";
@@ -38,10 +36,13 @@ interface Message {
   type: "text" | "image";
 }
 
+interface CampaignChatModalProps {
+  campaignId: string;
+}
+
 const ChatRoom: React.FC<{
   campaignId: string;
-  onClose: () => void;
-}> = ({ campaignId, onClose }) => {
+}> = ({ campaignId }) => {
   const pubnub = usePubNub();
   const user = authService.getUser();
   const userId = user?.id;
@@ -71,14 +72,13 @@ const ChatRoom: React.FC<{
       pubnub.removeListener(listener);
       pubnub.unsubscribeAll();
     };
-  }, []);
+  }, [pubnub, channel]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async () => {
-    // Gửi text
     if (text.trim()) {
       await pubnub.publish({
         channel,
@@ -94,17 +94,19 @@ const ChatRoom: React.FC<{
       setText("");
     }
 
-    // Gửi ảnh
     if (image) {
       setUploading(true);
       const formData = new FormData();
       formData.append("images", image);
 
       try {
-        const res = await fetch(`http://localhost:4000/cloud/upload-img-single`, {
-          method: "POST",
-          body: formData,
-        });
+        const res = await fetch(
+          `http://localhost:4000/cloud/upload-img-single`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
         const data = await res.json();
         const imageUrl = data?.file?.url;
 
@@ -131,16 +133,28 @@ const ChatRoom: React.FC<{
   };
 
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>
-        Trò chuyệntrong chiến dịch 
-        <IconButton onClick={onClose} sx={{ position: "absolute", right: 8, top: 8 }}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ height: 440, display: "flex", flexDirection: "column" }}>
-        <List sx={{ flex: 1, overflowY: "auto", mb: 1 }}>
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2,
+        overflow: "hidden",
+        bgcolor: "background.paper",
+      }}
+    >
+      {/* Messages Area */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          p: 1,
+          bgcolor: "background.default",
+        }}
+      >
+        <List>
           {messages.map((msg, idx) => (
             <ListItem
               key={idx}
@@ -149,12 +163,23 @@ const ChatRoom: React.FC<{
                 flexDirection: msg.senderId === userId ? "row-reverse" : "row",
                 alignItems: "flex-start",
                 gap: 1,
+                px: 1,
+                py: 1.5,
               }}
             >
-              <Avatar src={msg.avatar} />
+              <Avatar
+                src={msg.avatar}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  border: "2px solid",
+                  borderColor: "background.paper",
+                }}
+              />
               <ListItemText
                 sx={{
-                  bgcolor: msg.senderId === userId ? "primary.light" : "grey.200",
+                  bgcolor:
+                    msg.senderId === userId ? "primary.light" : "grey.200",
                   px: 2,
                   py: 1,
                   borderRadius: 2,
@@ -162,7 +187,9 @@ const ChatRoom: React.FC<{
                 }}
                 primary={
                   <>
-                    <Typography variant="subtitle2">{msg.senderFullName}</Typography>
+                    <Typography variant="subtitle2">
+                      {msg.senderFullName}
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {dayjs(msg.sentAt).fromNow()}
                     </Typography>
@@ -170,7 +197,10 @@ const ChatRoom: React.FC<{
                 }
                 secondary={
                   msg.type === "text" && msg.text ? (
-                    <Typography variant="body2" sx={{ wordBreak: "break-word" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ wordBreak: "break-word" }}
+                    >
                       {msg.text}
                     </Typography>
                   ) : msg.type === "image" && msg.image ? (
@@ -178,7 +208,7 @@ const ChatRoom: React.FC<{
                       <ImageListItem>
                         <img
                           src={msg.image}
-                          alt="Hình ảnh gửi"
+                          alt="Sent content"
                           style={{ maxWidth: 200, borderRadius: 8 }}
                         />
                       </ImageListItem>
@@ -188,10 +218,19 @@ const ChatRoom: React.FC<{
               />
             </ListItem>
           ))}
-          <div ref={chatEndRef}></div>
+          <div ref={chatEndRef} />
         </List>
+      </Box>
 
-        {/* Input gửi */}
+      {/* Input Area */}
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+        }}
+      >
         <Stack direction="row" spacing={1} alignItems="center">
           <input
             type="file"
@@ -201,19 +240,20 @@ const ChatRoom: React.FC<{
             onChange={(e) => setImage(e.target.files?.[0] || null)}
           />
           <label htmlFor="image-input">
-            <IconButton component="span" color={image ? "primary" : "default"}>
+            <IconButton
+              component="span"
+              color={image ? "primary" : "default"}
+              size="small"
+            >
               <PhotoIcon />
             </IconButton>
           </label>
           <TextField
             fullWidth
             size="small"
-            placeholder="Nhắn gì đó đi nè..."
+            placeholder="Type a message..."
             value={text}
             onChange={(e) => setText(e.target.value)}
-<<<<<<< Updated upstream
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-=======
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault(); 
@@ -226,30 +266,36 @@ const ChatRoom: React.FC<{
                 bgcolor: "background.default",
               },
             }}
->>>>>>> Stashed changes
           />
-          <Button variant="contained" onClick={sendMessage}>
-            Gửi
+          <Button
+            variant="contained"
+            onClick={sendMessage}
+            sx={{
+              borderRadius: 4,
+              px: 2,
+              fontWeight: "bold",
+              textTransform: "none",
+            }}
+          >
+            Send
           </Button>
         </Stack>
-
-        {/* Preview ảnh */}
         {image && (
-          <Typography variant="caption" sx={{ mt: 1 }}>
-            📷 Đã chọn: {image.name}
+          <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+            📷 Selected: {image.name}
           </Typography>
         )}
-      </DialogContent>
-
+      </Box>
       <Backdrop open={uploading} sx={{ zIndex: 1300 }}>
         <CircularProgress color="inherit" />
       </Backdrop>
-    </Dialog>
+    </Box>
   );
 };
 
-const CampaignChatModal: React.FC<{ campaignId: string }> = ({ campaignId }) => {
-  const [open, setOpen] = useState(false);
+const CampaignChatModal: React.FC<CampaignChatModalProps> = ({
+  campaignId,
+}) => {
   const [pubnub, setPubnub] = useState<PubNub | null>(null);
 
   useEffect(() => {
@@ -266,29 +312,27 @@ const CampaignChatModal: React.FC<{ campaignId: string }> = ({ campaignId }) => 
 
   if (!pubnub) {
     return (
-      <Button variant="outlined" color="primary" disabled>
-        Đang khởi tạo chat...
-      </Button>
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 2,
+          bgcolor: "background.paper",
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <>
-      <Button
-        variant="outlined"
-        color="primary"
-        startIcon={<ChatIcon />}
-        onClick={() => setOpen(true)}
-      >
-        Chat chiến dịch
-      </Button>
-
-      {open && (
-        <PubNubProvider client={pubnub}>
-          <ChatRoom campaignId={campaignId} onClose={() => setOpen(false)} />
-        </PubNubProvider>
-      )}
-    </>
+    <PubNubProvider client={pubnub}>
+      <ChatRoom campaignId={campaignId} />
+    </PubNubProvider>
   );
 };
 

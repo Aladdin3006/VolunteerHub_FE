@@ -22,7 +22,6 @@ const shake = keyframes`
   60% { transform: translateX(-2px); }
   80% { transform: translateX(2px); }
 `;
-
 const stormEntrance = keyframes`
   0% {
     opacity: 0;
@@ -129,6 +128,7 @@ const StormTrigger: React.FC = () => {
         onClick={() => setOpen(true)}
         sx={{
           animation: `${stormEntrance} 0.8s ease-out, ${shake} 2.5s infinite`,
+
           textTransform: "none",
           borderRadius: "50px",
           px: 0.5,
@@ -169,7 +169,6 @@ const StormTrigger: React.FC = () => {
       >
         🌀<span> Kích Hoạt Bão</span>
       </Button>
-
       {/* Modal nhập thông tin bão */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <Box

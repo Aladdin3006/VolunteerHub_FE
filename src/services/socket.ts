@@ -6,7 +6,6 @@ export interface ServerToClientEvents {
   "storm-deactivated": (stormId: string) => void;
   "notification": (data: any) => void;
   "relief-point:new": (data: any) => void;
-
   "weather:update": (data: { alerts: any[]; current: any; location: any }) => void;
 }
 

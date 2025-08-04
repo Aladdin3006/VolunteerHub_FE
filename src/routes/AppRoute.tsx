@@ -2,8 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/home/Home";
 import Login from "../pages/login/Login";
 import Register from "../pages/register/Register";
-import CampaignHome from "../pages/campaignDonation/CampaignHome";
-import CampaignDetail from "../pages/campaignVolunteer/CampaignDetail";
+import CampaignHome from "../pages/campaignVolunteer/CampaignHome";
+// import CampaignDetail from "../pages/campaignDonation/DonationDetail";
 import AboutUs from "../pages/about-us/aboutus";
 import DonatePage from "../pages/about-us/DonatePage";
 import ForgotPW from "../pages/login/ForgotPW";
@@ -23,12 +23,24 @@ import ThankYou from "../pages/campaignVolunteer/Thanhyou";
 
 import CampaignVolunteer from "../pages/campaignVolunteer/CampaignVolunteerDetail";
 
-import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerCampaign from "../pages/manager/ManagerCampaign";
 import NewDonationPage from "../pages/staff/NewDonationPage";
-import ManagerCampaignStaff from "@/pages/staff/ManagerCampaignStaff";
-import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
+import MyCampaignList from "@/pages/campaignVolunteer/MyCampaignList";
 import ForumPage from "../pages/forum/ForumPage";
+import ManagerCampaignStaff from "../pages/staff/ManagerCampaignStaff";
+import UpdateDonationPage from "../pages/staff/UpdateDonationPage";
+import TaskListPage from "../pages/campaignVolunteer/TaskListPage";
+import OverViewCampaign from "@/components/staff/OverViewCampaign";
+import { UpdateCampaignDialog } from "@/components/staff/UpdateCampaignDialog";
+
+import ReliefPointManager from "@/pages/manager/reliefPointManager/ReliefPointManager";
+import DonationHome from "@/pages/campaignDonation/DonationHome";
+import DonationDetail from "../pages/campaignDonation/DonationDetail";
+import { Manager } from "socket.io-client";
+import ManagerDonationStaff from "@/pages/staff/ManagerDonationStaff";
+import CampaignDonationView from "../components/staff/CampaignDonationView"
+import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
+
 
 const AppRoutes = () => (
   <Routes>
@@ -44,9 +56,9 @@ const AppRoutes = () => (
           if (user?.role === "admin")
             return <Navigate to="/admin/dashboard" replace />;
           if (user?.role === "organization")
-            return <Navigate to="/staff" replace />;
+            return <Navigate to="/staff/campaigns" replace />;
           if (user?.role === "manager")
-            return <Navigate to="/manager/dashboard" replace />;
+            return <Navigate to="/manager/campaigns" replace />;
         }
 
         // Allow guest or normal user
@@ -91,13 +103,41 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/campaigns/:campaignId"
+      path="/donations/:campaignId"
       element={
         <LayoutWrapper>
-          <CampaignDetail />
+          <DonationDetail />
         </LayoutWrapper>
       }
     />
+    <Route
+      path="/donations"
+      element={
+        <LayoutWrapper>
+          <DonationHome />
+        </LayoutWrapper>
+      }
+    />
+     
+     <Route
+      path="/staff/donation/:campaignId"
+      element={
+        <LayoutWrapper>
+          <CampaignDonationView />
+        </LayoutWrapper>
+      }
+    />
+
+    <Route
+      path="/manager/donations"
+      element={
+        <LayoutWrapper>
+          <ManagerCampaignDonation />
+        </LayoutWrapper>
+      }
+    />
+
+  
     <Route
       path="/campaigns"
       element={
@@ -115,10 +155,26 @@ const AppRoutes = () => (
       }
     />
     <Route
-      path="/volunteer/:campaignId"
+      path="/campaigns/:campaignId"
       element={
         <LayoutWrapper>
           <CampaignVolunteer />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/myCampaign"
+      element={
+        <LayoutWrapper>
+          <MyCampaignList />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/campaigns/:id/tasks"
+      element={
+        <LayoutWrapper>
+          <TaskListPage />
         </LayoutWrapper>
       }
     />
@@ -232,7 +288,7 @@ const AppRoutes = () => (
         <ProtectedRoute requiredRole="organization">
           <Routes>
             <Route
-              path=""
+              path="campaigns"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
                   <ManagerCampaignStaff />
@@ -240,10 +296,34 @@ const AppRoutes = () => (
               }
             />
             <Route
-              path="donations/new"
+              path="campaigns/:id"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="organization">
-                  <NewDonationPage />
+                  <OverViewCampaign />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="campaigns/:id/manage"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <ManagerCampaignStaff />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="campaigns/:id/update"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <UpdateCampaignDialog />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="donations"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="organization">
+                  <ManagerDonationStaff />
                 </LayoutWrapper>
               }
             />
@@ -355,14 +435,6 @@ const AppRoutes = () => (
         <ProtectedRoute requiredRole="manager">
           <Routes>
             <Route
-              path="dashboard"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="manager">
-                  <ManagerDashboard /> {/* Updated to use ManagerDashboard */}
-                </LayoutWrapper>
-              }
-            />
-            <Route
               path="campaigns"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="manager">
@@ -371,17 +443,10 @@ const AppRoutes = () => (
               }
             />
             <Route
-              path="reports"
+              path="storms"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="manager">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Reports
-                    </h1>
-                    <p className="text-gray-600">
-                      Generate and view system reports.
-                    </p>
-                  </div>
+                  <ReliefPointManager />
                 </LayoutWrapper>
               }
             />

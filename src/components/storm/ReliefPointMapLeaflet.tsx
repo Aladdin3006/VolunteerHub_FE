@@ -469,6 +469,7 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
             <Typography variant="body2">
              📝 Thông tin liên hệ:  <strong>{selectedPoint.contact}</strong>
             </Typography>
+
           </Box>
         )}
       </Box>

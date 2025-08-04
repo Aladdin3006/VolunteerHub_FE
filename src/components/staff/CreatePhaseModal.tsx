@@ -51,6 +51,7 @@ import ManageTask from "../../components/staff/ManageTask";
 import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import CheckInDialog from "./CheckInDialog";
+import IssueDialog from "./IssueDialog";
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -113,6 +114,7 @@ interface CreatePhaseModalProps {
   campaignId: string;
   selectedCampaign: { name: string };
   onTabChange?: (tabIndex: number) => void;
+  onPhaseCreated?: () => void;
 }
 
 const TabPanel: React.FC<{
@@ -137,6 +139,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
   campaignId,
   selectedCampaign,
   onTabChange,
+  onPhaseCreated,
 }) => {
   const [phases, setPhases] = useState<PhaseData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -347,6 +350,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       setIsSubmitting(true);
       setError(null);
       const updatedPhase = await startPhase(phaseId);
+      if (onPhaseCreated) {
+        await onPhaseCreated();
+      }
       setPhases(
         phases.map((phase) =>
           phase._id === phaseId
@@ -430,6 +436,10 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           }
           updatedPhases.push(existingPhase);
         }
+
+        if (onPhaseCreated) {
+          onPhaseCreated();
+        }
       }
 
       // Refresh the phases list after all operations
@@ -498,6 +508,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             2: "CheckIn",
             3: "Departments",
             4: "Volunteers",
+            5: "Issues",
           }[activeTab]
         }
         "
@@ -518,6 +529,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           <Tab label="CheckIn" />
           <Tab label="Departments" />
           <Tab label="Volunteers" />
+          <Tab label="Issues" />
         </Tabs>
         <TabPanel value={activeTab} index={0}>
           <form onSubmit={handleSubmit}>
@@ -555,7 +567,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                               color="success"
                               startIcon={<PlayArrowIcon />}
                               onClick={() => handleStartPhase(phase._id)}
-                              disabled={phase.status !== "upcoming" || isSubmitting}
+                              disabled={
+                                phase.status !== "upcoming" || isSubmitting
+                              }
                               sx={{ mr: 2 }}
                             >
                               Start Phase
@@ -815,7 +829,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             selectedCampaign={{ name: selectedCampaign.name }}
           />
         </TabPanel>
+        <TabPanel value={activeTab} index={5}>
+          <IssueDialog
+            open={activeTab === 5}
+            onClose={onClose}
+            campaignId={campaignId}
+            selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
+          />
+        </TabPanel>
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose} color="secondary">
           Cancel

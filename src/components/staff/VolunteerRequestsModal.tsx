@@ -21,11 +21,19 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
-import { Volunteer, getCampaignVolunteers, acceptVolunteer, rejectVolunteer, Phase, PhaseDay } from "../../apis/staff";
+import {
+  Volunteer,
+  getCampaignVolunteers,
+  acceptVolunteer,
+  rejectVolunteer,
+  Phase,
+  PhaseDay,
+} from "../../apis/staff";
 import CreatePhaseModal from "./CreatePhaseModal";
 import ManageTask from "./ManageTask";
 import CheckInDialog from "./CheckInDialog";
 import DepartmentManager from "./DepartmentManager";
+import IssueDialog from "./IssueDialog";
 
 interface VolunteerRequestsModalProps {
   open: boolean;
@@ -41,7 +49,12 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => (
+const TabPanel: React.FC<TabPanelProps> = ({
+  children,
+  value,
+  index,
+  ...other
+}) => (
   <div
     role="tabpanel"
     hidden={value !== index}
@@ -63,11 +76,17 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [acceptingVolunteers, setAcceptingVolunteers] = useState<Set<string>>(new Set());
-  const [rejectingVolunteers, setRejectingVolunteers] = useState<Set<string>>(new Set());
+  const [acceptingVolunteers, setAcceptingVolunteers] = useState<Set<string>>(
+    new Set()
+  );
+  const [rejectingVolunteers, setRejectingVolunteers] = useState<Set<string>>(
+    new Set()
+  );
   const [activeTab, setActiveTab] = useState(4); // Default to Volunteers tab
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
-  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(null);
+  const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchVolunteers = async () => {
@@ -146,10 +165,14 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "approved": return "success";
-      case "pending": return "warning";
-      case "rejected": return "error";
-      default: return "default";
+      case "approved":
+        return "success";
+      case "pending":
+        return "warning";
+      case "rejected":
+        return "error";
+      default:
+        return "default";
     }
   };
 
@@ -195,17 +218,23 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
             2: "CheckIn",
             3: "Departments",
             4: "Volunteers",
+            5: "Issues",
           }[activeTab]
         }
         "
       </DialogTitle>
       <DialogContent>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="management tabs">
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          aria-label="management tabs"
+        >
           <Tab label="Phases" />
           <Tab label="Tasks" />
           <Tab label="CheckIn" />
           <Tab label="Departments" />
           <Tab label="Volunteers" />
+          <Tab label="Issues" />
         </Tabs>
         <TabPanel value={activeTab} index={0}>
           <CreatePhaseModal
@@ -235,8 +264,17 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
           <DepartmentManager campaignId={campaignId} />
         </TabPanel>
         <TabPanel value={activeTab} index={4}>
-          <Box sx={{ p: 2, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Typography variant="h6" gutterBottom>Volunteer Requests</Typography>
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Volunteer Requests
+            </Typography>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
                 <CircularProgress />
@@ -244,11 +282,22 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
             ) : (
               <Box sx={{ width: "100%", minHeight: 300 }}>
                 {error && (
-                  <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                  <Alert
+                    severity="error"
+                    sx={{ mb: 2 }}
+                    onClose={() => setError(null)}
+                  >
                     {error}
                   </Alert>
                 )}
-                <Box sx={{ mb: 3, display: "flex", gap: 2, justifyContent: "center" }}>
+                <Box
+                  sx={{
+                    mb: 3,
+                    display: "flex",
+                    gap: 2,
+                    justifyContent: "center",
+                  }}
+                >
                   <Chip
                     label={`Pending: ${pendingVolunteers.length}`}
                     color="warning"
@@ -266,7 +315,9 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
                   />
                 </Box>
                 {volunteers.length === 0 ? (
-                  <Alert severity="info">No volunteer requests found for this campaign.</Alert>
+                  <Alert severity="info">
+                    No volunteer requests found for this campaign.
+                  </Alert>
                 ) : (
                   <Grid container spacing={3} direction="column">
                     <Grid>
@@ -298,16 +349,24 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
                                     size="small"
                                   />
                                 </TableCell>
-                                <TableCell>{formatDate(volunteer.registeredAt)}</TableCell>
+                                <TableCell>
+                                  {formatDate(volunteer.registeredAt)}
+                                </TableCell>
                                 <TableCell>
                                   <Button
                                     variant="contained"
                                     color="success"
                                     size="small"
-                                    onClick={() => handleAcceptVolunteer(volunteer.user._id)}
-                                    disabled={acceptingVolunteers.has(volunteer.user._id)}
+                                    onClick={() =>
+                                      handleAcceptVolunteer(volunteer.user._id)
+                                    }
+                                    disabled={acceptingVolunteers.has(
+                                      volunteer.user._id
+                                    )}
                                   >
-                                    {acceptingVolunteers.has(volunteer.user._id) ? "Approving" : "Approve"}
+                                    {acceptingVolunteers.has(volunteer.user._id)
+                                      ? "Approving"
+                                      : "Approve"}
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -345,16 +404,24 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
                                     size="small"
                                   />
                                 </TableCell>
-                                <TableCell>{formatDate(volunteer.registeredAt)}</TableCell>
+                                <TableCell>
+                                  {formatDate(volunteer.registeredAt)}
+                                </TableCell>
                                 <TableCell>
                                   <Button
                                     variant="contained"
                                     color="error"
                                     size="small"
-                                    onClick={() => handleRejectVolunteer(volunteer.user._id)}
-                                    disabled={rejectingVolunteers.has(volunteer.user._id)}
+                                    onClick={() =>
+                                      handleRejectVolunteer(volunteer.user._id)
+                                    }
+                                    disabled={rejectingVolunteers.has(
+                                      volunteer.user._id
+                                    )}
                                   >
-                                    {rejectingVolunteers.has(volunteer.user._id) ? "Rejecting" : "Reject"}
+                                    {rejectingVolunteers.has(volunteer.user._id)
+                                      ? "Rejecting"
+                                      : "Reject"}
                                   </Button>
                                 </TableCell>
                               </TableRow>
@@ -391,7 +458,9 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
                                     size="small"
                                   />
                                 </TableCell>
-                                <TableCell>{formatDate(volunteer.registeredAt)}</TableCell>
+                                <TableCell>
+                                  {formatDate(volunteer.registeredAt)}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -403,6 +472,14 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
               </Box>
             )}
           </Box>
+        </TabPanel>
+        <TabPanel value={activeTab} index={5}>
+          <IssueDialog
+            open={activeTab === 5}
+            onClose={onClose}
+            campaignId={campaignId}
+            selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
+          />
         </TabPanel>
       </DialogContent>
       <DialogActions>

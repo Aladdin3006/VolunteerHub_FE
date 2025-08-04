@@ -26,7 +26,9 @@ interface NotificationBellProps {
   color?: string;
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }) => {
+const NotificationBell: React.FC<NotificationBellProps> = ({
+  color = "inherit",
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -50,7 +52,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       setNotifications(data);
       const unread = data.filter((n) => !n.isRead).length;
       setUnreadCount(unread);
-    } catch (err) { }
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -69,13 +71,13 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       transports: ["websocket"],
     });
 
-    socketInstance.on("connect", () => { });
+    socketInstance.on("connect", () => {});
 
     socketInstance.on("notification", (data) => {
       setNotifications((prev) => [data, ...prev]);
       setUnreadCount((prev) => prev + 1);
       if (audioRef.current) {
-        audioRef.current.play().catch(() => { });
+        audioRef.current.play().catch(() => {});
       }
     });
 
@@ -87,7 +89,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
     try {
       await axios.patch(
         `${API_URL}/notification/${id}/read`,
-        {}, 
+        {},
         {
           headers: {
             Authorization: `Bearer ${authService.getToken() || ""}`,
@@ -96,9 +98,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       );
 
       setNotifications((prev) =>
-        prev.map((n) =>
-          n._id === id ? { ...n, isRead: true } : n
-        )
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
       );
 
       setUnreadCount((prev) => Math.max(prev - 1, 0));
@@ -106,7 +106,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
       console.error("Đánh dấu đã đọc thất bại", err);
     }
   };
-
 
   const handleOpen = (e: React.MouseEvent<SVGElement>) => {
     setAnchorEl(e.currentTarget as unknown as HTMLElement);
@@ -122,7 +121,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
           audioRef.current?.pause();
           audioRef.current!.currentTime = 0;
         })
-        .catch(() => { });
+        .catch(() => {});
     }
   };
 
@@ -133,32 +132,44 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
   return (
     <>
       {/* Use the same structure as other dropdown items */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f0f0f0", // gray background
+          borderRadius: "50%", // make it circular
+          width: "40px",
+          height: "40px",
+          cursor: "pointer",
+        }}
+      >
         <FaBell
           className="dropdown-icon"
           onClick={handleOpen}
-          style={{ cursor: 'pointer', width: '24px', height: '19.2px', color }}
+          style={{ cursor: "pointer", width: "24px", height: "19.2px", color }}
         />
         {unreadCount > 0 && (
           <span
             style={{
-              position: 'absolute',
-              top: '-8px',
-              right: '-8px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              borderRadius: '50%',
-              width: '18px',
-              height: '18px',
-              fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              minWidth: '18px'
+              position: "absolute",
+              top: "-8px",
+              right: "-8px",
+              backgroundColor: "#f44336",
+              color: "white",
+              borderRadius: "50%",
+              width: "18px",
+              height: "18px",
+              fontSize: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "bold",
+              minWidth: "18px",
             }}
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </div>
@@ -201,7 +212,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ color = "inherit" }
                 },
               }}
             >
-
               <Stack direction="row" spacing={2} alignItems="flex-start">
                 <Avatar
                   src={noti.image || "/default-avatar.png"}

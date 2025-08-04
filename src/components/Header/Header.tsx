@@ -1,5 +1,3 @@
-// Header.tsx with slide-down dropdown, mobile responsive, and glassmorphism
-
 import React, { useState, useEffect } from "react";
 import {
   AppBar,
@@ -18,7 +16,7 @@ import {
   List,
   ListItemButton,
   ListItem,
-  ListItemText
+  ListItemText,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -28,7 +26,7 @@ import {
   FaQuestionCircle,
   FaDesktop,
   FaSignOutAlt,
-  FaBars
+  FaBars,
 } from "react-icons/fa";
 import { keyframes } from "@emotion/react";
 import authService from "../../services/Authentication.service";
@@ -93,17 +91,35 @@ const Header: React.FC = () => {
   };
 
   const menuItems = [
-    { label: "Chỉnh sửa hồ sơ", icon: <FaUserEdit />, action: () => navigate("/profile") },
-    { label: "Thông báo", icon: <FaBell />, action: () => { } },
-    { label: "Cài đặt & bảo mật", icon: <FaCog />, action: () => navigate("/settings") },
-    { label: "Trợ giúp & hỗ trợ", icon: <FaQuestionCircle />, action: () => navigate("/help") },
-    { label: "Hiển thị & trợ năng", icon: <FaDesktop />, action: () => navigate("/accessibility") },
+    {
+      label: "Chỉnh sửa hồ sơ",
+      icon: <FaUserEdit />,
+      action: () => navigate("/profile"),
+    },
+    { label: "Thông báo", icon: <FaBell />, action: () => {} },
+    {
+      label: "Cài đặt & bảo mật",
+      icon: <FaCog />,
+      action: () => navigate("/settings"),
+    },
+    {
+      label: "Trợ giúp & hỗ trợ",
+      icon: <FaQuestionCircle />,
+      action: () => navigate("/help"),
+    },
+    {
+      label: "Chiến Dịch của tôi",
+      icon: <FaDesktop />,
+      action: () => navigate("/myCampaign"),
+    },
     { label: "Đăng xuất", icon: <FaSignOutAlt />, action: handleLogout },
   ];
 
   const navLinks = [
     { label: "Trang Chủ", path: "/" },
     { label: "Chiến Dịch", path: "/campaigns" },
+    { label: "Quyên góp", path: "/donations" },
+    { label: "Chiến dịch của tôi", path: "/myCampaign" },
     { label: "Về Chúng Tôi", path: "/about-us" },
     { label: "Cộng đồng", path: "/news" },
   ];
@@ -122,12 +138,23 @@ const Header: React.FC = () => {
         background: "rgba(255, 255, 255, 0.75)",
         boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
         zIndex: 1300,
-        transition: "all 0.3s ease"
+        transition: "all 0.3s ease",
       }}
     >
-      <AppBar position="static" elevation={0} sx={{ background: "transparent" }}>
+      <AppBar
+        position="static"
+        elevation={0}
+        sx={{ background: "transparent" }}
+      >
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Box component={Link} to="/" display="flex" alignItems="center" gap={1} sx={{ textDecoration: "none" }}>
+          <Box
+            component={Link}
+            to="/"
+            display="flex"
+            alignItems="center"
+            gap={1}
+            sx={{ textDecoration: "none" }}
+          >
             <img src="/logo.png" alt="Logo" style={{ height: 40 }} />
             <Box>
               <Typography variant="h6" fontWeight={700} color="#1976d2">
@@ -203,10 +230,7 @@ const Header: React.FC = () => {
                   <Typography variant="body2" color="#1976d2" fontWeight={500}>
                     Xin chào, {user.fullName.split(" ")[0]} 👋
                   </Typography>
-                  <Box
-                    onClick={handleMenuOpen}
-                    sx={{ cursor: "pointer" }}
-                  >
+                  <Box onClick={handleMenuOpen} sx={{ cursor: "pointer" }}>
                     <Avatar
                       className="glow-avatar"
                       src={user.avatar || "user-default.png"}

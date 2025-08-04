@@ -225,6 +225,7 @@ const ReliefPointManager: React.FC = () => {
   );
   const [openModal, setOpenModal] = useState(false);
   const [verifying, setVerifying] = useState(false);
+
   const [modalType, setModalType] = useState<"supply" | "need" | null>(null);
   const [formData, setFormData] = useState<FormDataType>({
     name: "",
@@ -395,7 +396,6 @@ const ReliefPointManager: React.FC = () => {
       }
     }
   };
-
   const handleVerifyPoint = async () => {
     if (!selectedPoint) return;
     setVerifying(true);
@@ -418,7 +418,6 @@ const ReliefPointManager: React.FC = () => {
       setVerifying(false);
     }
   };
-
   return (
     <Box>
       <div className="tab-list-container">
@@ -440,6 +439,7 @@ const ReliefPointManager: React.FC = () => {
           </li>
         </ul>
       </div>
+
       <Typography variant="h5" fontWeight="bold" p={3}>
         📍 Quản lý điểm cứu trợ
       </Typography>
@@ -928,6 +928,7 @@ const ReliefPointManager: React.FC = () => {
                           <ListItemText
                             primary={<Typography fontWeight={500}>{s.type}</Typography>}
                             secondary={`${s.quantity} - ${s.note || "Không có ghi chú"}`}
+
                           />
                         </ListItem>
                       ))}
@@ -949,6 +950,7 @@ const ReliefPointManager: React.FC = () => {
                           <ListItemText
                             primary={<Typography fontWeight={500}>{n.type}</Typography>}
                             secondary={`${n.quantity} - ${n.note || "Không có ghi chú"}`}
+
                           />
                         </ListItem>
                       ))}
@@ -958,7 +960,6 @@ const ReliefPointManager: React.FC = () => {
             </Paper>
           )}
         </DialogContent>
-
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={handleCloseDetail}>Đóng</Button>
 

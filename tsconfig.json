@@ -20,5 +20,8 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "files": [
+    "global.ts",
+  ]
 }
