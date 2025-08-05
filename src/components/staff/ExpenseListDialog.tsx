@@ -20,7 +20,8 @@ import {
     Button,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { fetchExpensesByCampaignId } from "../../apis/expense";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { fetchExpensesByCampaignId, deleteExpense } from "../../apis/expense";
 import EditExpenseDialog from "./EditExpenseDialog";
 
 export interface IExpenseListDialogRef {
@@ -33,7 +34,7 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
     const [loading, setLoading] = useState(false);
     const [expenses, setExpenses] = useState<any[]>([]);
     const [editingExpense, setEditingExpense] = useState<any | null>(null);
-
+    const [deleting, setDeleting] = useState<string | null>(null);
 
     useImperativeHandle(ref, () => ({
         open: (id: string) => {
@@ -49,11 +50,15 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
             try {
                 setLoading(true);
                 const userStr = localStorage.getItem("user");
-                const token = userStr ? JSON.parse(userStr).token : "";
+                if (!userStr) throw new Error("Không tìm thấy thông tin người dùng trong localStorage");
+                const token = JSON.parse(userStr).token;
+                console.log("Đang tải danh sách chi phí với campaignId:", campaignId, "Token:", token);
                 const res = await fetchExpensesByCampaignId(campaignId, token);
+                console.log("Danh sách chi phí:", res.data);
                 setExpenses(res.data);
-            } catch (err) {
-                console.error("Lỗi lấy danh sách expense", err);
+            } catch (err: any) {
+                console.error("Lỗi lấy danh sách chi phí:", err.message, err.response?.data);
+                alert(err.message || "Lấy danh sách chi phí thất bại!");
             } finally {
                 setLoading(false);
             }
@@ -61,6 +66,30 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
 
         fetchData();
     }, [open, campaignId]);
+
+    const handleDeleteExpense = async (expenseId: string) => {
+        if (window.confirm("Bạn có chắc muốn xóa chi phí này?")) {
+            try {
+                console.log("Đang xóa chi phí với ID:", expenseId);
+                setDeleting(expenseId);
+                const userStr = localStorage.getItem("user");
+                if (!userStr) throw new Error("Không tìm thấy thông tin người dùng trong localStorage");
+                const token = JSON.parse(userStr).token;
+                console.log("Token:", token);
+                await deleteExpense(expenseId, token);
+                console.log("Xóa chi phí thành công, đang tải lại danh sách...");
+                const res = await fetchExpensesByCampaignId(campaignId, token);
+                console.log("Danh sách chi phí mới:", res.data);
+                setExpenses(res.data);
+                alert("Xóa chi phí thành công!");
+            } catch (err: any) {
+                console.error("Lỗi xóa chi phí:", err.message, err.response?.data);
+                alert(err.message || "Xóa chi phí thất bại!");
+            } finally {
+                setDeleting(null);
+            }
+        }
+    };
 
     return (
         <Dialog
@@ -95,13 +124,14 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
                                     <TableCell className="font-semibold text-gray-700">Ảnh</TableCell>
                                     <TableCell className="font-semibold text-gray-700">Mô tả</TableCell>
                                     <TableCell className="font-semibold text-gray-700">Số tiền</TableCell>
-                                    <TableCell className="font-semibold text-gray-700">Trạng thái</TableCell>
+                                      <TableCell className="font-semibold text-gray-700">Người tạo</TableCell>
+                                    <TableCell className="font-semibold text-gray-700">Trạng thái</TableCell>                       
                                     <TableCell align="center" className="font-semibold text-gray-700">Hành động</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {expenses.map((item, index) => (
-                                    <TableRow key={item._id} className="hover:bg-gray-100">
+                                    <TableRow key={item._id} className={`hover:bg-gray-100 ${deleting === item._id ? "opacity-50" : ""}`}>
                                         <TableCell className="text-gray-600">{index + 1}</TableCell>
                                         <TableCell>
                                             {item.evidences?.length > 0 && (
@@ -114,23 +144,27 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
                                         </TableCell>
                                         <TableCell className="text-gray-600">{item.description}</TableCell>
                                         <TableCell className="text-gray-600">{item.amount.toLocaleString()} VNĐ</TableCell>
+                                         <TableCell className="text-gray-600">
+                                            {item.createdBy?.fullName || "Không xác định"}
+                                        </TableCell>
                                         <TableCell>
                                             <Chip
                                                 label={item.approvalStatus}
                                                 className={`
-                          capitalize font-medium
-                          ${item.approvalStatus === "approved" ? "bg-green-100 text-green-800" : ""}
-                          ${item.approvalStatus === "rejected" ? "bg-red-100 text-red-800" : ""}
-                          ${item.approvalStatus === "pending" ? "bg-yellow-100 text-yellow-800" : ""}
-                        `}
+                                                    capitalize font-medium
+                                                    ${item.approvalStatus === "approved" ? "bg-green-100 text-green-800" : ""}
+                                                    ${item.approvalStatus === "rejected" ? "bg-red-100 text-red-800" : ""}
+                                                    ${item.approvalStatus === "pending" ? "bg-yellow-100 text-yellow-800" : ""}
+                                                `}
                                                 size="small"
                                             />
-                                        </TableCell>
+                                        </TableCell>                             
                                         <TableCell align="center">
                                             <Tooltip title="Chỉnh sửa chi phí">
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => {
+                                                        console.log("Nhấn nút chỉnh sửa, ID:", item._id, "Trạng thái:", item.approvalStatus);
                                                         if (item.approvalStatus === "pending") {
                                                             setEditingExpense(item);
                                                         } else {
@@ -142,7 +176,19 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
                                                     <EditIcon fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
-
+                                            <Tooltip title="Xóa chi phí">
+                                                <IconButton
+                                                    size="small"
+                                                    disabled={deleting === item._id}
+                                                    onClick={() => {
+                                                        console.log("Nhấn nút xóa, ID:", item._id);
+                                                        handleDeleteExpense(item._id);
+                                                    }}
+                                                    className="text-red-600 hover:bg-red-50 rounded-full"
+                                                >
+                                                    {deleting === item._id ? <CircularProgress size={20} /> : <DeleteIcon fontSize="small" />}
+                                                </IconButton>
+                                            </Tooltip>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -166,13 +212,20 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
                 expense={editingExpense}
                 afterSubmit={() => {
                     setEditingExpense(null);
-                    // Gọi lại API sau khi cập nhật
                     const userStr = localStorage.getItem("user");
-                    const token = userStr ? JSON.parse(userStr).token : "";
-                    fetchExpensesByCampaignId(campaignId, token).then(res => setExpenses(res.data));
+                    if (!userStr) {
+                        alert("Không tìm thấy thông tin người dùng trong localStorage");
+                        return;
+                    }
+                    const token = JSON.parse(userStr).token;
+                    fetchExpensesByCampaignId(campaignId, token)
+                        .then(res => setExpenses(res.data))
+                        .catch(err => {
+                            console.error("Lỗi tải lại danh sách chi phí:", err.message, err.response?.data);
+                            alert(err.message || "Tải lại danh sách chi phí thất bại!");
+                        });
                 }}
             />
-
         </Dialog>
     );
 });

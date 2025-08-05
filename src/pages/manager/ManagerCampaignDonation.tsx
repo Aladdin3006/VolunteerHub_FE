@@ -12,6 +12,7 @@ import {
     Badge,
     Chip,
     Button,
+    LinearProgress,
 } from "@mui/material";
 
 import { useNavigate } from "react-router-dom";
@@ -126,16 +127,17 @@ const ManagerDonationStaff: React.FC = () => {
         setFilterStatus(["", "in-progress", "upcoming", "completed"][newValue]);
     };
 
-    const mapStatus = (approvalStatus?: string) => {
-        return approvalStatus === "approved" ? "in-progress" : "upcoming";
+    const mapStatus = (campaign: Campaign) => {
+        if (campaign.status === "completed") return "completed";
+        return campaign.approvalStatus === "approved" ? "in-progress" : "upcoming";
     };
 
     const getStatusCount = (status: string) => {
-        return campaigns.filter((campaign) => mapStatus(campaign.approvalStatus) === status).length;
+        return campaigns.filter((campaign) => mapStatus(campaign) === status).length;
     };
 
     const filteredCampaigns = campaigns.filter((campaign) =>
-        filterStatus ? mapStatus(campaign.approvalStatus) === filterStatus : true
+        filterStatus ? mapStatus(campaign) === filterStatus : true
     );
 
     return (
@@ -157,7 +159,7 @@ const ManagerDonationStaff: React.FC = () => {
                             className={activeLink === "ongoing" ? "active" : ""}
                             onClick={() => setActiveLink("ongoing")}
                         >
-                            Quản lý Donation
+                            Quản lý Quyên Góp
                         </li>
                         <li
                             className={activeLink === "finished" ? "active" : ""}
@@ -249,8 +251,8 @@ const ManagerDonationStaff: React.FC = () => {
                             <Card
                                 onClick={() => handleCardClick(campaign)}
                                 sx={{
-                                    width: 360, // Fixed width for all cards
-                                    height: 440, // Fixed height for all cards
+                                    width: 360,
+                                    height: 450,
                                     borderRadius: 3,
                                     boxShadow: 3,
                                     cursor: "pointer",
@@ -261,7 +263,7 @@ const ManagerDonationStaff: React.FC = () => {
                                         boxShadow: 6,
                                     },
                                     overflow: "hidden",
-                                    boxSizing: "border-box", // Ensure padding/border included in dimensions
+                                    boxSizing: "border-box",
                                 }}
                             >
                                 {/* Thumbnail + Status Chip */}
@@ -328,10 +330,10 @@ const ManagerDonationStaff: React.FC = () => {
                                                 campaign.status === "draft"
                                                     ? "#f57c00"
                                                     : campaign.status === "active"
-                                                    ? "#2e7d32"
-                                                    : campaign.status === "completed"
-                                                    ? "#0288d1"
-                                                    : "#2e7d32", // Default to in-progress color
+                                                        ? "#2e7d32"
+                                                        : campaign.status === "completed"
+                                                            ? "#0288d1"
+                                                            : "#2e7d32",
                                             py: 0.5,
                                             textAlign: "center",
                                             flexShrink: 0,
@@ -341,10 +343,10 @@ const ManagerDonationStaff: React.FC = () => {
                                             {campaign.status === "draft"
                                                 ? "WAITING"
                                                 : campaign.status === "active"
-                                                ? "IN-PROGRESS"
-                                                : campaign.status === "completed"
-                                                ? "COMPLETED"
-                                                : "IN-PROGRESS"}
+                                                    ? "IN-PROGRESS"
+                                                    : campaign.status === "completed"
+                                                        ? "COMPLETED"
+                                                        : "IN-PROGRESS"}
                                         </Typography>
                                     </Box>
                                 )}
@@ -357,7 +359,7 @@ const ManagerDonationStaff: React.FC = () => {
                                         flexDirection: "column",
                                         justifyContent: "space-between",
                                         padding: 2,
-                                        height: "100%", // Ensure it takes remaining space
+                                        height: "100%",
                                         boxSizing: "border-box",
                                     }}
                                 >
@@ -372,29 +374,11 @@ const ManagerDonationStaff: React.FC = () => {
                                                 display: "-webkit-box",
                                                 WebkitLineClamp: 2,
                                                 WebkitBoxOrient: "vertical",
-                                                minHeight: 48, // Reserve space for 2 lines
+                                                minHeight: 48,
                                             }}
                                         >
                                             {campaign.title}
                                         </Typography>
-
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                                            <Typography variant="body2" color="text.secondary">📍</Typography>
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                                sx={{
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    display: "-webkit-box",
-                                                    WebkitLineClamp: 1,
-                                                    WebkitBoxOrient: "vertical",
-                                                    minHeight: 20, // Reserve space for 1 line
-                                                }}
-                                            >
-                                                {campaign.description || "Địa điểm không rõ"}
-                                            </Typography>
-                                        </Box>
 
                                         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                                             <Typography variant="body2" color="text.secondary">📅</Typography>
@@ -409,6 +393,19 @@ const ManagerDonationStaff: React.FC = () => {
                                             >
                                                 {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
                                                 {new Date(campaign.updatedAt).toLocaleDateString()}
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 0.5 }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Tiến độ quyên góp
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={(campaign.currentAmount / campaign.goalAmount) * 100}
+                                                sx={{ height: 8, borderRadius: 5 }}
+                                            />
+                                            <Typography variant="caption" color="text.secondary">
+                                                {campaign.currentAmount.toLocaleString()} / {campaign.goalAmount.toLocaleString()} VNĐ
                                             </Typography>
                                         </Box>
 
@@ -465,7 +462,7 @@ const ManagerDonationStaff: React.FC = () => {
                                                 </Button>
                                             </>
                                         )}
-                                        {campaign.approvalStatus === "approved" && (
+                                        {campaign.approvalStatus === "approved" && campaign.status !== "completed" && (
                                             <Button
                                                 variant="contained"
                                                 color="secondary"
