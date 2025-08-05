@@ -24,10 +24,13 @@ import {
   Stack,
   Divider,
   TablePagination,
+  Modal,
+  IconButton,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
+import CloseIcon from "@mui/icons-material/Close";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import getCampaignDetail, {
@@ -54,6 +57,52 @@ interface Campaign {
   status: "active" | "completed";
 }
 
+// Image Modal Component
+const ImageModal: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  imageUrl: string;
+}> = ({ open, onClose, imageUrl }) => {
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: 4,
+          maxWidth: "150vw", // Increased from 90vw
+          maxHeight: "150vh", // Increased from 90vh
+          overflow: "auto",
+          borderRadius: 2,
+        }}
+      >
+        <IconButton
+          sx={{ position: "absolute", top: 8, right: 8 }}
+          onClick={onClose}
+        >
+          <CloseIcon />
+        </IconButton>
+        <Box
+          component="img"
+          src={imageUrl}
+          alt="Evidence"
+          sx={{
+            width: "100%",
+            height: "auto",
+            maxHeight: "150vh",
+            display: "block",
+            margin: "0 auto",
+          }}
+        />
+      </Box>
+    </Modal>
+  );
+};
+
 const DonationDetail: React.FC = () => {
   const { campaignId } = useParams<{ campaignId: string }>();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -68,6 +117,8 @@ const DonationDetail: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [expensePage, setExpensePage] = useState(0);
   const [expenseRowsPerPage, setExpenseRowsPerPage] = useState(10);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>("");
 
   useEffect(() => {
     if (!campaignId) {
@@ -121,9 +172,9 @@ const DonationDetail: React.FC = () => {
       setCampaign((prev) =>
         prev
           ? {
-            ...prev,
-            currentAmount: prev.currentAmount + d.transaction.amount,
-          }
+              ...prev,
+              currentAmount: prev.currentAmount + d.transaction.amount,
+            }
           : prev
       );
     };
@@ -156,6 +207,16 @@ const DonationDetail: React.FC = () => {
   ) => {
     setExpenseRowsPerPage(parseInt(event.target.value, 10));
     setExpensePage(0);
+  };
+
+  const handleOpenImageModal = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setImageModalOpen(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setImageModalOpen(false);
+    setSelectedImage("");
   };
 
   const pagedDonations = donations2.slice(
@@ -237,7 +298,7 @@ const DonationDetail: React.FC = () => {
                                     {expense.evidences.length > 0 ? (
                                       <Button
                                         variant="text"
-                                        onClick={() => window.open(expense.evidences[0], "_blank")}
+                                        onClick={() => handleOpenImageModal(expense.evidences[0])}
                                       >
                                         Xem minh chứng
                                       </Button>
@@ -320,7 +381,6 @@ const DonationDetail: React.FC = () => {
           </Box>
         )}
       </Container>
-
 
       {/* Tabs: Nội dung trước, ủng hộ sau */}
       {!loading && !error && (
@@ -467,6 +527,11 @@ const DonationDetail: React.FC = () => {
         onClose={() => setShowModal(false)}
         campaignId={campaignId || ""}
         presetAmount={donationAmount}
+      />
+      <ImageModal
+        open={imageModalOpen}
+        onClose={handleCloseImageModal}
+        imageUrl={selectedImage}
       />
       <Footer />
     </Box>

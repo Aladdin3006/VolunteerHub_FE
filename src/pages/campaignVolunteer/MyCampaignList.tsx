@@ -19,20 +19,18 @@ import {
 } from '@mui/icons-material';
 import CampaignCard from './CampaignListCard';
 import Header from '../../components/Header/Header';
-import TaskListModal from './TaskListModal';
 import { useNavigate } from 'react-router-dom';
 
-// Định nghĩa interface Campaign
 interface Campaign {
   id: string;
   name: string;
   description: string;
-  startDate: Date | null;
-  endDate: Date | null;
-  status: 'ongoing' | 'upcoming' | 'completed';
+  startDate: string | null;
+  endDate: string | null;
+  status: 'in-progress' | 'upcoming' | 'completed';
   imageUrl?: string;
   category: string[];
-  registrationDate: Date | null;
+  registrationDate: string | null;
   location: {
     address: string;
     coordinates: [number, number];
@@ -64,11 +62,8 @@ const MyCampaignList: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [openModal, setOpenModal] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch campaigns từ API
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
@@ -76,27 +71,19 @@ const MyCampaignList: React.FC = () => {
         setError(null);
 
         const userString = localStorage.getItem('user');
-        if (!userString) {
-          throw new Error('Không tìm thấy thông tin người dùng');
-        }
+        if (!userString) throw new Error('Không tìm thấy thông tin người dùng');
 
         const user = JSON.parse(userString);
         const token = user.token;
-
-        if (!token) {
-          throw new Error('Token không tồn tại trong user');
-        }
+        if (!token) throw new Error('Token không tồn tại trong user');
 
         const response = await axios.get('http://localhost:4000/campaigns/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const list = response.data?.result?.listCampaign || [];
-        // Ánh xạ dữ liệu API sang interface Campaign
+
         const mappedCampaigns: Campaign[] = list.map((item: any) => {
-          // Kiểm tra và xử lý ngày không hợp lệ
           const startDate = item.startDate ? new Date(item.startDate) : null;
           const endDate = item.endDate ? new Date(item.endDate) : null;
           const registeredAt =
@@ -108,14 +95,12 @@ const MyCampaignList: React.FC = () => {
             id: item.campaignId || item._id,
             name: item.name || 'Không có tên',
             description: item.description || 'Không có mô tả',
-            startDate: startDate && !isNaN(startDate.getTime()) ? startDate : null,
-            endDate: endDate && !isNaN(endDate.getTime()) ? endDate : null,
+            startDate: startDate && !isNaN(startDate.getTime()) ? startDate.toISOString() : null,
+            endDate: endDate && !isNaN(endDate.getTime()) ? endDate.toISOString() : null,
             status:
-              item.status === 'in-progress'
-                ? 'ongoing'
-                : item.status === 'ended'
-                  ? 'completed'
-                  : item.status,
+              item.status === 'in-progress' || item.status === 'upcoming' || item.status === 'completed'
+                ? item.status
+                : 'upcoming',
             imageUrl: item.image || 'https://via.placeholder.com/400x200',
             category: item.categories || [],
             registrationDate:
@@ -141,14 +126,13 @@ const MyCampaignList: React.FC = () => {
   }, []);
 
   const handleCardClick = (campaign: Campaign) => {
-    if (campaign.status === 'ongoing') {
+    if (campaign.status === 'in-progress') {
       navigate(`/campaigns/${campaign.id}/tasks`);
     }
   };
 
-  // Phân loại campaigns theo trạng thái
   const categorizedCampaigns = useMemo(() => {
-    const ongoing = campaigns.filter((c) => c.status === 'ongoing');
+    const ongoing = campaigns.filter((c) => c.status === 'in-progress');
     const upcoming = campaigns.filter((c) => c.status === 'upcoming');
     const completed = campaigns.filter((c) => c.status === 'completed');
     return { ongoing, upcoming, completed };
@@ -268,9 +252,7 @@ const MyCampaignList: React.FC = () => {
           {tabData.map((tab, index) => (
             <TabPanel key={index} value={activeTab} index={index}>
               {tab.campaigns.length === 0 ? (
-                <EmptyState
-                  message={`Không có campaign nào ${tab.label.toLowerCase()}`}
-                />
+                <EmptyState message={`Không có campaign nào ${tab.label.toLowerCase()}`} />
               ) : (
                 <>
                   <Box sx={{ mb: 3, px: 3 }}>

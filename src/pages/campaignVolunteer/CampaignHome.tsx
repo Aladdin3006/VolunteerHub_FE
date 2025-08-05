@@ -15,23 +15,20 @@ import { getCampaignVolunteer, CampaignVolunteer } from "../../apis/campaign";
 import VolunteerCard from "./VolunteerCard";
 
 const CampaignHome: React.FC = () => {
-  const [volunteerCampaigns, setVolunteerCampaigns] = useState<
-    CampaignVolunteer[]
-  >([]);
+  const [volunteerCampaigns, setVolunteerCampaigns] = useState<CampaignVolunteer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<"in-progress" | "completed">("in-progress");
   const navigate = useNavigate();
 
-  // Fetch volunteer campaigns
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const data = await getCampaignVolunteer();
-        console.log("Fetched volunteer campaigns:", data);
-        const inProgressOnly = Array.isArray(data)
+        const approvedCampaigns = Array.isArray(data)
           ? data.filter((c) => c.acceptStatus === "approved")
           : [];
-        setVolunteerCampaigns(inProgressOnly);
+        setVolunteerCampaigns(approvedCampaigns);
       } catch (err) {
         console.error("Fetch campaigns error:", err);
       } finally {
@@ -41,7 +38,10 @@ const CampaignHome: React.FC = () => {
     fetchData();
   }, []);
 
-  // Banner
+  const handleTabChange = (_: React.SyntheticEvent, newValue: "in-progress" | "completed") => {
+    setSelectedTab(newValue);
+  };
+
   const Banner = () => (
     <Box
       sx={{
@@ -71,11 +71,14 @@ const CampaignHome: React.FC = () => {
     </Box>
   );
 
-  // Render grid
+  const filteredCampaigns = volunteerCampaigns.filter(
+    (c) => c.status === selectedTab && c.acceptStatus === "approved"
+  );
+
   const renderGrid = (): JSX.Element => (
     <Grid container spacing={3}>
-      {volunteerCampaigns.map((c) => (
-        <Grid key={c._id}>
+      {filteredCampaigns.map((c) => (
+        <Grid item xs={12} sm={6} md={4} lg={3} key={c._id}>
           <VolunteerCard campaign={c} />
         </Grid>
       ))}
@@ -88,7 +91,58 @@ const CampaignHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
-        {/* Section Title */}
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 4 }}>
+          <Box
+            sx={{
+              maxWidth: 600,
+              mx: "auto",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
+            <Tabs
+              value={selectedTab}
+              onChange={handleTabChange}
+              variant="fullWidth"
+              TabIndicatorProps={{
+                style: {
+                  height: "4px",
+                  backgroundColor: "#1976d2",
+                  borderRadius: "2px",
+                },
+              }}
+              sx={{ width: "100%" }}
+            >
+              <Tab
+                label="Dự án đang diễn ra"
+                value="in-progress"
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                  textTransform: "none",
+                  flexGrow: 1,
+                  minWidth: 0,
+                  color: "#000",
+                }}
+              />
+              <Tab
+                label="Dự án đã kết thúc"
+                value="completed"
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                  textTransform: "none",
+                  flexGrow: 1,
+                  minWidth: 0,
+                  color: "#000",
+                }}
+              />
+            </Tabs>
+          </Box>
+        </Box>
+
+        {/* Title */}
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
             Các dự án cần tình nguyện viên
