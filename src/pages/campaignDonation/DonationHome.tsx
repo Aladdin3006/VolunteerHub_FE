@@ -8,17 +8,15 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import FundraisingCard from "./DonationCard";
 import { getCampaigns, Campaign } from "../../apis/campaign";
 
 const DonationHome: React.FC = () => {
-  const [fundraisingCampaigns, setFundraisingCampaigns] = useState<Campaign[]>(
-    []
-  );
+  const [fundraisingCampaigns, setFundraisingCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<"active" | "completed">("active");
 
   // Fetch fundraising campaigns
   useEffect(() => {
@@ -66,16 +64,24 @@ const DonationHome: React.FC = () => {
     </Box>
   );
 
+  // Handle tab change
+  const handleTabChange = (event: React.SyntheticEvent, newValue: "active" | "completed") => {
+    setSelectedTab(newValue);
+  };
+
   // Render grid
-  const renderGrid = (): JSX.Element => (
-    <Grid container spacing={3}>
-      {fundraisingCampaigns.map((c) => (
-        <Grid key={c._id}>
-          <FundraisingCard campaign={c} />
-        </Grid>
-      ))}
-    </Grid>
-  );
+  const renderGrid = (): JSX.Element => {
+    const filtered = fundraisingCampaigns.filter((c) => c.status === selectedTab);
+    return (
+      <Grid container spacing={3}>
+        {filtered.map((c) => (
+          <Grid item key={c._id} xs={12} sm={6} md={4}>
+            <FundraisingCard campaign={c} />
+          </Grid>
+        ))}
+      </Grid>
+    );
+  };
 
   return (
     <>
@@ -83,10 +89,67 @@ const DonationHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
+        {/* Tabs */}
+
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 4 }}>
+          <Box
+            sx={{
+              maxWidth: 600,
+              mx: "auto",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
+            <Tabs
+              value={selectedTab}
+              onChange={handleTabChange}
+              variant="fullWidth"
+              TabIndicatorProps={{
+                style: {
+                  height: "4px",
+                  backgroundColor: "#1976d2", // xanh nước biển
+                  borderRadius: "2px",
+                },
+              }}
+              sx={{
+                width: "100%",
+              }}
+            >
+              <Tab
+                label="Dự án đang gây quỹ"
+                value="active"
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                  textTransform: "none",
+                  flexGrow: 1,
+                  minWidth: 0,
+                  color: "#000",
+                }}
+              />
+              <Tab
+                label="Dự án đã kết thúc"
+                value="completed"
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                  textTransform: "none",
+                  flexGrow: 1,
+                  minWidth: 0,
+                  color: "#000",
+                }}
+              />
+            </Tabs>
+          </Box>
+        </Box>
+
+
+
+
         {/* Section Title */}
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-            Các dự án đang gây quỹ
+            {selectedTab === "active" ? "Các dự án đang gây quỹ" : "Các dự án đã kết thúc"}
           </Typography>
           <Typography
             variant="body1"

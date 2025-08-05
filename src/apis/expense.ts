@@ -2,6 +2,23 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:4000";
 
+export interface DonationExpense {
+  _id: string;
+  donationCampaignId: string;
+  amount: number;
+  description: string;
+  evidences: string[];
+  createdBy: {
+    _id: string;
+    fullName: string;
+  };
+  approvedBy?: string | null;
+  approvalStatus: "pending" | "approved" | "rejected";
+  note?: string;
+  remainingBalance?: number | null;
+  createdAt: string;
+}
+
 // Tạo expense mới (POST /expense)
 export const createExpenseApi = async (
   token: string,
@@ -43,6 +60,13 @@ export const fetchExpensesByCampaignId = async (campaignId: string, token: strin
   });
   return response.data;
 };
+
+export const fetchExpensesByCampaignId1 = async (campaignId: string): Promise<DonationExpense[]> => {
+  const response = await axios.get(`${BASE_URL}/expense/campaign/${campaignId}`);
+  console.log("API response:", response.data);
+  return response.data.data; // ✅ lấy đúng mảng
+};
+
 
 
 //edit expens 
@@ -90,4 +114,17 @@ export const denyExpense = async (expenseId: string, token: string) => {
   );
 
   return response.data;
+};
+
+//deletedExpense
+export const deleteExpense = async (id: string, token: string) => {
+  try {
+    const response = await axios.delete(`http://localhost:4000/expense/${id}`, {
+      // Nếu cần gửi token:
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || "Xoá chi phí thất bại");
+  }
 };
