@@ -68,6 +68,10 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
     }, [open, campaignId]);
 
     const handleDeleteExpense = async (expenseId: string) => {
+        if (expense.approvalStatus === "approved") {
+        alert("Không thể xóa chi phí đã được duyệt.");
+        return;
+    }
         if (window.confirm("Bạn có chắc muốn xóa chi phí này?")) {
             try {
                 console.log("Đang xóa chi phí với ID:", expenseId);
@@ -75,11 +79,8 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
                 const userStr = localStorage.getItem("user");
                 if (!userStr) throw new Error("Không tìm thấy thông tin người dùng trong localStorage");
                 const token = JSON.parse(userStr).token;
-                console.log("Token:", token);
                 await deleteExpense(expenseId, token);
-                console.log("Xóa chi phí thành công, đang tải lại danh sách...");
                 const res = await fetchExpensesByCampaignId(campaignId, token);
-                console.log("Danh sách chi phí mới:", res.data);
                 setExpenses(res.data);
                 alert("Xóa chi phí thành công!");
             } catch (err: any) {
@@ -179,7 +180,7 @@ export const ExpenseListDialog = forwardRef<IExpenseListDialogRef>((_, ref) => {
                                             <Tooltip title="Xóa chi phí">
                                                 <IconButton
                                                     size="small"
-                                                    disabled={deleting === item._id}
+                                                    disabled={deleting === item._id || item.approvalStatus === "approved"}
                                                     onClick={() => {
                                                         console.log("Nhấn nút xóa, ID:", item._id);
                                                         handleDeleteExpense(item._id);
