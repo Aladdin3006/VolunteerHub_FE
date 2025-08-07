@@ -365,7 +365,11 @@ const CalendarTask: React.FC = () => {
               minDetail="month"
               maxDetail="month"
               className="react-calendar"
-              tileDisabled={({ date }) => date > new Date()}
+              tileDisabled={({ date }) => {
+                const tasksForDate = getTasksForDate(date);
+                // const isToday = isSameDay(date, new Date());
+                return tasksForDate.length === 0 || date > new Date(); // Disable days with no tasks (except today if it has tasks) or future dates
+              }}
               showNeighboringMonth={true}
               calendarType="gregory"
             />
@@ -453,6 +457,7 @@ const CalendarTask: React.FC = () => {
           display: flex; /* Use flexbox */
           align-items: center; /* Vertically center */
           justify-content: center; /* Horizontally center */
+          color: #000;
         }
 
         .react-calendar__tile:hover {
