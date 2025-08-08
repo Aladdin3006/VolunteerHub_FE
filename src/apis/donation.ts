@@ -65,22 +65,56 @@ export const DONATION_API = {
 
   async updateDonation(id: string, data: IDonationDataUpload): Promise<any> {
   try {
-    const res = await axiosInstance.put(`/donate/${id}`, data, {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const formData = new FormData();
+
+    formData.append("title", data.title || "");
+    formData.append("description", data.description || "");
+    formData.append("goalAmount", data.goalAmount.toString());
+
+    if (data.thumbnail instanceof File) {
+      formData.append("thumbnail", data.thumbnail);
+    } else {
+      formData.append("thumbnail", data.thumbnail); // nếu là base64 hoặc URL
+    }
+
+    data.images.forEach((img) => {
+      formData.append("images", img); // img có thể là File hoặc base64/URL
     });
 
-    console.log("✅ Res trả về:", res.data);
+    data.tags.forEach((tagId) => {
+      formData.append("tags[]", tagId);
+    });
+
+    const res = await axiosInstance.put(`/donate/${id}`, formData);
+
+    if (!res.data) throw new Error("Không có dữ liệu trả về");
+
     return res.data;
   } catch (err: any) {
-    console.error("❌ Lỗi thực tế khi gọi API:", err.response?.data || err.message);
-    throw err;
+    // In rõ toàn bộ lỗi để debug
+    console.error("❌ Axios error:", err);
+
+    if (err.response) {
+      console.error("📛 Response data:", err.response.data);
+      throw {
+        message: err.response.data?.message || "Request failed",
+        origin: err,
+      };
+    } else if (err.request) {
+      console.error("📛 Request không phản hồi:", err.request);
+      throw {
+        message: "No response received from server",
+        origin: err,
+      };
+    } else {
+      console.error("📛 Lỗi khác:", err.message);
+      throw {
+        message: err.message || "axios error",
+        origin: err,
+      };
+    }
   }
 },
-
-
-
 
   async getById(
     id: string,
@@ -142,3 +176,25 @@ export const rejectDonationCampaign = async (id: string) => {
   }
 };
 
+export const completeDonationCampaign = async (id: string) => {
+  try {
+    const userStr = localStorage.getItem("user");
+    const token = userStr ? JSON.parse(userStr).token : null;
+
+    if (!token) throw new Error("Không tìm thấy token");
+
+    const response = await axios.put(
+      `http://localhost:4000/donate/${id}/complete`,
+      {}, // không có body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Lỗi khi kết thúc chiến dịch");
+  }
+};

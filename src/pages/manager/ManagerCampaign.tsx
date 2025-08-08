@@ -835,7 +835,7 @@ const ManagerCampaign: React.FC = () => {
               navigate("/manager/donations");
             }}
           >
-            Quản lý Donation
+            Quản lý Quyên Góp
           </li>
           <li
             className={activeLink === "finished" ? "active" : ""}
