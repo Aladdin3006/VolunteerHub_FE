@@ -18,7 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../apis/campaign";
 import DonationDetailDialog, { CampaignDetailResponse } from "../../components/manager/DonationDetailDialog";
-import { approveDonationCampaign, rejectDonationCampaign } from "@/apis/donation";
+import { approveDonationCampaign, rejectDonationCampaign, completeDonationCampaign } from "@/apis/donation";
 
 interface Campaign {
     _id: string;
@@ -111,6 +111,24 @@ const ManagerDonationStaff: React.FC = () => {
             alert(err.message || "Lỗi khi từ chối chiến dịch");
         }
     };
+
+    const handleEndCampaign = async (id: string) => {
+        try {
+            const confirm = window.confirm("Bạn có chắc chắn muốn kết thúc chiến dịch này?");
+            if (!confirm) return;
+
+            await completeDonationCampaign(id); // Call the API
+
+            alert("Chiến dịch đã được kết thúc");
+
+            const updated = campaigns.map((c) =>
+                c._id === id ? { ...c, status: "completed" } : c
+            );
+            setCampaigns(updated);
+        } catch (err: any) {
+            alert(err.message || "Lỗi khi kết thúc chiến dịch");
+        }
+    }
 
     const handleCardClick = (campaign: Campaign) => {
         setSelectedCampaign(campaign);
@@ -469,7 +487,7 @@ const ManagerDonationStaff: React.FC = () => {
                                                 size="small"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    // handleEndCampaign(campaign._id);
+                                                    handleEndCampaign(campaign._id);
                                                 }}
                                                 sx={{
                                                     flex: 1,
