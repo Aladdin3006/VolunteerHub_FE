@@ -431,6 +431,15 @@ const ReliefPointManager: React.FC = () => {
           >
             Quản lý Chiến dịch
           </li>
+         <li
+            className={activeLink === "ongoing" ? "active" : ""}
+            onClick={() => {
+              setActiveLink("ongoing");
+              navigate("/manager/donations");
+            }}
+          >
+            Quản lý Quyên Góp
+          </li>
           <li
             className={activeLink === "storms" ? "active" : ""}
             onClick={() => setActiveLink("storms")}
