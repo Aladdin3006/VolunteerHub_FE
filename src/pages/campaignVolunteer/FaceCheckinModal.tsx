@@ -82,7 +82,7 @@ export const FaceCheckinModal: React.FC<Props> = ({
       return;
     }
 
-    const [targetLng, targetLat] = checkinLocation.coordinates;
+    const [targetLat, targetLng] = checkinLocation.coordinates;
 
     const fetchLocationAndCompare = () => {
       setLoadingLocation(true);
@@ -212,7 +212,13 @@ export const FaceCheckinModal: React.FC<Props> = ({
               />
               <Typography mt={0} mb={1}>
                 📏 Khoảng cách:{" "}
-                <strong>{distanceToCheckpoint?.toFixed(2)}m</strong>
+                <strong>
+                  {typeof distanceToCheckpoint === "number"
+                    ? distanceToCheckpoint >= 1000
+                      ? `${(distanceToCheckpoint / 1000).toFixed(2)}km`
+                      : `${distanceToCheckpoint.toFixed(2)}m`
+                    : "Đang tính..."}
+                </strong>
               </Typography>
               {!isWithinRange && (
                 <Typography color="error" fontStyle="italic" mb={2}>
@@ -230,7 +236,8 @@ export const FaceCheckinModal: React.FC<Props> = ({
           <Button
             onClick={handleOpenCheckinFace}
             variant="contained"
-            disabled={!isWithinRange || loadingLocation}
+            // disabled={!isWithinRange || loadingLocation}
+            disabled={loadingLocation}
           >
             Check-in
           </Button>

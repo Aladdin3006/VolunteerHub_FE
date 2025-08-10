@@ -17,7 +17,8 @@ import {
   DialogContentText,
   DialogActions,
   TextField,
-  InputAdornment,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useParams, useNavigate } from "react-router-dom";
@@ -34,21 +35,27 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { PickersDay, PickersDayProps } from "@mui/x-date-pickers/PickersDay";
-
-import {
-  CampaignVolunteer,
-  getCampaignVolunteerDetail,
-  joinCampaign,
-} from "../../apis/campaign";
-import { CreateIssueData, ISSUE_API } from "../../apis/issue";
-import Header from "../../components/Header/Header";
-import Footer from "../../components/Footer/Footer";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
 import "leaflet-geosearch/dist/geosearch.css";
 import { SearchIcon } from "lucide-react";
+import { suggestedSkills } from "@/configs/constant.js";
+import {
+  CampaignVolunteer,
+  getCampaignVolunteerDetail,
+  joinCampaign,
+} from "../../apis/campaign";
+import { CreateIssueData, ISSUE_API } from "../../apis/issue";
+import { addSkillsToUser } from "../../apis/profile";
+import Header from "../../components/Header/Header";
+import Footer from "../../components/Footer/Footer";
+
+interface UserProfile {
+  id: string;
+  skills: string[];
+}
 
 const CampaignVolunteerDetail: React.FC = () => {
   const { campaignId } = useParams();
@@ -59,8 +66,6 @@ const CampaignVolunteerDetail: React.FC = () => {
     lat: number;
     lng: number;
   } | null>(null);
-
-  /* -------------------- state -------------------- */
   const [campaign, setCampaign] = useState<CampaignVolunteer | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -73,6 +78,20 @@ const CampaignVolunteerDetail: React.FC = () => {
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
+  const [addSkillDialogOpen, setAddSkillDialogOpen] = useState(false);
+  const [newSkill, setNewSkill] = useState("");
+  const [tempSkills, setTempSkills] = useState<string[]>([]);
+  const [skillLoading, setSkillLoading] = useState(false);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUserId = user._id || user.id;
+  const isLoggedIn = !!currentUserId;
+  const token = user.token || null;
+
+  // Flatten suggested skills
+  const allSuggestedSkills: string[] = Array.from(
+    new Set(Object.values(suggestedSkills).flat() as string[])
+  );
 
   const center = campaign?.location?.coordinates
     ? {
@@ -111,15 +130,9 @@ const CampaignVolunteerDetail: React.FC = () => {
     width: "100%",
     height: "300px",
     borderRadius: "8px",
-    zIndex: 0, // Ensure map stays below other elements
+    zIndex: 0,
   };
 
-  /* -------------------- user -------------------- */
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const currentUserId = user._id || user.id;
-  const isLoggedIn = !!currentUserId;
-
-  /* -------------------- fetch campaign -------------------- */
   useEffect(() => {
     if (!campaignId) return;
     (async () => {
@@ -155,14 +168,18 @@ const CampaignVolunteerDetail: React.FC = () => {
       }
     };
 
+    const fetchUserSkills = () => {
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      setTempSkills(storedUser.skills || []);
+    };
+
     checkPendingWithdrawal();
+    fetchUserSkills();
   }, [campaignId, currentUserId, isLoggedIn]);
 
-  /* -------------------- map initialization -------------------- */
   useEffect(() => {
     if (!mapRef.current || !campaign?.location?.coordinates) return;
 
-    // Add search control
     const provider = new OpenStreetMapProvider();
     const searchControl = new (GeoSearchControl as any)({
       provider,
@@ -185,7 +202,6 @@ const CampaignVolunteerDetail: React.FC = () => {
     };
   }, [campaign?.location?.coordinates]);
 
-  /* -------------------- get user location -------------------- */
   const handleGetUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -194,7 +210,6 @@ const CampaignVolunteerDetail: React.FC = () => {
           const newLocation = { lat: latitude, lng: longitude };
           setUserLocation(newLocation);
 
-          // Fly to a point that shows both markers
           if (mapRef.current) {
             const bounds = L.latLngBounds(
               [center.lat, center.lng],
@@ -215,7 +230,6 @@ const CampaignVolunteerDetail: React.FC = () => {
     }
   };
 
-  /* -------------------- create route -------------------- */
   const handleCreateRoute = () => {
     if (!userLocation || !campaign?.location?.coordinates) {
       setJoinMessage("Vui lòng lấy vị trí hiện tại trước khi tạo đường đi.");
@@ -227,17 +241,77 @@ const CampaignVolunteerDetail: React.FC = () => {
     window.open(url, "_blank");
   };
 
-  /* -------------------- volunteer & status -------------------- */
   const myVolunteer = campaign?.volunteers?.find(
     (v) => v.user?._id === currentUserId
   );
 
-  /* -------------------- join handler -------------------- */
+  const addSkill = () => {
+    if (newSkill.trim() && !tempSkills.includes(newSkill.trim())) {
+      if (tempSkills.length >= 5) {
+        setJoinMessage("Bạn chỉ có thể thêm tối đa 5 kỹ năng.");
+        return;
+      }
+
+      setTempSkills((prev) => [...prev, newSkill.trim()]);
+      setNewSkill("");
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setTempSkills((prev) => prev.filter((skill) => skill !== skillToRemove));
+  };
+
+  const handleSaveSkills = async () => {
+    if (!tempSkills.length) {
+      setJoinMessage("Vui lòng thêm ít nhất một kỹ năng để tiếp tục.");
+      return;
+    }
+
+    try {
+      setSkillLoading(true);
+      const response = await addSkillsToUser(currentUserId, tempSkills, token);
+
+      // Update localStorage
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...storedUser,
+          skills: response.data.skills,
+        })
+      );
+
+      setTempSkills(response.data.skills);
+      setAddSkillDialogOpen(false);
+      // Proceed with joining campaign after adding skills
+      handleJoinCampaign();
+    } catch (error) {
+      setJoinMessage(
+        `Không thể thêm kỹ năng: ${
+          error instanceof Error ? error.message : "Lỗi không xác định"
+        }`
+      );
+    } finally {
+      setSkillLoading(false);
+    }
+  };
+
   const handleJoin = async () => {
     if (!isLoggedIn) {
       setLoginDialogOpen(true);
       return;
     }
+
+    // Check if user has skills
+    if (!tempSkills.length) {
+      setAddSkillDialogOpen(true);
+      return;
+    }
+
+    handleJoinCampaign();
+  };
+
+  const handleJoinCampaign = async () => {
     try {
       setJoinLoading(true);
       const msg = await joinCampaign(campaignId!);
@@ -260,7 +334,6 @@ const CampaignVolunteerDetail: React.FC = () => {
     }
   };
 
-  /* -------------------- withdrawal handler -------------------- */
   const handleOpenWithdrawalDialog = () => {
     setWithdrawalDialogOpen(true);
   };
@@ -305,7 +378,6 @@ const CampaignVolunteerDetail: React.FC = () => {
     }
   };
 
-  /* -------------------- loading & not-found -------------------- */
   if (loading)
     return (
       <Box sx={{ pt: 15, display: "flex", justifyContent: "center" }}>
@@ -319,7 +391,6 @@ const CampaignVolunteerDetail: React.FC = () => {
       </Box>
     );
 
-  /* -------------------- dialog handlers -------------------- */
   const handleCloseLoginDialog = () => {
     setLoginDialogOpen(false);
   };
@@ -334,12 +405,8 @@ const CampaignVolunteerDetail: React.FC = () => {
     setLoginDialogOpen(false);
   };
 
-  /* ============================================================
-     =========== 2. MÀN HÌNH CHI TIẾT CHIẾN DỊCH GỐC ============
-     ============================================================ */
   const { name, description, startDate, endDate, image, location } = campaign;
 
-  /* ------------ nhãn & disable button tham gia ------------ */
   let joinLabel = "Gửi yêu cầu tham gia";
   let joinDisabled = joinLoading;
   let isWithdrawalButton = false;
@@ -358,8 +425,6 @@ const CampaignVolunteerDetail: React.FC = () => {
     }
   }
 
-  /* -------------------- custom day rendering -------------------- */
-  /* -------------------- custom day rendering -------------------- */
   const CustomDay = (
     props: PickersDayProps<Dayjs> & {
       startDate?: string | Date;
@@ -379,7 +444,6 @@ const CampaignVolunteerDetail: React.FC = () => {
       ...other
     } = props;
 
-    // Ensure day is a Dayjs instance
     const safeDay = day ? dayjs(day) : null;
 
     const isDisabled = () => {
@@ -463,7 +527,6 @@ const CampaignVolunteerDetail: React.FC = () => {
   return (
     <Box sx={{ bgcolor: "#f9f9f9", pb: 10 }}>
       <Header />
-
       <Card sx={{ borderRadius: 0 }}>
         <CardMedia
           component="img"
@@ -475,8 +538,6 @@ const CampaignVolunteerDetail: React.FC = () => {
           alt={name}
         />
       </Card>
-
-      {/* ---------- nội dung + sidebar ---------- */}
       <Box
         sx={{
           maxWidth: 1200,
@@ -488,7 +549,6 @@ const CampaignVolunteerDetail: React.FC = () => {
           gap: 4,
         }}
       >
-        {/* ----- nội dung bên trái ----- */}
         <Box flex={1}>
           <Typography
             variant="h4"
@@ -505,25 +565,21 @@ const CampaignVolunteerDetail: React.FC = () => {
             </IconButton>
             {name}
           </Typography>
-
           <Typography
             variant="body1"
             sx={{ whiteSpace: "pre-line", lineHeight: 1.7 }}
           >
             {description || "Không có mô tả chi tiết."}
           </Typography>
-
           {startDate && (
             <Typography variant="body2" sx={{ mt: 3 }} color="text.secondary">
               🕓 Từ: {dayjs(startDate).format("DD/MM/YYYY")} đến{" "}
               {endDate ? dayjs(endDate).format("DD/MM/YYYY") : "?"}
             </Typography>
           )}
-
           <Typography variant="subtitle1" color="text.secondary" mt={2}>
             📍 {location?.address || "Không rõ địa điểm"}
           </Typography>
-          {/* Location Actions */}
           <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
             <Button
               variant="outlined"
@@ -582,8 +638,6 @@ const CampaignVolunteerDetail: React.FC = () => {
             </Box>
           )}
         </Box>
-
-        {/* ----- sidebar bên phải ----- */}
         <Box
           sx={{
             flexShrink: 0,
@@ -605,7 +659,6 @@ const CampaignVolunteerDetail: React.FC = () => {
                 </Typography>
               </Box>
             </Stack>
-
             <Button
               disabled={joinDisabled}
               onClick={
@@ -618,7 +671,6 @@ const CampaignVolunteerDetail: React.FC = () => {
             >
               {joinLoading ? "Đang gửi..." : joinLabel}
             </Button>
-
             {myVolunteer?.status === "approved" && (
               <Button
                 fullWidth
@@ -628,9 +680,9 @@ const CampaignVolunteerDetail: React.FC = () => {
                   mt: 2,
                   textTransform: "none",
                   borderRadius: 2,
-                  bgcolor: "#4caf50", // Green color
+                  bgcolor: "#4caf50",
                   "&:hover": {
-                    bgcolor: "#388e3c", // Darker green on hover
+                    bgcolor: "#388e3c",
                   },
                 }}
                 onClick={() => navigate(`/campaigns/${campaignId}/tasks`)}
@@ -639,7 +691,6 @@ const CampaignVolunteerDetail: React.FC = () => {
               </Button>
             )}
           </Paper>
-
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <CalendarMonthIcon color="primary" />
@@ -675,7 +726,6 @@ const CampaignVolunteerDetail: React.FC = () => {
               />
             </LocalizationProvider>
           </Paper>
-
           <Stack direction="row" spacing={2} justifyContent="center">
             <IconButton
               onClick={() => setIsFavorited(!isFavorited)}
@@ -693,8 +743,6 @@ const CampaignVolunteerDetail: React.FC = () => {
           </Stack>
         </Box>
       </Box>
-
-      {/* ---------- login dialog ---------- */}
       <Dialog open={loginDialogOpen} onClose={handleCloseLoginDialog}>
         <DialogTitle>Yêu cầu đăng nhập</DialogTitle>
         <DialogContent>
@@ -723,8 +771,6 @@ const CampaignVolunteerDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* ---------- withdrawal dialog ---------- */}
       <Dialog open={withdrawalDialogOpen} onClose={handleCloseWithdrawalDialog}>
         <DialogTitle>Rút lui khỏi chiến dịch</DialogTitle>
         <DialogContent>
@@ -770,8 +816,6 @@ const CampaignVolunteerDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* ---------- confirmation dialog ---------- */}
       <Dialog
         open={confirmDialogOpen}
         onClose={handleCloseConfirmDialog}
@@ -816,15 +860,119 @@ const CampaignVolunteerDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* ---------- snackbar ---------- */}
+      <Dialog
+        open={addSkillDialogOpen}
+        onClose={() => setAddSkillDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Thêm kỹ năng</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn cần thêm ít nhất một kỹ năng để tham gia chiến dịch (tối đa 5 kỹ
+            năng). Vui lòng chọn hoặc nhập kỹ năng.
+          </DialogContentText>
+          <Box sx={{ mt: 2 }}>
+            {tempSkills.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Kỹ năng đã chọn:
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {tempSkills.map((skill, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        bgcolor: "grey.200",
+                        borderRadius: 1,
+                        px: 1,
+                        py: 0.5,
+                      }}
+                    >
+                      <Typography variant="body2">{skill}</Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => removeSkill(skill)}
+                        disabled={skillLoading}
+                        sx={{ ml: 1 }}
+                      >
+                        <Typography sx={{ fontSize: "0.8rem" }}>×</Typography>
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+            <Select
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              fullWidth
+              variant="outlined"
+              displayEmpty
+              sx={{ mb: 2 }}
+              disabled={skillLoading}
+            >
+              <MenuItem value="">Chọn kỹ năng hoặc nhập bên dưới</MenuItem>
+              {allSuggestedSkills
+                .filter((skill) => !tempSkills.includes(skill))
+                .map((skill) => (
+                  <MenuItem key={skill} value={skill}>
+                    {skill}
+                  </MenuItem>
+                ))}
+            </Select>
+            <TextField
+              label="Kỹ năng tùy chỉnh"
+              fullWidth
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              variant="outlined"
+              placeholder="Hoặc nhập kỹ năng tùy chỉnh"
+              disabled={skillLoading}
+            />
+            <Button
+              onClick={addSkill}
+              variant="outlined"
+              color="primary"
+              sx={{ mt: 1 }}
+              disabled={
+                skillLoading || !newSkill.trim() || tempSkills.length >= 5
+              }
+            >
+              Thêm kỹ năng
+            </Button>
+            <Typography variant="caption" sx={{ mt: 1, display: "block" }}>
+              {tempSkills.length}/5 kỹ năng đã thêm
+              {tempSkills.length >= 5 && " (Đã đạt tối đa)"}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setAddSkillDialogOpen(false)}
+            color="primary"
+            variant="outlined"
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSaveSkills}
+            color="primary"
+            variant="contained"
+            disabled={skillLoading || !tempSkills.length}
+          >
+            {skillLoading ? "Đang lưu..." : "Lưu và tham gia"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar
         open={!!joinMessage}
         autoHideDuration={4000}
         onClose={() => setJoinMessage(null)}
         message={joinMessage}
       />
-
       <Footer />
     </Box>
   );

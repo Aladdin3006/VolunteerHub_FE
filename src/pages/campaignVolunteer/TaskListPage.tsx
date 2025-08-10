@@ -28,6 +28,7 @@ import {
   DialogActions,
   CardMedia,
   Menu,
+  Rating,
 } from "@mui/material";
 import {
   ExpandMore,
@@ -166,6 +167,16 @@ const TaskListPage: React.FC = () => {
     );
   }, [checkedInPhaseDays]);
 
+  const isToday = (dateStr: string) => {
+    const today = new Date();
+    const date = new Date(dateStr);
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("vi-VN", {
       weekday: "long",
@@ -217,8 +228,7 @@ const TaskListPage: React.FC = () => {
   const openModalWithTaskId = (
     taskId: string,
     mode: "complete" | "report" | "review",
-    revieweeId?: string,
-    leaderId?: string
+    revieweeId?: string
   ) => {
     setSelectedTaskId(taskId);
     setModalMode(mode);
@@ -237,6 +247,18 @@ const TaskListPage: React.FC = () => {
     phaseDayId: string,
     checkinLocation: { coordinates: [number, number]; address: string }
   ) => {
+    const userString = localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+
+    // Check if user has face descriptor
+    if (!user?.faceDescriptor) {
+      alert(
+        "Bạn chưa đăng ký khuôn mặt. Vui lòng đăng ký trước khi điểm danh."
+      );
+      navigate("/profile");
+      return;
+    }
+
     setSelectedPhaseId(phaseId);
     setPhaseDayId(phaseDayId);
     setSelectedCheckinLocation({
@@ -256,6 +278,26 @@ const TaskListPage: React.FC = () => {
       console.log("📝 Updated checkedInPhaseDays:", updated);
       return updated;
     });
+
+    // Update the phases state to reflect the check-in status
+    setPhases((prevPhases) =>
+      prevPhases.map((phase) => ({
+        ...phase,
+        phaseDays: phase.phaseDays.map((day) =>
+          day._id === phaseDayId
+            ? {
+                ...day,
+                checkinStatus: {
+                  hasCheckedIn: true,
+                  checkinTime: new Date().toISOString(),
+                  method: "face",
+                },
+              }
+            : day
+        ),
+      }))
+    );
+
     setCheckinModalOpen(false);
   };
 
@@ -477,7 +519,7 @@ const TaskListPage: React.FC = () => {
               transform: "translateX(-50%)",
               fontWeight: 700,
               textAlign: "center",
-              fontSize: { xs: "2.2rem", sm: "3.2rem", md: "3.8rem" },
+              fontSize: { xs: "1.2rem", sm: "1.2rem", md: "1.8rem" },
               fontFamily:
                 '"Nunito Sans", "Roboto", "Helvetica Neue", sans-serif',
               background: "linear-gradient(45deg, #1976d2, #00b4d8)",
@@ -691,7 +733,10 @@ const TaskListPage: React.FC = () => {
                                   ? "success"
                                   : "primary"
                               }
-                              disabled={day.checkinStatus?.hasCheckedIn}
+                              disabled={
+                                day.checkinStatus?.hasCheckedIn ||
+                                !isToday(day.date)
+                              }
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleCheckIn(
@@ -714,7 +759,9 @@ const TaskListPage: React.FC = () => {
                             >
                               {day.checkinStatus?.hasCheckedIn
                                 ? "✅ Đã điểm danh"
-                                : "Điểm danh"}
+                                : isToday(day.date)
+                                ? "Điểm danh"
+                                : "Chưa diễn ra"}
                             </Button>
                             {expandedPhaseDay === day._id ? (
                               <ExpandLess className="text-blue-500" />
@@ -759,33 +806,22 @@ const TaskListPage: React.FC = () => {
                                       sx={{ p: 3 }}
                                       className="space-y-4"
                                     >
-                                      <Stack
-                                        direction="row"
-                                        alignItems="center"
-                                        justifyContent="space-between"
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                          mb: 1,
+                                        }}
                                       >
-                                        <Box>
-                                          <Typography
-                                            variant="h6"
-                                            fontWeight="bold"
-                                            gutterBottom
-                                            color="primary"
-                                            className="text-blue-600"
-                                            sx={{ mb: 0.5 }}
-                                          >
-                                            {task.title}
-                                          </Typography>
-                                          <Typography
-                                            variant="body1"
-                                            color="text.secondary"
-                                            sx={{
-                                              lineHeight: 1.4,
-                                            }}
-                                            className="text-gray-600"
-                                          >
-                                            {task.description}
-                                          </Typography>
-                                        </Box>
+                                        <Typography
+                                          variant="h6"
+                                          fontWeight="bold"
+                                          color="primary"
+                                          className="text-blue-600"
+                                        >
+                                          {task.title}
+                                        </Typography>
                                         <Button
                                           variant="outlined"
                                           startIcon={<GroupIcon />}
@@ -797,84 +833,24 @@ const TaskListPage: React.FC = () => {
                                             textTransform: "none",
                                             fontWeight: 600,
                                             px: 3,
+                                            height: 36,
                                           }}
                                           className="border-blue-500 text-blue-500 hover:bg-blue-50"
                                         >
                                           Thành viên
                                         </Button>
-                                      </Stack>
+                                      </Box>
 
-                                      <Menu
-                                        anchorEl={anchorEl}
-                                        open={
-                                          Boolean(anchorEl) &&
-                                          selectedTaskForMembers?._id ===
-                                            task._id
-                                        }
-                                        onClose={handleMembersClose}
-                                        anchorOrigin={{
-                                          vertical: "bottom",
-                                          horizontal: "right",
-                                        }}
-                                        transformOrigin={{
-                                          vertical: "top",
-                                          horizontal: "right",
-                                        }}
-                                        PaperProps={{
-                                          style: {
-                                            maxHeight: 400,
-                                            width: 300,
-                                            borderRadius: 12,
-                                            boxShadow:
-                                              "0 4px 20px rgba(0, 0, 0, 0.15)",
-                                          },
-                                        }}
+                                      <Typography
+                                        variant="body1"
+                                        color="text.secondary"
+                                        sx={{ lineHeight: 1.4 }}
+                                        className="text-gray-600"
                                       >
-                                        {task.assignedUsers.map((user) => (
-                                          <MenuItem
-                                            key={user.userId._id}
-                                            sx={{ py: 1.5 }}
-                                            className="hover:bg-blue-50"
-                                          >
-                                            <Stack
-                                              direction="row"
-                                              alignItems="center"
-                                              spacing={2}
-                                            >
-                                              <Avatar
-                                                src={
-                                                  user.avatar ||
-                                                  user.userId.avatar ||
-                                                  undefined
-                                                }
-                                                alt={
-                                                  user.userName ||
-                                                  user.userId.fullName
-                                                }
-                                                sx={{ width: 36, height: 36 }}
-                                              />
-                                              <Typography
-                                                variant="body2"
-                                                className="text-gray-800"
-                                              >
-                                                {user.userId.fullName ||
-                                                  user.userName}
-                                                {task.leaderId ===
-                                                  user.userId._id && (
-                                                  <StarIcon
-                                                    fontSize="small"
-                                                    sx={{
-                                                      color: "gold",
-                                                      ml: 1,
-                                                    }}
-                                                  />
-                                                )}
-                                              </Typography>
-                                            </Stack>
-                                          </MenuItem>
-                                        ))}
-                                      </Menu>
+                                        {task.description}
+                                      </Typography>
 
+                                      {/* Status and action buttons row remains unchanged */}
                                       <Box
                                         sx={{
                                           display: "flex",
@@ -882,39 +858,146 @@ const TaskListPage: React.FC = () => {
                                           alignItems: "center",
                                           flexWrap: "wrap",
                                           gap: 2,
+                                          mt: 2,
                                         }}
                                       >
-                                        <Chip
-                                          icon={getStatusIcon(task.status)}
-                                          label={getStatusLabel(task.status)}
-                                          color={getStatusColor(task.status)}
-                                          variant="filled"
-                                          sx={{
-                                            fontWeight: 600,
-                                            px: 2,
-                                            py: 1,
+                                        <Menu
+                                          anchorEl={anchorEl}
+                                          open={
+                                            Boolean(anchorEl) &&
+                                            selectedTaskForMembers?._id ===
+                                              task._id
+                                          }
+                                          onClose={handleMembersClose}
+                                          anchorOrigin={{
+                                            vertical: "bottom",
+                                            horizontal: "right",
                                           }}
-                                          className="shadow-sm"
-                                        />
+                                          transformOrigin={{
+                                            vertical: "top",
+                                            horizontal: "right",
+                                          }}
+                                          PaperProps={{
+                                            style: {
+                                              maxHeight: 400,
+                                              width: 300,
+                                              borderRadius: 12,
+                                              boxShadow:
+                                                "0 4px 20px rgba(0, 0, 0, 0.15)",
+                                            },
+                                          }}
+                                        >
+                                          {task.assignedUsers.map((user) => (
+                                            <MenuItem
+                                              key={user.userId._id}
+                                              sx={{ py: 1.5 }}
+                                              className="hover:bg-blue-50"
+                                            >
+                                              <Stack
+                                                direction="row"
+                                                alignItems="center"
+                                                spacing={2}
+                                              >
+                                                <Avatar
+                                                  src={
+                                                    user.avatar ||
+                                                    user.userId.avatar ||
+                                                    undefined
+                                                  }
+                                                  alt={
+                                                    user.userName ||
+                                                    user.userId.fullName
+                                                  }
+                                                  sx={{ width: 36, height: 36 }}
+                                                />
+                                                <Typography
+                                                  variant="body2"
+                                                  className="text-gray-800"
+                                                >
+                                                  {user.userId.fullName ||
+                                                    user.userName}
+                                                  {task.leaderId ===
+                                                    user.userId._id && (
+                                                    <StarIcon
+                                                      fontSize="small"
+                                                      sx={{
+                                                        color: "gold",
+                                                        ml: 1,
+                                                      }}
+                                                    />
+                                                  )}
+                                                </Typography>
+                                              </Stack>
+                                            </MenuItem>
+                                          ))}
+                                        </Menu>
 
-                                        <Stack direction="row" spacing={2}>
-                                          {task.leaderId === userId && (
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            flexWrap: "wrap",
+                                            gap: 2,
+                                          }}
+                                        >
+                                          <Chip
+                                            icon={getStatusIcon(task.status)}
+                                            label={getStatusLabel(task.status)}
+                                            color={getStatusColor(task.status)}
+                                            variant="filled"
+                                            sx={{
+                                              fontWeight: 600,
+                                              px: 2,
+                                              py: 1,
+                                            }}
+                                            className="shadow-sm"
+                                          />
+
+                                          <Stack direction="row" spacing={2}>
+                                            {task.leaderId === userId && (
+                                              <Button
+                                                variant={
+                                                  task.status === "in_progress"
+                                                    ? "contained"
+                                                    : "outlined"
+                                                }
+                                                color="success"
+                                                onClick={() =>
+                                                  openModalWithTaskId(
+                                                    task._id,
+                                                    "complete"
+                                                  )
+                                                }
+                                                disabled={
+                                                  task.status === "submitted" ||
+                                                  task.status === "completed"
+                                                }
+                                                sx={{
+                                                  borderRadius: 3,
+                                                  textTransform: "none",
+                                                  fontWeight: 600,
+                                                  px: 3,
+                                                }}
+                                                className={
+                                                  task.status === "in_progress"
+                                                    ? "bg-green-500 text-white hover:bg-green-600"
+                                                    : "border-gray-300 text-gray-500"
+                                                }
+                                              >
+                                                {task.status === "in_progress"
+                                                  ? "Nộp báo cáo"
+                                                  : "Đã nộp"}
+                                              </Button>
+                                            )}
                                             <Button
-                                              variant={
-                                                task.status === "in_progress"
-                                                  ? "contained"
-                                                  : "outlined"
-                                              }
-                                              color="success"
+                                              variant="outlined"
+                                              color="error"
                                               onClick={() =>
                                                 openModalWithTaskId(
                                                   task._id,
-                                                  "complete"
+                                                  "report"
                                                 )
-                                              }
-                                              disabled={
-                                                task.status === "submitted" ||
-                                                task.status === "completed"
                                               }
                                               sx={{
                                                 borderRadius: 3,
@@ -922,72 +1005,47 @@ const TaskListPage: React.FC = () => {
                                                 fontWeight: 600,
                                                 px: 3,
                                               }}
-                                              className={
-                                                task.status === "in_progress"
-                                                  ? "bg-green-500 text-white hover:bg-green-600"
-                                                  : "border-gray-300 text-gray-500"
-                                              }
+                                              className="border-red-500 text-red-500 hover:bg-red-50"
                                             >
-                                              {task.status === "in_progress"
-                                                ? "Nộp báo cáo"
-                                                : "Đã nộp"}
+                                              Sự cố
                                             </Button>
-                                          )}
-                                          <Button
-                                            variant="outlined"
-                                            color="error"
-                                            onClick={() =>
-                                              openModalWithTaskId(
-                                                task._id,
-                                                "report"
-                                              )
-                                            }
-                                            sx={{
-                                              borderRadius: 3,
-                                              textTransform: "none",
-                                              fontWeight: 600,
-                                              px: 3,
-                                            }}
-                                            className="border-red-500 text-red-500 hover:bg-red-50"
-                                          >
-                                            Sự cố
-                                          </Button>
-                                          <Button
-                                            variant="outlined"
-                                            color="primary"
-                                            onClick={() =>
-                                              openModalWithTaskId(
-                                                task._id,
-                                                "review"
-                                              )
-                                            }
-                                            sx={{
-                                              borderRadius: 3,
-                                              textTransform: "none",
-                                              fontWeight: 600,
-                                              px: 3,
-                                            }}
-                                            className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                                          >
-                                            Đánh giá đồng nghiệp
-                                          </Button>
-                                          <Button
-                                            variant="outlined"
-                                            color="info"
-                                            onClick={() =>
-                                              handleViewReviews(task)
-                                            }
-                                            sx={{
-                                              borderRadius: 3,
-                                              textTransform: "none",
-                                              fontWeight: 600,
-                                              px: 3,
-                                            }}
-                                            className="border-teal-500 text-teal-500 hover:bg-teal-50"
-                                          >
-                                            Xem đánh giá nhiệm vụ
-                                          </Button>
-                                        </Stack>
+                                            <Button
+                                              variant="outlined"
+                                              color="primary"
+                                              onClick={() =>
+                                                openModalWithTaskId(
+                                                  task._id,
+                                                  "review"
+                                                )
+                                              }
+                                              sx={{
+                                                borderRadius: 3,
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                px: 3,
+                                              }}
+                                              className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                                            >
+                                              Đánh giá đồng nghiệp
+                                            </Button>
+                                            <Button
+                                              variant="outlined"
+                                              color="info"
+                                              onClick={() =>
+                                                handleViewReviews(task)
+                                              }
+                                              sx={{
+                                                borderRadius: 3,
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                px: 3,
+                                              }}
+                                              className="border-teal-500 text-teal-500 hover:bg-teal-50"
+                                            >
+                                              Xem đánh giá nhiệm vụ
+                                            </Button>
+                                          </Stack>
+                                        </Box>
                                       </Box>
                                     </CardContent>
                                   </Card>
@@ -1098,7 +1156,7 @@ const TaskListPage: React.FC = () => {
           }
           onSubmit={handleSubmitTaskAction}
           reviewProps={
-            modalMode === "report"
+            modalMode === "review"
               ? {
                   score: reviewScore,
                   setScore: setReviewScore,
@@ -1199,91 +1257,111 @@ const TaskListPage: React.FC = () => {
                 <Box className="p-4 bg-white rounded-lg shadow-sm">
                   {selectedTask?.peerReviews &&
                   selectedTask.peerReviews.length > 0 ? (
-                    selectedTask.peerReviews.map((review, index) => {
-                      const reviewerUser = selectedTask.assignedUsers.find(
-                        (u) => u.userId._id === review.reviewer
-                      );
-                      const revieweeUser = selectedTask.assignedUsers.find(
-                        (u) => u.userId._id === review.reviewee
-                      );
-                      const reviewerAvatar =
-                        reviewerUser?.avatar || reviewerUser?.userId.avatar;
-                      const revieweeAvatar =
-                        revieweeUser?.avatar || revieweeUser?.userId.avatar;
+                    <>
+                      {/* Calculate average score and total reviews for current user */}
+                      {(() => {
+                        const userReviews = selectedTask.peerReviews.filter(
+                          (review) => review.reviewee === userId
+                        );
+                        const averageScore =
+                          userReviews.length > 0
+                            ? userReviews.reduce(
+                                (sum, review) => sum + review.score,
+                                0
+                              ) / userReviews.length
+                            : 0;
+                        const totalReviews = userReviews.length;
 
-                      return (
-                        <Box
-                          key={index}
-                          sx={{ mb: 2, borderBottom: "1px solid #eee", pb: 1 }}
-                          className="hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200"
-                        >
-                          <Typography
-                            variant="body1"
-                            sx={{ display: "flex", alignItems: "center" }}
-                            className="text-gray-800"
+                        return (
+                          <Box
+                            sx={{
+                              mb: 3,
+                              p: 2,
+                              bgcolor: "#f5f5f5",
+                              borderRadius: 2,
+                            }}
                           >
-                            <strong>Người đánh giá:</strong>&nbsp;
-                            <Avatar
-                              src={reviewerAvatar || undefined}
-                              alt={reviewerUser?.userName || review.reviewer}
-                              sx={{ width: 24, height: 24, mx: 1 }}
-                            />
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              {reviewerUser?.userId.fullName ||
-                                reviewerUser?.userName ||
-                                review.reviewer}
-                              {selectedTask.leaderId ===
-                                reviewerUser?.userId._id && (
-                                <StarIcon
-                                  fontSize="small"
-                                  sx={{ color: "gold", ml: 0.5 }}
-                                />
-                              )}
+                            <Typography variant="h6" gutterBottom>
+                              Đánh giá của bạn
+                            </Typography>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                              }}
+                            >
+                              <Box>
+                                <Typography variant="body1">
+                                  <strong>Điểm trung bình:</strong>{" "}
+                                  {averageScore.toFixed(1)}
+                                  <StarIcon
+                                    fontSize="small"
+                                    sx={{ color: "gold", ml: 0.5 }}
+                                  />
+                                </Typography>
+                                <Typography variant="body1">
+                                  <strong>Tổng số đánh giá:</strong>{" "}
+                                  {totalReviews}
+                                </Typography>
+                              </Box>
+                              <Rating
+                                value={averageScore}
+                                readOnly
+                                precision={0.1}
+                                size="large"
+                                sx={{ ml: 1 }}
+                              />
                             </Box>
-                          </Typography>
-
-                          <Typography
-                            variant="body1"
-                            sx={{ display: "flex", alignItems: "center" }}
-                            className="text-gray-800"
-                          >
-                            <strong>Người được đánh giá:</strong>&nbsp;
-                            <Avatar
-                              src={revieweeAvatar || undefined}
-                              alt={revieweeUser?.userName || review.reviewee}
-                              sx={{ width: 24, height: 24, mx: 1 }}
-                            />
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              {revieweeUser?.userId.fullName ||
-                                revieweeUser?.userName ||
-                                review.reviewee}
-                              {selectedTask.leaderId ===
-                                revieweeUser?.userId._id && (
-                                <StarIcon
-                                  fontSize="small"
-                                  sx={{ color: "gold", ml: 0.5 }}
+                          </Box>
+                        );
+                      })()}
+                      {/* List of reviews for current user - Anonymous version */}
+                      <Box>
+                        <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                          Danh sách bình luận
+                        </Typography>
+                        {selectedTask.peerReviews
+                          .filter((review) => review.reviewee === userId)
+                          .map((review, index) => (
+                            <Box
+                              key={index}
+                              sx={{
+                                mb: 2,
+                                p: 2,
+                                border: "1px solid #eee",
+                                borderRadius: 2,
+                                bgcolor: "#fafafa",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  mb: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ mr: 1 }}
+                                >
+                                  Đánh giá #{index + 1}
+                                </Typography>
+                                <Rating
+                                  value={review.score}
+                                  readOnly
+                                  size="small"
+                                  sx={{ ml: "auto" }}
                                 />
-                              )}
+                              </Box>
+                              <Typography variant="body1">
+                                {review.comment}
+                              </Typography>
                             </Box>
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{ display: "flex", alignItems: "center" }}
-                            className="text-gray-800"
-                          >
-                            <strong>Điểm số:</strong>&nbsp;
-                            {review.score}
-                            <StarIcon
-                              fontSize="small"
-                              sx={{ color: "gold", ml: 0.5 }}
-                            />
-                          </Typography>
-                          <Typography variant="body1" className="text-gray-800">
-                            <strong>Bình luận:</strong> {review.comment}
-                          </Typography>
-                        </Box>
-                      );
-                    })
+                          ))}
+                      </Box>
+                    </>
                   ) : (
                     <Typography className="text-gray-600">
                       Chưa có đánh giá từ đồng nghiệp.
