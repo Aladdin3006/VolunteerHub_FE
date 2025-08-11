@@ -57,29 +57,29 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
 
     const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
       try {
-        const res = await DONATION_API.createDonation(data);
-        if (res.status === 201 && res.data?.message && res.data?.campaign) {
-          setSnackbarSeverity("success");
-          setSnackbarMessage(res.data.message || "Tạo chiến dịch thành công");
-          afterSubmit && afterSubmit(data);
-          if (closeAfterSubmit !== false) {
-            close();
-          }
-        } else {
-          setSnackbarSeverity("error");
-          setSnackbarMessage(res.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau");
+        const res = await DONATION_API.createDonation(data); // res là res.data rồi do interceptor
+        console.log("Response from createDonation:", res);
+
+        // ✅ KHÔNG kiểm tra res.status vì interceptor đã trả res.data
+        setSnackbarSeverity("success");
+        setSnackbarMessage(res.message || "Tạo chiến dịch thành công");
+
+        afterSubmit && afterSubmit(data);
+        if (closeAfterSubmit !== false) {
+          close();
         }
       } catch (error: any) {
         setSnackbarSeverity("error");
-        setSnackbarMessage(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại sau");
+        setSnackbarMessage(error.message || "Có lỗi xảy ra, vui lòng thử lại sau");
         console.error(error);
       }
     };
 
+
     return (
       <Dialog
         open={open}
-        onClose={() => {}}
+        onClose={() => { }}
         fullWidth
         maxWidth="sm"
         keepMounted={false}
