@@ -16,8 +16,10 @@ import {
   CircularProgress,
   Chip,
   Avatar,
+  Badge,
+  Stack,
 } from "@mui/material";
-import { Star as StarIcon } from "@mui/icons-material";
+import { CheckCircle, Star as StarIcon } from "@mui/icons-material";
 
 interface TaskActionModalProps {
   open: boolean;
@@ -136,10 +138,22 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
   const getAvailableUsersForReview = () => {
     if (!reviewProps?.assignedUsers) return [];
 
-    return reviewProps.assignedUsers.filter((user) => {
-      if (user.userId._id === userId) return false;
-      return true;
-    });
+    return reviewProps.assignedUsers
+      .filter((user) => user.userId._id !== userId) // Filter out current user
+      .sort((a, b) => {
+        // Sort by leader first, then by name
+        const isALeader = a.userId._id === leaderId;
+        const isBLeader = b.userId._id === leaderId;
+        if (isALeader && !isBLeader) return -1;
+        if (!isALeader && isBLeader) return 1;
+        return (a.userId.fullName || a.userName).localeCompare(
+          b.userId.fullName || b.userName
+        );
+      });
+  };
+
+  const getUserById = (id: string) => {
+    return reviewProps?.assignedUsers.find((u) => u.userId._id === id);
   };
 
   return (
@@ -154,140 +168,182 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
       <DialogContent sx={{ p: 2 }}>
         {mode === "review" && reviewProps ? (
           <Box sx={{ p: 1 }}>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Chọn tình nguyện viên</InputLabel>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              Chọn đồng nghiệp để đánh giá
+            </Typography>
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel id="select-volunteer-label">
+                Tình nguyện viên
+              </InputLabel>
               <Select
+                labelId="select-volunteer-label"
                 value={selectedRevieweeId}
                 onChange={(e) => setSelectedRevieweeId(e.target.value)}
-                label="Chọn tình nguyện viên"
+                label="Tình nguyện viên"
                 disabled={isSubmitting}
-                sx={{ minWidth: 200 }}
+                renderValue={(selected) => {
+                  const user = getUserById(selected);
+                  if (!user)
+                    return <Typography>Chọn tình nguyện viên</Typography>;
+
+                  return (
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Avatar
+                        src={user.avatar || user.userId.avatar}
+                        sx={{ width: 32, height: 32 }}
+                      />
+                      <Typography>
+                        {user.userId.fullName || user.userName}
+                        {leaderId === user.userId._id && (
+                          <StarIcon
+                            fontSize="small"
+                            sx={{ ml: 0.5, color: "gold" }}
+                          />
+                        )}
+                      </Typography>
+                      {hasReviewed(selected) && (
+                        <Chip
+                          label="Đã đánh giá"
+                          size="small"
+                          color="success"
+                          icon={<CheckCircle fontSize="small" />}
+                        />
+                      )}
+                    </Stack>
+                  );
+                }}
               >
                 {getAvailableUsersForReview().map((user) => {
-                  const isReviewed = hasReviewed(user.userId._id);
                   const isLeader = leaderId === user.userId._id;
-                  const avatarUrl = user.avatar || user.userId.avatar; // Use top-level avatar or userId.avatar
+                  const isReviewed = hasReviewed(user.userId._id);
+                  const avatarUrl = user.avatar || user.userId.avatar;
+
                   return (
                     <MenuItem
                       key={user.userId._id}
                       value={user.userId._id}
                       disabled={isReviewed}
+                      sx={{
+                        py: 1.5,
+                        "&.Mui-disabled": {
+                          opacity: 0.7,
+                        },
+                      }}
                     >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        width="100%"
                       >
-                        <Avatar
-                          src={avatarUrl || undefined}
-                          alt={user.userName}
-                          sx={{ width: 24, height: 24 }}
-                        />
-                        <Typography
-                          sx={{
-                            color: isReviewed
-                              ? "text.disabled"
-                              : "text.primary",
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
                           }}
+                          badgeContent={
+                            isLeader ? (
+                              <StarIcon
+                                fontSize="small"
+                                sx={{ color: "gold" }}
+                              />
+                            ) : null
+                          }
                         >
-                          {user.userId.fullName ||
-                            user.userName ||
-                            `Tình nguyện viên ${user.userId._id}`}
-                          {isLeader && (
-                            <StarIcon
-                              fontSize="small"
-                              sx={{ ml: 0.5, color: "gold" }}
-                            />
-                          )}
-                        </Typography>
-                        <Chip
-                          label={isReviewed ? "Đã đánh giá" : "Chưa đánh giá"}
-                          color={isReviewed ? "success" : "default"}
-                          size="small"
-                        />
-                      </Box>
+                          <Avatar
+                            src={avatarUrl || undefined}
+                            alt={user.userName}
+                            sx={{ width: 40, height: 40 }}
+                          />
+                        </Badge>
+
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="body1">
+                            {user.userId.fullName || user.userName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {isLeader ? "Trưởng nhóm" : "Thành viên"}
+                          </Typography>
+                        </Box>
+
+                        {isReviewed ? (
+                          <Chip
+                            label="Đã đánh giá"
+                            size="small"
+                            color="success"
+                            icon={<CheckCircle fontSize="small" />}
+                          />
+                        ) : (
+                          <Chip
+                            label="Chưa đánh giá"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Stack>
                     </MenuItem>
                   );
                 })}
               </Select>
             </FormControl>
 
-            {reviewProps.peerReviews && reviewProps.peerReviews.length > 0 && (
+            {selectedRevieweeId && !hasReviewed(selectedRevieweeId) && (
               <Box
-                sx={{ mb: 2, p: 1, border: "1px solid #eee", borderRadius: 2 }}
+                sx={{
+                  p: 3,
+                  border: "1px solid #eee",
+                  borderRadius: 2,
+                  backgroundColor: "#f9f9f9",
+                }}
               >
-                <Typography
-                  variant="subtitle1"
-                  fontWeight="bold"
-                  sx={{ mb: 1 }}
-                >
-                  Đánh giá đồng nghiệp hiện có
+                <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                  Đánh giá cho{" "}
+                  <strong>
+                    {getUserById(selectedRevieweeId)?.userId.fullName ||
+                      getUserById(selectedRevieweeId)?.userName}
+                  </strong>
                 </Typography>
-                {reviewProps.peerReviews.map((review, index) => {
-                  const revieweeUser = reviewProps.assignedUsers.find(
-                    (u) => u.userId._id === review.reviewee
-                  );
-                  const reviewerUser = reviewProps.assignedUsers.find(
-                    (u) => u.userId._id === review.reviewer
-                  );
-                  const revieweeAvatar =
-                    revieweeUser?.avatar || revieweeUser?.userId.avatar;
-                  const reviewerAvatar =
-                    reviewerUser?.avatar || reviewerUser?.userId.avatar;
 
-                  return (
-                    <Box
-                      key={index}
-                      sx={{ mb: 1, p: 1, bgcolor: "#f5f5f5", borderRadius: 1 }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{ display: "flex", alignItems: "center" }}
-                      >
-                        <strong>Người đánh giá:</strong>&nbsp;
-                        <Avatar
-                          src={reviewerAvatar || undefined}
-                          alt={reviewerUser?.userName || review.reviewer}
-                          sx={{ width: 24, height: 24, mr: 1 }}
-                        />
-                        {reviewerUser?.userId.fullName ||
-                          reviewerUser?.userName ||
-                          review.reviewer}
-                        {leaderId === reviewerUser?.userId._id && (
-                          <StarIcon
-                            fontSize="small"
-                            sx={{ ml: 0.5, mb: 0.5, color: "gold" }}
-                          />
-                        )}
-                      </Typography>
+                <Box sx={{ mb: 3 }}>
+                  <Typography gutterBottom>Điểm đánh giá:</Typography>
+                  <Rating
+                    value={reviewProps.score}
+                    onChange={(e, value) => reviewProps.setScore(value || 0)}
+                    max={5}
+                    precision={0.5}
+                    size="large"
+                    sx={{
+                      "& .MuiRating-iconFilled": {
+                        color: "#ff6d75",
+                      },
+                      "& .MuiRating-iconHover": {
+                        color: "#ff3d47",
+                      },
+                    }}
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
+                    (1 sao - Rất không hài lòng, 5 sao - Rất hài lòng)
+                  </Typography>
+                </Box>
 
-                      <Typography
-                        variant="body2"
-                        sx={{ display: "flex", alignItems: "center" }}
-                      >
-                        <strong>Người được đánh giá:</strong>&nbsp;
-                        <Avatar
-                          src={revieweeAvatar || undefined}
-                          alt={revieweeUser?.userName || review.reviewee}
-                          sx={{ width: 24, height: 24, mr: 1 }}
-                        />
-                        {revieweeUser?.userId.fullName ||
-                          revieweeUser?.userName ||
-                          review.reviewee}
-                        {leaderId === revieweeUser?.userId._id && (
-                          <StarIcon
-                            fontSize="small"
-                            sx={{ ml: 0.5, mb: 0.5, color: "gold" }}
-                          />
-                        )}
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Điểm:</strong> {review.score}/5
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Bình luận:</strong> {review.comment}
-                      </Typography>
-                    </Box>
-                  );
-                })}
+                <TextField
+                  label="Nhận xét chi tiết"
+                  placeholder="Mô tả cụ thể về đóng góp và hiệu quả công việc..."
+                  multiline
+                  rows={4}
+                  value={reviewProps.comment}
+                  onChange={(e) => reviewProps.setComment(e.target.value)}
+                  fullWidth
+                  margin="normal"
+                  disabled={isSubmitting}
+                  sx={{ mb: 1 }}
+                />
               </Box>
             )}
 
@@ -310,33 +366,6 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                   {reviewProps.staffReview.overallComment}
                 </Typography>
               </Box>
-            )}
-
-            {selectedRevieweeId && !hasReviewed(selectedRevieweeId) && (
-              <>
-                <Typography variant="subtitle1" gutterBottom>
-                  Đánh giá của bạn
-                </Typography>
-                <Rating
-                  value={reviewProps.score}
-                  onChange={(e, value) => reviewProps.setScore(value || 0)}
-                  max={5}
-                  precision={0.5}
-                  disabled={isSubmitting}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="Bình luận"
-                  multiline
-                  rows={3}
-                  value={reviewProps.comment}
-                  onChange={(e) => reviewProps.setComment(e.target.value)}
-                  fullWidth
-                  margin="normal"
-                  disabled={isSubmitting}
-                  sx={{ mb: 1 }}
-                />
-              </>
             )}
           </Box>
         ) : (

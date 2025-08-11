@@ -306,9 +306,20 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
                 <ListItem key={phase._id} divider>
                   <ListItemText
                     primary={
-                      <Typography fontWeight="bold">{phase.name}</Typography>
+                      <Typography fontWeight="bold" noWrap>
+                        {phase.name}
+                      </Typography>
                     }
-                    secondary={phase.description}
+                    secondary={
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        noWrap
+                        sx={{ maxWidth: 300 }} // adjust width as needed
+                      >
+                        {phase.description}
+                      </Typography>
+                    }
                   />
                   <ListItemSecondaryAction>
                     <Button

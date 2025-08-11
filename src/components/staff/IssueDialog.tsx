@@ -174,7 +174,12 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
           },
         }
       );
-      setIssues(data.data);
+      // Sort issues by createdAt in descending order (newest first)
+      const sortedIssues = data.data.sort(
+        (a: Issue, b: Issue) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setIssues(sortedIssues);
     } catch (error) {
       console.error("Error fetching issues:", error);
     } finally {
@@ -340,7 +345,7 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
                           }
                           disabled={issue.status === "closed"}
                           onClick={() => handleClosedIssue(issue._id)}
-                          sx={{ minWidth: 120 }}
+                          sx={{ minWidth: 140, width: 140 }} // Fixed width
                         >
                           {issue.status === "closed"
                             ? "Đã giải quyết"
@@ -349,7 +354,7 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
                         <Button
                           variant="outlined"
                           onClick={() => handleViewDetails(issue)}
-                          sx={{ minWidth: 120 }}
+                          sx={{ minWidth: 140, width: 140 }} // Fixed width
                         >
                           Xem chi tiết
                         </Button>

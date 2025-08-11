@@ -9,7 +9,7 @@ export interface Storm {
   _id: string;
   name: string;
   description?: string;
-  imageUrl?: string;
+  instruction?: string;
   centerLocation?: {
     lat: number;
     lng: number;
@@ -31,6 +31,7 @@ export interface StormPayload {
   };
   isActive?: boolean;
   startDate?: string;
+  endDate?: string;
 }
 
 /** ================================

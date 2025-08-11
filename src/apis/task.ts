@@ -60,3 +60,21 @@ export const reviewPeerTaskApi = async (
 
   return response.data;
 };
+
+export const fetchTasksByVolunteer = async (
+  userId: string,
+  year: number,
+  month: number,
+  token: string
+) => {
+  const response = await axios.get(
+    `http://localhost:4000/task/${userId}/volunteer`,
+    {
+      params: { year, month },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};

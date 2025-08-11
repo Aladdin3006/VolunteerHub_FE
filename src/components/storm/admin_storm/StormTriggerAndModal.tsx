@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Button,
-  Typography,
+  Modal,
   Box,
+  Typography,
+  TextField,
+  Divider,
+  CircularProgress,
+  Backdrop,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { keyframes } from "@emotion/react";
+import socket from "@/services/socket";
 import { StormAPI } from "@/apis/storm.api";
-// For map
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 
 const shake = keyframes`
   0%, 100% { transform: translateX(0); }
@@ -22,72 +22,113 @@ const shake = keyframes`
   60% { transform: translateX(-2px); }
   80% { transform: translateX(2px); }
 `;
+const stormEntrance = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-30deg);
+    filter: blur(10px);
+  }
+  50% {
+    transform: scale(1.1) rotate(5deg);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+`;
 
 const StormTrigger: React.FC = () => {
+  const [hasAlert, setHasAlert] = useState(false);
+  const [alertData, setAlertData] = useState<any>(null);
+  const [weatherData, setWeatherData] = useState<any>(null);
   const [open, setOpen] = useState(false);
-  const [stormData, setStormData] = useState({
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "warning";
+  }>({ open: false, message: "", severity: "success" });
+
+  const [stormForm, setStormForm] = useState({
     name: "",
     description: "",
-    imageUrl: "",
-    lat: "18.333",  // Tọa độ mặc định cho Hà Tĩnh
-    lng: "105.900", // Tọa độ mặc định cho Hà Tĩnh
-    startDate: "",
+    instruction: "",
+    centerLocation: { lat: 18.35, lng: 105.9 },
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
   });
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+  useEffect(() => {
+    const handleWeatherUpdate = (data: any) => {
+      if (Array.isArray(data?.alerts) && data.alerts.length > 0) {
+        const alert = data.alerts[0];
+        setHasAlert(true);
+        setAlertData(alert);
+        setWeatherData(data.weather);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStormData({ ...stormData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async () => {
-    const payload = {
-      name: stormData.name,
-      description: stormData.description,
-      imageUrl: stormData.imageUrl,
-      isActive: true,
-      startDate: new Date(stormData.startDate).toISOString(), // Convert to ISO string for consistency
-      centerLocation: {
-        lat: parseFloat(stormData.lat),
-        lng: parseFloat(stormData.lng),
-      },
+        setStormForm({
+          name: alert.headline || "Cơn bão chưa đặt tên",
+          description: alert.desc || "",
+          instruction: alert.instruction || "",
+          centerLocation: { lat: 18.35, lng: 105.9 },
+          startDate: new Date(alert.effective).toISOString(),
+          endDate: new Date(alert.expires).toISOString(),
+        });
+      } else {
+        setHasAlert(false);
+        setAlertData(null);
+        setWeatherData(null);
+      }
     };
 
+    socket.on("weather:update", handleWeatherUpdate);
+    return () => {
+      socket.off("weather:update", handleWeatherUpdate);
+    };
+  }, []);
+
+  const showToast = (message: string, severity: "success" | "error" | "warning") => {
+    setToast({ open: true, message, severity });
+  };
+
+  const handleSubmitStorm = async () => {
+    setLoading(true);
     try {
-      await StormAPI.createStorm(payload);
-      alert("🌪️ Đã kích hoạt bão thành công!");
-      handleClose();
+      const allStorms = await StormAPI.getAllStorms();
+      const isDuplicate = allStorms.some(
+        (storm: any) =>
+          storm.name?.toLowerCase().trim() === stormForm.name.toLowerCase().trim()
+      );
+
+      if (isDuplicate) {
+        showToast("⚠️ Một cơn bão với tên này đã tồn tại!", "warning");
+        return;
+      }
+
+      await StormAPI.createStorm(stormForm);
+      showToast("✅ Tạo bão thành công!", "success");
+      setShowForm(false);
     } catch (err) {
-      console.error("❌ Lỗi khi kích hoạt bão:", err);
-      alert("❌ Lỗi khi kích hoạt bão!");
+      console.error(err);
+      showToast("❌ Tạo bão thất bại!", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  function LocationFinder() {
-    useMapEvents({
-      click(e) {
-        setStormData({
-          ...stormData,
-          lat: e.latlng.lat.toString(),
-          lng: e.latlng.lng.toString(),
-        });
-      },
-    });
-    return null;
-  }
-
-  const position: [number, number] = [
-    parseFloat(stormData.lat) || 18.333,  // Fallback nếu rỗng
-    parseFloat(stormData.lng) || 105.900, // Fallback nếu rỗng
-  ];
+  if (!hasAlert) return null;
 
   return (
     <>
-      {/* ☄️ Nút trigger */}
+      {/* Nút kích hoạt */}
       <Button
-        onClick={handleOpen}
+        onClick={() => setOpen(true)}
         sx={{
+          animation: `${stormEntrance} 0.8s ease-out, ${shake} 2.5s infinite`,
+
           textTransform: "none",
           borderRadius: "50px",
           px: 0.5,
@@ -102,7 +143,6 @@ const StormTrigger: React.FC = () => {
           whiteSpace: "nowrap",
           transition: "all 0.4s ease",
           boxShadow: "0 0 6px rgba(244, 67, 54, 0.4)",
-          animation: `${shake} 2.5s infinite`,
           bgcolor: "#fff",
           "&:hover": {
             backgroundColor: "#f44336",
@@ -129,85 +169,143 @@ const StormTrigger: React.FC = () => {
       >
         🌀<span> Kích Hoạt Bão</span>
       </Button>
+      {/* Modal nhập thông tin bão */}
+      <Modal open={open} onClose={() => setOpen(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "white",
+            borderRadius: 3,
+            boxShadow: 24,
+            p: 4,
+            display: "flex",
+            gap: 3,
+            width: "90%",
+            maxWidth: 1000,
+          }}
+        >
+          <Box flex={1}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>
+              🌀 Cảnh Báo Bão: {alertData?.headline}
+            </Typography>
 
-      {/* 🌩️ Modal tạo bão */}
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>🌀 Tạo cơn bão mới</DialogTitle>
-        <DialogContent>
-          <Box display="flex" flexDirection="column" gap={2} mt={1}>
-            <TextField
-              label="Tên cơn bão"
-              name="name"
-              value={stormData.name}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Mô tả"
-              name="description"
-              value={stormData.description}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={2}
-            />
-            <TextField
-              label="Vĩ độ tâm bão (lat)"
-              name="lat"
-              value={stormData.lat}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Kinh độ tâm bão (lng)"
-              name="lng"
-              value={stormData.lng}
-              onChange={handleChange}
-              fullWidth
-            />
-            {/* Bản đồ để chọn vị trí */}
-            <MapContainer
-              center={position}
-              zoom={9}  // Zoom mặc định để bao quát tỉnh Hà Tĩnh
-              style={{ height: "300px", width: "100%" }}
-            >
-              <TileLayer
-                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Marker
-                position={position}
-                draggable={true}
-                eventHandlers={{
-                  dragend(e) {
-                    const { lat, lng } = e.target.getLatLng();
-                    setStormData({
-                      ...stormData,
-                      lat: lat.toString(),
-                      lng: lng.toString(),
-                    });
-                  },
-                }}
-              />
-              <LocationFinder />
-            </MapContainer>
-            <TextField
-              label="Thời gian bắt đầu (ISO format)"
-              name="startDate"
-              type="datetime-local"
-              value={stormData.startDate}
-              onChange={handleChange}
-              fullWidth
-            />
+            <Typography><strong>⏰ Hiệu lực:</strong> {alertData?.effective}</Typography>
+            <Typography><strong>⏳ Hết hạn:</strong> {alertData?.expires}</Typography>
+            <Typography><strong>📍 Khu vực:</strong> {alertData?.areas}</Typography>
+            <Typography><strong>📢 Mô tả:</strong> {alertData?.desc}</Typography>
+            <Typography><strong>📌 Hướng dẫn:</strong> {alertData?.instruction}</Typography>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="subtitle1" fontWeight="bold">🌤️ Thời tiết hiện tại:</Typography>
+            <Typography>🌡️ {weatherData?.temp_c}°C (cảm giác: {weatherData?.feelslike_c}°C)</Typography>
+            <Typography>💨 Gió: {weatherData?.wind_kph} km/h ({weatherData?.windLevel})</Typography>
+            <Typography>💧 Độ ẩm: {weatherData?.humidity}%</Typography>
+            <Typography>📈 Áp suất: {weatherData?.pressure_mb} mb</Typography>
+            <Typography>☀️ UV: {weatherData?.uv}</Typography>
+
+            {!showForm && (
+              <Button variant="contained" color="error" sx={{ mt: 3 }} onClick={() => setShowForm(true)}>
+                🚀 Tạo Cơn Bão
+              </Button>
+            )}
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Hủy</Button>
-          <Button onClick={handleSubmit} variant="contained" color="error">
-            🌪️ Kích Hoạt
-          </Button>
-        </DialogActions>
-      </Dialog>
+
+          {showForm && (
+            <Box flex={1} component="form" onSubmit={(e) => e.preventDefault()}>
+              <Typography variant="h6" fontWeight="bold" mb={2}>
+                ✍️ Tạo Bão
+              </Typography>
+              <TextField
+                label="Tên bão"
+                fullWidth
+                margin="normal"
+                value={stormForm.name}
+                onChange={(e) => setStormForm({ ...stormForm, name: e.target.value })}
+              />
+              <TextField
+                label="Mô tả"
+                fullWidth
+                margin="normal"
+                multiline
+                minRows={2}
+                value={stormForm.description}
+                onChange={(e) => setStormForm({ ...stormForm, description: e.target.value })}
+              />
+              <TextField
+                label="Hướng dẫn"
+                fullWidth
+                margin="normal"
+                multiline
+                minRows={2}
+                value={stormForm.instruction}
+                onChange={(e) => setStormForm({ ...stormForm, instruction: e.target.value })}
+              />
+              <TextField
+                label="Thời gian bắt đầu"
+                type="datetime-local"
+                fullWidth
+                margin="normal"
+                value={stormForm.startDate?.slice(0, 16)}
+                onChange={(e) =>
+                  setStormForm({
+                    ...stormForm,
+                    startDate: new Date(e.target.value).toISOString(),
+                  })
+                }
+              />
+              <TextField
+                label="Thời gian kết thúc"
+                type="datetime-local"
+                fullWidth
+                margin="normal"
+                value={stormForm.endDate?.slice(0, 16)}
+                onChange={(e) =>
+                  setStormForm({
+                    ...stormForm,
+                    endDate: new Date(e.target.value).toISOString(),
+                  })
+                }
+              />
+
+              <Button
+                variant="contained"
+                color="primary"
+                sx={{ mt: 2 }}
+                onClick={handleSubmitStorm}
+                disabled={loading}
+              >
+                Gửi lên hệ thống
+              </Button>
+            </Box>
+          )}
+        </Box>
+      </Modal>
+
+      {/* Backdrop Loading */}
+      <Backdrop open={loading} sx={{ zIndex: 1300, color: "#fff" }}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
+
+      {/* Snackbar Toast */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={4000}
+        onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setToast({ ...toast, open: false })}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

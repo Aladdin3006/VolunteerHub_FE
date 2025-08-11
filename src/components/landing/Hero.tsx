@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import React, { useState, useEffect } from "react";
+import styled, { keyframes } from "styled-components";
 import { Box, Typography, Container } from "@mui/material";
-import TypingEffect from './TypingWord';
+import TypingEffect from "./TypingWord";
+import { useNavigate } from "react-router-dom";
 
 const words = [
-    "thiện nguyện ❤️",
-    "ấm áp 🔥",
-    "tử tế 🌱",
-    "đồng cảm 🫂",
-    "yêu thương 💖",
-    "nhân ái ☀️"
+  "thiện nguyện ❤️",
+  "ấm áp 🔥",
+  "tử tế 🌱",
+  "đồng cảm 🫂",
+  "yêu thương 💖",
+  "nhân ái ☀️",
 ];
 
 const shimmer = keyframes`
@@ -44,83 +45,83 @@ const fadeIn = keyframes`
 `;
 
 const HeroSection: React.FC = () => {
-    const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentWordIndex((prevIndex) => (prevIndex + 1) % words.length);
-        }, 2500);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentWordIndex((prevIndex) => (prevIndex + 1) % words.length);
+    }, 2500);
 
-        return () => clearInterval(interval);
-    }, []);
+    return () => clearInterval(interval);
+  }, []);
 
-    return (
-        <Box
-            sx={{
-                position: "relative",
-                height: "100vh",
-                width: "100%",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                backgroundColor: "#000",
-            }}
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        height: "100vh",
+        width: "100%",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        backgroundColor: "#000",
+      }}
+    >
+      <Box
+        component="img"
+        src="/image/ImageLanding/heroSection.jpg"
+        alt="Hero background"
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          filter: "blur(4px) brightness(0.5)",
+          zIndex: 0,
+        }}
+      />
+
+      <Container
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          textAlign: "center",
+        }}
+      >
+        <Typography
+          variant="h3"
+          fontWeight={700}
+          sx={{
+            mb: 2,
+            fontSize: { xs: "2rem", md: "3.5rem" },
+            lineHeight: 1.2,
+          }}
         >
-            <Box
-                component="img"
-                src="/image/ImageLanding/heroSection.jpg"
-                alt="Hero background"
-                sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    filter: "blur(4px) brightness(0.5)",
-                    zIndex: 0,
-                }}
-            />
+          Chào mừng đến với <HighlightText>VolunteerHub Hà Tĩnh</HighlightText>
+        </Typography>
 
-            <Container
-                sx={{
-                    position: "relative",
-                    zIndex: 1,
-                    textAlign: "center",
-                }}
-            >
-                <Typography
-                    variant="h3"
-                    fontWeight={700}
-                    sx={{
-                        mb: 2,
-                        fontSize: { xs: "2rem", md: "3.5rem" },
-                        lineHeight: 1.2,
-                    }}
-                >
-                    Chào mừng đến với{" "}
-                    <HighlightText>VolunteerHub Hà Tĩnh</HighlightText>
-                </Typography>
+        <TypingEffect />
 
-                <TypingEffect />
-
-                <StyledWrapper>
-                    <div className="button">
-                        <div className="box">J</div>
-                        <div className="box">O</div>
-                        <div className="box">I</div>
-                        <div className="box">N</div>
-                        <div className="box" />
-                        <div className="box">N</div>
-                        <div className="box">O</div>
-                        <div className="box">W</div>
-                    </div>
-                </StyledWrapper>
-            </Container>
-        </Box>
-    );
+        <StyledWrapper>
+          <div className="button" onClick={() => navigate("/campaigns")}>
+            <div className="box">J</div>
+            <div className="box">O</div>
+            <div className="box">I</div>
+            <div className="box">N</div>
+            <div className="box" />
+            <div className="box">N</div>
+            <div className="box">O</div>
+            <div className="box">W</div>
+          </div>
+        </StyledWrapper>
+      </Container>
+    </Box>
+  );
 };
 
 const AnimatedWord = styled.span`
@@ -143,14 +144,13 @@ const StyledWrapper = styled.div`
     font-size: 15px;
     font-weight: 700;
     color: #fff;
-    transition: all .8s;
+    transition: all 0.8s;
     cursor: pointer;
     position: relative;
     background: rgb(58, 165, 253);
     overflow: hidden;
-    box-shadow: 
-    5px -5px 15px rgba(58, 165, 253, 0.5), 
-    5px 5px 15px rgba(58, 165, 253, 0.5);
+    box-shadow: 5px -5px 15px rgba(58, 165, 253, 0.5),
+      5px 5px 15px rgba(58, 165, 253, 0.5);
   }
 
   .box:before {
@@ -164,50 +164,50 @@ const StyledWrapper = styled.div`
     align-items: center;
     justify-content: center;
     transform: translateY(100%);
-    transition: transform .4s;
+    transition: transform 0.4s;
   }
-    
-  .box:nth-child(1){
- border-radius: 10px 0 0 10px;
- }
- .box:nth-child(8){
- border-radius: 0 10px 10px 0;
- }
+
+  .box:nth-child(1) {
+    border-radius: 10px 0 0 10px;
+  }
+  .box:nth-child(8) {
+    border-radius: 0 10px 10px 0;
+  }
 
   .box:nth-child(1)::before {
     transform: translateY(-100%);
-    content: 'V';
+    content: "V";
   }
 
   .box:nth-child(2)::before {
-    content: 'H';
+    content: "H";
   }
 
   .box:nth-child(3)::before {
     transform: translateY(-100%);
-    content: 'H';
+    content: "H";
   }
 
   .box:nth-child(4)::before {
-    content: 'T';
+    content: "T";
   }
 
   .box:nth-child(5)::before {
     transform: translateY(-100%);
-    content: '';
+    content: "";
   }
 
   .box:nth-child(6)::before {
-    content: 'H';
+    content: "H";
   }
 
   .box:nth-child(7)::before {
     transform: translateY(-100%);
-    content: 'U';
+    content: "U";
   }
 
   .box:nth-child(8)::before {
-    content: 'B';
+    content: "B";
   }
 
   .button:hover .box:before {

@@ -27,6 +27,7 @@ import {
   FaDesktop,
   FaSignOutAlt,
   FaBars,
+  FaTasks,
 } from "react-icons/fa";
 import { keyframes } from "@emotion/react";
 import authService from "../../services/Authentication.service";
@@ -106,6 +107,11 @@ const Header: React.FC = () => {
       label: "Trợ giúp & hỗ trợ",
       icon: <FaQuestionCircle />,
       action: () => navigate("/help"),
+    },
+    {
+      label: "Nhiệm vụ trong tháng",
+      icon: <FaTasks />,
+      action: () => navigate("/myTask"),
     },
     {
       label: "Chiến Dịch của tôi",
