@@ -71,7 +71,14 @@ const DonationHome: React.FC = () => {
 
   // Render grid
   const renderGrid = (): JSX.Element => {
-    const filtered = fundraisingCampaigns.filter((c) => c.status === selectedTab);
+    const filtered = fundraisingCampaigns.filter((c) => {
+    if (selectedTab === "active") {
+      // Dự án đang gây quỹ
+      return c.approvalStatus === "approved" && c.status === "draft";
+    }
+    // Dự án đã kết thúc
+    return c.approvalStatus === "approved" && c.status === "completed";
+  });
     return (
       <Grid container spacing={3}>
         {filtered.map((c) => (
