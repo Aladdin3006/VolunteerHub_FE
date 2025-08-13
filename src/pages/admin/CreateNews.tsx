@@ -1,45 +1,26 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import newsService, { NewsItem } from "../../apis/news";
-import "./CreateNews.css";
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import newsService, { CreateNewsData } from "../../apis/news";
+import "./EditNews.css"; // Reuse the same CSS for consistency
 
 const CreateNews: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isEditing = !!id;
 
   const [formData, setFormData] = useState({
     title: "",
     content: "",
+    type: "news" as "news" | "forum",
   });
-
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>("");
 
-  // Fetch news data when in edit mode
-  useEffect(() => {
-    if (isEditing) {
-      const fetchNews = async () => {
-        try {
-          const newsItem = await newsService.getNewsById(id);
-          setFormData({
-            title: newsItem.title,
-            content: newsItem.content,
-          });
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to load news");
-        }
-      };
-
-      fetchNews();
-    }
-  }, [id, isEditing]);
-
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -82,9 +63,7 @@ const CreateNews: React.FC = () => {
   };
 
   const removeImage = (index: number) => {
-    // Revoke object URL to prevent memory leaks
     URL.revokeObjectURL(imagePreviewUrls[index]);
-
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
@@ -106,46 +85,31 @@ const CreateNews: React.FC = () => {
     setError("");
 
     try {
-      if (isEditing) {
-        await newsService.updateNews(id, {
-          title: formData.title.trim(),
-          content: formData.content.trim(),
-          images: selectedImages,
-        });
-      } else {
-        // Log form data for debugging
-        console.log("Submitting news:", {
-          title: formData.title.trim(),
-          content: formData.content.trim(),
-          imageCount: selectedImages.length,
-        });
+      const createData: CreateNewsData = {
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        type: formData.type,
+        images: selectedImages,
+      };
 
-        await newsService.createNews({
-          title: formData.title.trim(),
-          content: formData.content.trim(),
-          images: selectedImages,
-        });
-      }
+      await newsService.createNews(createData);
 
       // Clean up preview URLs
       imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
 
       navigate("/admin/news");
     } catch (err) {
-      console.error('Submit error:', err);
-      
-      let errorMessage = `Failed to ${isEditing ? 'update' : 'create'} news`;
+      console.error("Create news error:", err);
+      let errorMessage = "Failed to create news";
       if (err instanceof Error) {
-        // Handle specific backend errors
-        if (err.message.includes('useful')) {
-          errorMessage = 'Server configuration error. Please contact support.';
-        } else if (err.message.includes('500')) {
-          errorMessage = 'Internal server error. Please try again later.';
+        if (err.message.includes("useful")) {
+          errorMessage = "Server configuration error. Please contact support.";
+        } else if (err.message.includes("500")) {
+          errorMessage = "Internal server error. Please try again later.";
         } else {
           errorMessage = err.message;
         }
       }
-      
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -153,13 +117,12 @@ const CreateNews: React.FC = () => {
   };
 
   const handleCancel = () => {
-    // Clean up preview URLs
     imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
     navigate("/admin/news");
   };
 
   return (
-    <div className="create-news-page">
+    <div className="edit-news-page">
       <div className="page-header">
         <div className="header-left">
           <button className="back-button" onClick={handleCancel} type="button">
@@ -178,14 +141,12 @@ const CreateNews: React.FC = () => {
             </svg>
             Back
           </button>
-          <h1 className="page-title">
-            {isEditing ? "Edit News Article" : "Create News Article"}
-          </h1>
+          <h1 className="page-title">Create News Article</h1>
         </div>
       </div>
 
-      <div className="create-form-container">
-        <form onSubmit={handleSubmit} className="create-news-form">
+      <div className="edit-form-container">
+        <form onSubmit={handleSubmit} className="edit-news-form">
           {error && (
             <div className="error-message">
               <svg
@@ -244,6 +205,23 @@ const CreateNews: React.FC = () => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="type" className="form-label">
+                Type <span className="required">*</span>
+              </label>
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                className="form-select"
+                required
+              >
+                <option value="news">News</option>
+                <option value="forum">Forum</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Images (Optional)</label>
               <div className="image-upload-section">
                 <div className="upload-area">
@@ -279,10 +257,10 @@ const CreateNews: React.FC = () => {
                   </label>
                 </div>
 
-                {selectedImages.length > 0 && (
+                {imagePreviewUrls.length > 0 && (
                   <div className="image-preview-grid">
                     {imagePreviewUrls.map((url, index) => (
-                      <div key={index} className="image-preview-item">
+                      <div key={`new-${index}`} className="image-preview-item">
                         <img
                           src={url}
                           alt={`Preview ${index + 1}`}
@@ -362,12 +340,10 @@ const CreateNews: React.FC = () => {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  {isEditing ? "Updating..." : "Publishing..."}
+                  Creating...
                 </>
-              ) : isEditing ? (
-                "Update News"
               ) : (
-                "Publish News"
+                "Create News"
               )}
             </button>
           </div>

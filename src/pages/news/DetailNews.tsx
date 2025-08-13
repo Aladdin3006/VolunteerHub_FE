@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogActions,
   Select,
-  MenuItem as SelectMenuItem,
   InputAdornment,
 } from "@mui/material";
 import {
@@ -48,16 +47,12 @@ const DetailNews: React.FC = () => {
   const [news, setNews] = useState<NewsItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [upvotes, setUpvotes] = useState(42);
-  const [downvotes, setDownvotes] = useState(3);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [replyContent, setReplyContent] = useState<ReplyState>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const replyInputRef = useRef<HTMLInputElement>(null);
-
-  // Add state for comment menu
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [currentComment, setCurrentComment] = useState<Comment | null>(null);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -65,6 +60,7 @@ const DetailNews: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sortOption, setSortOption] = useState("newest");
   const [searchTerm, setSearchTerm] = useState("");
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -85,6 +81,7 @@ const DetailNews: React.FC = () => {
       if (!id) return;
       try {
         const data = await commentsService.getComments("NewsPost", id);
+        console.log("Fetched comments:", data);
         setComments(data);
       } catch (error) {
         console.error("Failed to fetch comments:", error);
@@ -112,46 +109,209 @@ const DetailNews: React.FC = () => {
     return `${years} năm trước`;
   };
 
-  const renderImages = (images: string[]) => {
-    if (!images || images.length === 0) return null;
-
-    const imageCount = images.length;
-    let imageStyle = {};
-
-    switch (imageCount) {
-      case 1:
-        imageStyle = { width: "500px", height: "400px" };
-        break;
-      case 2:
-        imageStyle = { width: "300px", height: "250px" };
-        break;
-      case 3:
-        imageStyle = { width: "200px", height: "200px" };
-        break;
-      case 4:
-        imageStyle = { width: "150px", height: "150px" };
-        break;
-      case 5:
-        imageStyle = { width: "120px", height: "120px" };
-        break;
-      default:
-        imageStyle = { width: "100px", height: "100px" };
+  const updateCommentVotes = (
+    comments: Comment[],
+    commentId: string,
+    result: {
+      upvotes: number;
+      downvotes: number;
+      userVote: "upvote" | "downvote" | null;
     }
+  ): Comment[] => {
+    return comments.map((comment) => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          upvotes: result.upvotes,
+          downvotes: result.downvotes,
+          userVote: result.userVote,
+        };
+      }
+      if (comment.replies && comment.replies.length > 0) {
+        return {
+          ...comment,
+          replies: updateCommentVotes(comment.replies, commentId, result),
+        };
+      }
+      return comment;
+    });
+  };
 
+  const handleUpvote = async (commentId: string) => {
+    if (!commentId) {
+      console.error("Comment ID is undefined");
+      return;
+    }
+    try {
+      const result = await commentsService.upvoteComment(commentId);
+      setComments((prev) => updateCommentVotes(prev, commentId, result));
+    } catch (error) {
+      console.error("Failed to upvote comment:", error);
+    }
+  };
+
+  const handleDownvote = async (commentId: string) => {
+    if (!commentId) {
+      console.error("Comment ID is undefined");
+      return;
+    }
+    try {
+      const result = await commentsService.downvoteComment(commentId);
+      setComments((prev) => updateCommentVotes(prev, commentId, result));
+    } catch (error) {
+      console.error("Failed to downvote comment:", error);
+    }
+  };
+
+  const sortedAndFilteredComments = [...comments]
+    .filter((comment) =>
+      comment.content.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      switch (sortOption) {
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case "mostVotes":
+          return (b.upvotes || 0) - (a.upvotes || 0);
+        default:
+          return 0;
+      }
+    });
+
+  const renderComment = (
+    comment: Comment,
+    level = 0,
+    parentName: string | null = null
+  ) => {
+    const isChild = level > 0;
+    console.log(
+      `Rendering comment ${comment.id} at level ${level}, parentName: ${parentName}`,
+      comment
+    );
     return (
-      <Box className="image-container">
-        {images.map((img, idx) => (
+      <Box
+        key={comment.id}
+        sx={{
+          backgroundColor: "#fff",
+          p: 2,
+          mb: 2,
+          ml: level * 2,
+          ...(isChild
+            ? { borderRadius: 0, boxShadow: "none" }
+            : { borderRadius: 2, boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }),
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <img
-            key={idx}
-            src={img}
-            alt={`News ${idx + 1}`}
-            style={imageStyle}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = "default-image.png";
-            }}
+            src={comment.createdBy.avatar || "user-default.png"}
+            alt={comment.createdBy.fullName}
+            style={{ width: 40, height: 40, borderRadius: "50%", mr: 2 }}
           />
-        ))}
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold">
+              {comment.createdBy.fullName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {formatTimeAgo(comment.createdAt)}
+            </Typography>
+          </Box>
+          <Box sx={{ ml: "auto" }}>
+            <IconButton
+              size="small"
+              onClick={(e) => handleMenuOpen(e, comment)}
+            >
+              <MoreVert />
+            </IconButton>
+          </Box>
+        </Box>
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          {isChild && parentName ? (
+            <>
+              <Box component="span" sx={{ color: "primary.main" }}>
+                @{parentName}
+              </Box>{" "}
+              {comment.content}
+            </>
+          ) : (
+            comment.content
+          )}
+        </Typography>
+        <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+          <Tooltip title="Upvote">
+            <IconButton size="small" onClick={() => handleUpvote(comment.id)}>
+              <ThumbUp
+                fontSize="small"
+                color={comment.userVote === "upvote" ? "primary" : "inherit"}
+              />
+            </IconButton>
+          </Tooltip>
+          <Typography variant="caption">{comment.upvotes ?? 0}</Typography>
+          <Tooltip title="Downvote">
+            <IconButton size="small" onClick={() => handleDownvote(comment.id)}>
+              <ThumbDown
+                fontSize="small"
+                color={comment.userVote === "downvote" ? "primary" : "inherit"}
+              />
+            </IconButton>
+          </Tooltip>
+          <Typography variant="caption">{comment.downvotes ?? 0}</Typography>
+          <Button
+            size="small"
+            onClick={() => handleReply(comment.id)}
+            sx={{ textTransform: "none" }}
+          >
+            Trả lời
+          </Button>
+        </Box>
+        {replyingTo === comment.id && (
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              value={replyContent[comment.id] || ""}
+              onChange={(e) =>
+                setReplyContent((prev) => ({
+                  ...prev,
+                  [comment.id]: e.target.value,
+                }))
+              }
+              placeholder="Viết trả lời..."
+              variant="outlined"
+              inputRef={replyInputRef}
+              InputProps={{
+                endAdornment: (
+                  <>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleSubmitReply(comment.id)}
+                      sx={{ mr: 1 }}
+                    >
+                      <Send fontSize="small" />
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleCancelReply}
+                    >
+                      Hủy
+                    </Button>
+                  </>
+                ),
+              }}
+            />
+          </Box>
+        )}
+        {(comment.replies || []).map((reply) =>
+          renderComment(reply, level + 1, comment.createdBy.fullName)
+        )}
       </Box>
     );
   };
@@ -173,6 +333,9 @@ const DetailNews: React.FC = () => {
         {
           ...newCommentData,
           replies: [],
+          upvotes: 0,
+          downvotes: 0,
+          userVote: null,
           createdBy: {
             ...newCommentData.createdBy,
             avatar: newCommentData.createdBy.avatar || "user-default.png",
@@ -222,12 +385,41 @@ const DetailNews: React.FC = () => {
                 ...(comment.replies || []),
                 {
                   ...newReply,
+                  upvotes: 0,
+                  downvotes: 0,
+                  userVote: null,
                   createdBy: {
                     ...newReply.createdBy,
                     avatar: newReply.createdBy.avatar || "user-default.png",
                   },
                 },
               ],
+            };
+          }
+          if (comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.map((reply) =>
+                reply.id === parentCommentId
+                  ? {
+                      ...reply,
+                      replies: [
+                        ...(reply.replies || []),
+                        {
+                          ...newReply,
+                          upvotes: 0,
+                          downvotes: 0,
+                          userVote: null,
+                          createdBy: {
+                            ...newReply.createdBy,
+                            avatar:
+                              newReply.createdBy.avatar || "user-default.png",
+                          },
+                        },
+                      ],
+                    }
+                  : reply
+              ),
             };
           }
           return comment;
@@ -260,7 +452,7 @@ const DetailNews: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleReportSubmit = async () => {
+  const handleReportSubmit = () => {
     if (currentComment) {
       console.log(
         "Reported comment:",
@@ -275,351 +467,116 @@ const DetailNews: React.FC = () => {
   };
 
   const handleDeleteComment = () => {
-    setAnchorEl(null); // Only close menu, don't reset currentComment
     setDeleteDialogOpen(true);
+    handleMenuClose();
   };
 
   const handleConfirmDelete = async () => {
-    if (currentComment && id) {
+    if (currentComment) {
       try {
         await commentsService.deleteComment(currentComment.id);
-        const updatedComments = await commentsService.getComments(
-          "NewsPost",
-          id
-        );
-        setComments(updatedComments);
+        setComments((prev) => prev.filter((c) => c.id !== currentComment.id));
         setDeleteDialogOpen(false);
+        setCurrentComment(null);
       } catch (error) {
         console.error("Failed to delete comment:", error);
-        setError("Failed to delete comment. Please try again.");
       }
     }
   };
 
-  const sortComments = (comments: Comment[]) => {
-    let sortedComments = [...comments];
-    switch (sortOption) {
-      case "newest":
-        sortedComments.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
-      case "oldest":
-        sortedComments.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        break;
-      case "mostVotes":
-        sortedComments;
-        break;
-      default:
-        break;
-    }
-    return sortedComments;
-  };
-
-  const filterComments = (comments: Comment[]) => {
-    if (!searchTerm) return comments;
-    return comments.filter(
-      (comment) =>
-        comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comment.createdBy.fullName
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-    );
-  };
-
-  const renderComment = (comment: Comment, level = 0) => (
-    <Box
-      key={comment.id}
-      className="comment"
-      sx={{ marginLeft: level * 1.5 + "rem", marginTop: 0 }}
-    >
-      <Box className="comment-header">
-        <img
-          src={comment.createdBy.avatar || "user-default.png"}
-          alt={`${comment.createdBy.fullName}'s avatar`}
-          className="comment-avatar"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = "user-default.png";
-          }}
-        />
-        <Box sx={{ flex: "row" }}>
-          <Box
-            sx={{ display: "flex", alignItems: "center", gap: "space-between" }}
-          >
-            <Typography variant="subtitle2" className="comment-author">
-              {comment.createdBy.fullName}
-            </Typography>
-            <Tooltip title="More actions">
-              <IconButton
-                size="small"
-                onClick={(e) => handleMenuOpen(e, comment)}
-              >
-                <MoreVert fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Typography variant="caption" className="comment-time">
-            {formatTimeAgo(comment.createdAt)}
-          </Typography>
-        </Box>
-      </Box>
-      <Typography
-        variant="body2"
-        className="comment-content"
-        sx={{ textAlign: "left" }}
-      >
-        {comment.content}
-      </Typography>
-      <Box className="comment-actions">
-        <Tooltip title="Upvote">
-          <IconButton size="small">
-            <ThumbUp fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Typography variant="caption">{0}</Typography>
-        <Tooltip title="Downvote">
-          <IconButton size="small">
-            <ThumbDown fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Typography variant="caption">{0}</Typography>
-        <Tooltip title="Reply">
-          <IconButton size="small" onClick={() => handleReply(comment.id)}>
-            <CommentIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Share">
-          <IconButton
-            size="small"
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
-              setOpenSnackbar(true);
-            }}
-          >
-            <Share fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      {replyingTo === comment.id && (
-        <Box className="reply-form" sx={{ ml: 2, mt: 1 }}>
-          <TextField
-            fullWidth
-            multiline
-            rows={2}
-            value={replyContent[comment.id] || ""}
-            onChange={(e) =>
-              setReplyContent({
-                ...replyContent,
-                [comment.id]: e.target.value,
-              })
-            }
-            placeholder={`Reply to ${comment.createdBy.fullName}...`}
-            variant="outlined"
-            inputRef={replyInputRef}
-            InputProps={{
-              endAdornment: (
-                <>
-                  <Button
-                    size="small"
-                    onClick={handleCancelReply}
-                    sx={{ mr: 1 }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleSubmitReply(comment.id)}
-                  >
-                    Reply
-                  </Button>
-                </>
-              ),
-            }}
-          />
-        </Box>
-      )}
-
-      {comment.replies && comment.replies.length > 0 && (
-        <Box className="replies">
-          {comment.replies.map((reply: any) => renderComment(reply, level + 1))}
-        </Box>
-      )}
-    </Box>
-  );
-
-  if (isLoading) {
-    return (
-      <div className="detail-news-page">
-        <Header />
-        <Box className="loading-container">
-          <Box className="loading-spinner"></Box>
-          <Typography>Đang tải...</Typography>
-        </Box>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="detail-news-page">
-        <Header />
-        <Box className="error-container">
-          <Typography>{error}</Typography>
-          <Button variant="contained" onClick={() => navigate("/news")}>
-            Quay lại trang tin tức
-          </Button>
-        </Box>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!news) {
-    return (
-      <div className="detail-news-page">
-        <Header />
-        <Box className="not-found-container">
-          <Typography>Không tìm thấy bài viết</Typography>
-          <Button variant="contained" onClick={() => navigate("/news")}>
-            Quay lại trang tin tức
-          </Button>
-        </Box>
-        <Footer />
-      </div>
-    );
-  }
-
-  const sortedAndFilteredComments = filterComments(sortComments(comments));
-
   return (
-    <div className="detail-news-page">
+    <div>
       <Header />
-      <Box className="main-layout">
-        <Box className="container">
-          <Box className="news-header">
-            <Box className="logo-container">
-              <img src="/logo.png" alt="Logo" className="logo-image" />
-            </Box>
-            <Box className="news-info">
-              <Typography variant="subtitle1" className="news-source">
-                VolunteerHub Hà Tĩnh
-              </Typography>
-              <Typography variant="caption" className="news-time">
-                {formatTimeAgo(news.createdAt)}
-              </Typography>
-            </Box>
+      <Box
+        sx={{
+          marginTop: "100px",
+          padding: { xs: 2, md: 4 },
+          maxWidth: "1200px",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        {isLoading ? (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="h6">Đang tải bài viết...</Typography>
           </Box>
-
-          <Typography variant="h4" className="news-title">
-            {news.title}
-          </Typography>
-
-          {/* {news.images && news.images.length > 0 && renderImages(news.images)} */}
-          <ImageGallery images={news.images}/>
-          <div
-            className="news-content"
-            dangerouslySetInnerHTML={{ __html: news.content }}
-          ></div>
-
-          <Box className="action-bar">
-            <Box className="vote-section">
-              <Tooltip title="Upvote">
-                <IconButton
-                  size="small"
-                  onClick={() => setUpvotes(upvotes + 1)}
-                >
-                  <ThumbUp fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Typography variant="caption">{upvotes - downvotes}</Typography>
-              <Tooltip title="Downvote">
-                <IconButton
-                  size="small"
-                  onClick={() => setDownvotes(downvotes + 1)}
-                >
-                  <ThumbDown fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            <Box className="comments-section">
-              <Tooltip title="Comments">
-                <IconButton size="small">
-                  <CommentIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Typography variant="caption">{comments.length}</Typography>
-            </Box>
-            <Box className="share-section">
-              <Tooltip title="Share">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    setOpenSnackbar(true);
-                  }}
-                >
-                  <Share fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
+        ) : error ? (
+          <Box sx={{ textAlign: "center", py: 4, color: "error.main" }}>
+            <Typography variant="h6">{error}</Typography>
           </Box>
+        ) : news ? (
+          <Box>
+            <Box
+              sx={{
+                backgroundColor: "#fff",
+                borderRadius: 2,
+                boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                p: 3,
+                mb: 4,
+              }}
+            >
+              <Typography variant="h4" fontWeight="bold" gutterBottom>
+                {news.title}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                {new Date(news.createdAt).toLocaleDateString("vi-VN", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </Typography>
+              <ImageGallery images={news.images} />
+              <Box
+                sx={{ mt: 2 }}
+                dangerouslySetInnerHTML={{ __html: news.content }}
+              />
+            </Box>
 
-          <Box className="comments-container">
-            <Typography variant="h6" className="comments-title">
-              Bình luận ({comments.length})
-            </Typography>
-            <Box className="comment-form">
+            <Box
+              sx={{
+                backgroundColor: "#fff",
+                borderRadius: 2,
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                p: 3,
+                mb: 4,
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Bình luận ({comments.length})
+              </Typography>
               <TextField
                 fullWidth
                 multiline
                 rows={3}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Thêm bình luận..."
+                placeholder="Viết bình luận của bạn..."
                 variant="outlined"
+                sx={{ mb: 2 }}
                 InputProps={{
                   endAdornment: (
                     <Button
                       variant="contained"
-                      size="small"
                       onClick={handleSubmitComment}
-                      sx={{ marginLeft: 1, height: "40px" }}
+                      disabled={!newComment.trim()}
                     >
-                      <Send fontSize="small" />
+                      <Send />
                     </Button>
                   ),
                 }}
-                sx={{ mb: 1 }}
               />
-              <Box
-                sx={{ display: "flex", alignItems: "center", mt: 1, gap: 1 }}
-              >
-                <Typography variant="caption">Sắp xếp theo:</Typography>
+              <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                 <Select
                   value={sortOption}
                   onChange={(e: SelectChangeEvent) =>
                     setSortOption(e.target.value as string)
                   }
                   size="small"
-                  sx={{
-                    ml: 1,
-                    borderRadius: "20px",
-                    height: "32px",
-                  }}
+                  sx={{ minWidth: 120 }}
                 >
-                  <SelectMenuItem value="newest">Mới nhất</SelectMenuItem>
-                  <SelectMenuItem value="oldest">Cũ nhất</SelectMenuItem>
-                  <SelectMenuItem value="mostVotes">
-                    Nhiều vote nhất
-                  </SelectMenuItem>
+                  <MenuItem value="newest">Mới nhất</MenuItem>
+                  <MenuItem value="oldest">Cũ nhất</MenuItem>
+                  <MenuItem value="mostVotes">Nhiều vote nhất</MenuItem>
                 </Select>
                 <TextField
                   variant="outlined"
@@ -627,58 +584,65 @@ const DetailNews: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   size="small"
-                  sx={{
-                    borderRadius: "20px",
-                    height: "32px",
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: "20px",
-                      paddingLeft: "8px",
-                    },
-                  }}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    },
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
                   }}
                 />
               </Box>
-            </Box>
-            <Box className="comments-list">
-              {sortedAndFilteredComments.length > 0 ? (
-                sortedAndFilteredComments.map((comment) =>
-                  renderComment(comment)
-                )
-              ) : (
-                <Typography variant="body2" sx={{ textAlign: "center", py: 3 }}>
-                  Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
-                </Typography>
-              )}
+              <Box>
+                {sortedAndFilteredComments.length > 0 ? (
+                  sortedAndFilteredComments.map((comment) =>
+                    renderComment(comment)
+                  )
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{ textAlign: "center", py: 2 }}
+                  >
+                    Chưa có bình luận nào. Hãy là người đầu tiên!
+                  </Typography>
+                )}
+              </Box>
             </Box>
           </Box>
-        </Box>
+        ) : null}
 
-        <Box className="sidebar">
-          <Typography variant="h6" className="related-title">
-            📰 Tin tức liên quan
+        <Box
+          sx={{
+            backgroundColor: "#fff",
+            borderRadius: 2,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            p: 3,
+            mt: 4,
+          }}
+        >
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Tin tức liên quan
           </Typography>
-          <ul className="related-list">
-            <li>
-              <a href="#">Chính phủ hỗ trợ miền Trung sau lũ lụt</a>
-            </li>
-            <li>
-              <a href="#">Chiến dịch hiến máu nhân đạo tháng 7</a>
-            </li>
-            <li>
-              <a href="#">Thanh niên tình nguyện vì cộng đồng</a>
-            </li>
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            {[
+              "Chính phủ hỗ trợ miền Trung sau lũ lụt",
+              "Chiến dịch hiến máu nhân đạo tháng 7",
+              "Thanh niên tình nguyện vì cộng đồng",
+            ].map((item, index) => (
+              <li key={index} style={{ marginBottom: 1 }}>
+                <a
+                  href="#"
+                  style={{ textDecoration: "none", color: "#1976d2" }}
+                >
+                  {item}
+                </a>
+              </li>
+            ))}
           </ul>
         </Box>
       </Box>
       <Footer />
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={2000}
@@ -688,21 +652,19 @@ const DetailNews: React.FC = () => {
         <Alert severity="success">Đã sao chép liên kết!</Alert>
       </Snackbar>
 
-      {/* Comment menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
         <MenuItem onClick={handleReportClick}>
-          <Report fontSize="small" sx={{ mr: 1 }} /> Báo cáo
+          <Report sx={{ mr: 1 }} /> Báo cáo
         </MenuItem>
         <MenuItem onClick={handleDeleteComment}>
-          <Delete fontSize="small" sx={{ mr: 1 }} /> Xóa
+          <Delete sx={{ mr: 1 }} /> Xóa
         </MenuItem>
       </Menu>
 
-      {/* Report dialog */}
       <Dialog
         open={reportDialogOpen}
         onClose={() => setReportDialogOpen(false)}
@@ -726,12 +688,11 @@ const DetailNews: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Delete confirmation dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => {
           setDeleteDialogOpen(false);
-          setCurrentComment(null); // Reset here instead
+          setCurrentComment(null);
         }}
       >
         <DialogTitle>Xác nhận xóa bình luận</DialogTitle>

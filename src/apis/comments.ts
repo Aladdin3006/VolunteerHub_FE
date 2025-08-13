@@ -11,6 +11,12 @@ export interface Comment {
   createdAt: string;
   updatedAt: string;
   replies: Comment[];
+  upvotes: number;
+  downvotes: number;
+  parentComment?: string | null;
+  refType: string;
+  refId: string;
+  userVote: "upvote" | "downvote" | null;
 }
 
 interface CreateCommentData {
@@ -49,9 +55,7 @@ export const commentsService = {
       `${API_BASE}/comment?refType=${refType}&refId=${refId}`,
       {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
       }
     );
 
@@ -61,10 +65,29 @@ export const commentsService = {
     }
 
     const data = await response.json();
-    return data.map((comment: any) => ({
-      ...comment,
-      id: comment._id || comment.id,
-    }));
+    const normalizeComments = (comments: any[]): Comment[] => {
+      return comments.map((comment: any) => ({
+        ...comment,
+        id: comment._id || comment.id,
+        upvotes: Array.isArray(comment.upvotes)
+          ? comment.upvotes.length
+          : comment.upvotes || 0,
+        downvotes: Array.isArray(comment.downvotes)
+          ? comment.downvotes.length
+          : comment.downvotes || 0,
+        userVote: comment.upvotes?.includes(
+          JSON.parse(localStorage.getItem("user") || "{}").id
+        )
+          ? "upvote"
+          : comment.downvotes?.includes(
+              JSON.parse(localStorage.getItem("user") || "{}").id
+            )
+          ? "downvote"
+          : null,
+        replies: normalizeComments(comment.replies || []),
+      }));
+    };
+    return normalizeComments(data);
   },
 
   deleteComment: async (id: string): Promise<void> => {
@@ -77,6 +100,70 @@ export const commentsService = {
       const errorText = await response.text();
       throw new Error(`Failed to delete comment: ${errorText}`);
     }
+  },
+
+  upvoteComment: async (
+    id: string
+  ): Promise<{
+    upvotes: number;
+    downvotes: number;
+    userVote: "upvote" | "downvote" | null;
+  }> => {
+    const response = await fetch(`${API_BASE}/comment/${id}/upvote`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to upvote comment: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      ...result,
+      userVote: result.upvotes?.includes(
+        JSON.parse(localStorage.getItem("user") || "{}").id
+      )
+        ? "upvote"
+        : result.downvotes?.includes(
+            JSON.parse(localStorage.getItem("user") || "{}").id
+          )
+        ? "downvote"
+        : null,
+    };
+  },
+
+  downvoteComment: async (
+    id: string
+  ): Promise<{
+    upvotes: number;
+    downvotes: number;
+    userVote: "upvote" | "downvote" | null;
+  }> => {
+    const response = await fetch(`${API_BASE}/comment/${id}/downvote`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to downvote comment: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return {
+      ...result,
+      userVote: result.upvotes?.includes(
+        JSON.parse(localStorage.getItem("user") || "{}").id
+      )
+        ? "upvote"
+        : result.downvotes?.includes(
+            JSON.parse(localStorage.getItem("user") || "{}").id
+          )
+        ? "downvote"
+        : null,
+    };
   },
 };
 
