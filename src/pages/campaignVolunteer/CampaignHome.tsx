@@ -7,12 +7,14 @@ import {
   Typography,
   Grid,
   CircularProgress,
+  Paper, // Thêm Paper để tạo nền cho Tabs
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import { getCampaignVolunteer, CampaignVolunteer } from "../../apis/campaign";
 import VolunteerCard from "./VolunteerCard";
+import { MoodBad } from "@mui/icons-material"; // Icon cho trạng thái trống
 
 const CampaignHome: React.FC = () => {
   const [volunteerCampaigns, setVolunteerCampaigns] = useState<CampaignVolunteer[]>([]);
@@ -42,30 +44,31 @@ const CampaignHome: React.FC = () => {
     setSelectedTab(newValue);
   };
 
+  // Nâng cấp Banner: Thêm gradient và mô tả
   const Banner = () => (
     <Box
       sx={{
-        height: 220,
-        backgroundImage:
-          "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
+        height: 260, // Tăng chiều cao một chút
+        backgroundImage: "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
-        mb: 4,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        textAlign: "center",
+        mb: 6, // Tăng khoảng cách dưới
       }}
     >
-      <Box sx={{ position: "absolute", inset: 0, bgcolor: "rgba(0,0,0,.4)" }} />
-      <Box
-        sx={{
-          position: "relative",
-          height: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Typography variant="h3" sx={{ color: "#fff", fontWeight: 700 }}>
-          Tình nguyện
+      {/* Lớp phủ gradient để tạo chiều sâu */}
+      <Box sx={{ position: "absolute", inset: 0, background: "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.6))" }} />
+      <Box sx={{ position: "relative", px: 2 }}>
+        <Typography variant="h2" sx={{ fontWeight: 700, mb: 1 }}>
+          Chung tay hành động
+        </Typography>
+        <Typography variant="h6" sx={{ fontWeight: 300 }}>
+          Tìm kiếm và tham gia các dự án tình nguyện ý nghĩa cùng chúng tôi.
         </Typography>
       </Box>
     </Box>
@@ -75,15 +78,31 @@ const CampaignHome: React.FC = () => {
     (c) => c.status === selectedTab && c.acceptStatus === "approved"
   );
 
-  const renderGrid = (): JSX.Element => (
-    <Grid container spacing={3}>
-      {filteredCampaigns.map((c) => (
-        <Grid item xs={12} sm={6} md={4} lg={3} key={c._id}>
-          <VolunteerCard campaign={c} />
-        </Grid>
-      ))}
-    </Grid>
+  // Component cho trạng thái trống
+  const EmptyState = () => (
+    <Box textAlign="center" py={10}>
+      <MoodBad sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+      <Typography variant="h6" color="text.secondary">
+        Không tìm thấy dự án nào
+      </Typography>
+      <Typography color="text.secondary">
+        Hiện tại không có dự án nào trong mục này. Vui lòng quay lại sau nhé!
+      </Typography>
+    </Box>
   );
+
+  // Style chung cho các Tab để tránh lặp code
+  const tabStyle = {
+    fontWeight: 600,
+    fontSize: "1rem",
+    textTransform: "none",
+    flexGrow: 1,
+    minWidth: 0,
+    color: "text.primary",
+    '&.Mui-selected': {
+      color: 'primary.main', // Màu cho tab được chọn
+    },
+  };
 
   return (
     <>
@@ -91,78 +110,58 @@ const CampaignHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
-        {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 4 }}>
-          <Box
-            sx={{
-              maxWidth: 600,
-              mx: "auto",
-              display: "flex",
-              justifyContent: "space-between",
+        {/* Nâng cấp Tabs: Đặt trong Paper để nổi bật hơn */}
+        <Paper
+          elevation={2}
+          sx={{
+            maxWidth: 600,
+            mx: "auto",
+            mb: 6, // Tăng khoảng cách
+            borderRadius: 2,
+            overflow: 'hidden'
+          }}
+        >
+          <Tabs
+            value={selectedTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            TabIndicatorProps={{
+              style: {
+                height: "3px",
+                borderRadius: "2px",
+              },
             }}
           >
-            <Tabs
-              value={selectedTab}
-              onChange={handleTabChange}
-              variant="fullWidth"
-              TabIndicatorProps={{
-                style: {
-                  height: "4px",
-                  backgroundColor: "#1976d2",
-                  borderRadius: "2px",
-                },
-              }}
-              sx={{ width: "100%" }}
-            >
-              <Tab
-                label="Dự án đang diễn ra"
-                value="in-progress"
-                sx={{
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  textTransform: "none",
-                  flexGrow: 1,
-                  minWidth: 0,
-                  color: "#000",
-                }}
-              />
-              <Tab
-                label="Dự án đã kết thúc"
-                value="completed"
-                sx={{
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  textTransform: "none",
-                  flexGrow: 1,
-                  minWidth: 0,
-                  color: "#000",
-                }}
-              />
-            </Tabs>
-          </Box>
-        </Box>
+            <Tab label="Dự án đang diễn ra" value="in-progress" sx={tabStyle} />
+            <Tab label="Dự án đã kết thúc" value="completed" sx={tabStyle} />
+          </Tabs>
+        </Paper>
 
-        {/* Title */}
-        <Box sx={{ textAlign: "center", mb: 4 }}>
-          <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-            Các dự án cần tình nguyện viên
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ maxWidth: 600, mx: "auto" }}
-          >
-            Tham gia trở thành một phần của dự án mà bạn tâm đắc
-          </Typography>
-        </Box>
-
-        {/* Grid or loader */}
+        {/* Grid hoặc loader */}
         {loading ? (
           <Box sx={{ textAlign: "center", mt: 6 }}>
-            <CircularProgress />
+            <CircularProgress size={50} />
           </Box>
+        ) : filteredCampaigns.length > 0 ? (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, 370px)", // Chiều rộng cố định mỗi card
+              gap: 5, // khoảng cách giữa các card
+              justifyContent: "center", // căn giữa toàn bộ grid
+            }}
+          >
+            {filteredCampaigns.map((c) => (
+              <VolunteerCard
+                key={c._id}
+                campaign={c}
+                style={{ width: "370px", height: "100%" }}
+              />
+            ))}
+          </Box>
+
         ) : (
-          renderGrid()
+          <EmptyState /> // Hiển thị trạng thái trống
         )}
       </Container>
 
