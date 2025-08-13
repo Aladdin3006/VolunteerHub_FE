@@ -5,26 +5,31 @@ import {
   Tab,
   Container,
   Typography,
-  Grid,
   CircularProgress,
+  Paper,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom"; // Không dùng ở đây nhưng giữ nếu cần
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import FundraisingCard from "./DonationCard";
 import { getCampaigns, Campaign } from "../../apis/campaign";
+import FundraisingCard from "./DonationCard"; // Sửa tên import nếu cần (từ DonationCard sang FundraisingCard)
+import { MoodBad } from "@mui/icons-material"; // Icon cho trạng thái trống
 
 const DonationHome: React.FC = () => {
   const [fundraisingCampaigns, setFundraisingCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState<"active" | "completed">("active");
 
-  // Fetch fundraising campaigns
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const data = await getCampaigns();
-        setFundraisingCampaigns(data);
+        // Lọc approved ngay từ đầu để đồng bộ
+        const approvedCampaigns = Array.isArray(data)
+          ? data.filter((c) => c.approvalStatus === "approved")
+          : [];
+        setFundraisingCampaigns(approvedCampaigns);
       } catch (err) {
         console.error("Fetch campaigns error:", err);
       } finally {
@@ -34,60 +39,75 @@ const DonationHome: React.FC = () => {
     fetchData();
   }, []);
 
-  // Banner
+  const handleTabChange = (_: React.SyntheticEvent, newValue: "active" | "completed") => {
+    setSelectedTab(newValue);
+  };
+
+  // Nâng cấp Banner: Thêm gradient và mô tả
   const Banner = () => (
     <Box
       sx={{
-        height: 220,
+        height: 260, // Đồng bộ chiều cao
         backgroundImage:
           "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
-        mb: 4,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        textAlign: "center",
+        mb: 6,
       }}
     >
-      <Box sx={{ position: "absolute", inset: 0, bgcolor: "rgba(0,0,0,.4)" }} />
+      {/* Lớp phủ gradient */}
       <Box
-        sx={{
-          position: "relative",
-          height: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Typography variant="h3" sx={{ color: "#fff", fontWeight: 700 }}>
+        sx={{ position: "absolute", inset: 0, background: "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.6))" }}
+      />
+      <Box sx={{ position: "relative", px: 2 }}>
+        <Typography variant="h2" sx={{ fontWeight: 700, mb: 1 }}>
           Quyên góp
+        </Typography>
+        <Typography variant="h6" sx={{ fontWeight: 300 }}>
+          Hỗ trợ các dự án ý nghĩa bằng cách đóng góp tài chính cùng chúng tôi.
         </Typography>
       </Box>
     </Box>
   );
 
-  // Handle tab change
-  const handleTabChange = (event: React.SyntheticEvent, newValue: "active" | "completed") => {
-    setSelectedTab(newValue);
-  };
-
-  // Render grid
-  const renderGrid = (): JSX.Element => {
-    const filtered = fundraisingCampaigns.filter((c) => {
+  const filteredCampaigns = fundraisingCampaigns.filter((c) => {
     if (selectedTab === "active") {
-      // Dự án đang gây quỹ
-      return c.approvalStatus === "approved" && c.status === "draft";
+      // Giả sử "draft" là "in-progress", điều chỉnh nếu cần
+      return c.status === "draft"; // Hoặc thay bằng "in-progress" để đồng bộ
     }
-    // Dự án đã kết thúc
-    return c.approvalStatus === "approved" && c.status === "completed";
+    return c.status === "completed";
   });
-    return (
-      <Grid container spacing={3}>
-        {filtered.map((c) => (
-          <Grid item key={c._id} xs={12} sm={6} md={4}>
-            <FundraisingCard campaign={c} />
-          </Grid>
-        ))}
-      </Grid>
-    );
+
+  // Component cho trạng thái trống
+  const EmptyState = () => (
+    <Box textAlign="center" py={10}>
+      <MoodBad sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
+      <Typography variant="h6" color="text.secondary">
+        Không tìm thấy dự án nào
+      </Typography>
+      <Typography color="text.secondary">
+        Hiện tại không có dự án nào trong mục này. Vui lòng quay lại sau nhé!
+      </Typography>
+    </Box>
+  );
+
+  // Style chung cho các Tab
+  const tabStyle = {
+    fontWeight: 600,
+    fontSize: "1rem",
+    textTransform: "none",
+    flexGrow: 1,
+    minWidth: 0,
+    color: "text.primary",
+    "&.Mui-selected": {
+      color: "primary.main",
+    },
   };
 
   return (
@@ -96,84 +116,57 @@ const DonationHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
-        {/* Tabs */}
-
-        <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 4 }}>
-          <Box
-            sx={{
-              maxWidth: 600,
-              mx: "auto",
-              display: "flex",
-              justifyContent: "space-between",
+        {/* Nâng cấp Tabs: Đặt trong Paper */}
+        <Paper
+          elevation={2}
+          sx={{
+            maxWidth: 600,
+            mx: "auto",
+            mb: 6,
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
+        >
+          <Tabs
+            value={selectedTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            TabIndicatorProps={{
+              style: {
+                height: "3px",
+                borderRadius: "2px",
+              },
             }}
           >
-            <Tabs
-              value={selectedTab}
-              onChange={handleTabChange}
-              variant="fullWidth"
-              TabIndicatorProps={{
-                style: {
-                  height: "4px",
-                  backgroundColor: "#1976d2", // xanh nước biển
-                  borderRadius: "2px",
-                },
-              }}
-              sx={{
-                width: "100%",
-              }}
-            >
-              <Tab
-                label="Dự án đang gây quỹ"
-                value="active"
-                sx={{
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  textTransform: "none",
-                  flexGrow: 1,
-                  minWidth: 0,
-                  color: "#000",
-                }}
-              />
-              <Tab
-                label="Dự án đã kết thúc"
-                value="completed"
-                sx={{
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  textTransform: "none",
-                  flexGrow: 1,
-                  minWidth: 0,
-                  color: "#000",
-                }}
-              />
-            </Tabs>
-          </Box>
-        </Box>
+            <Tab label="Dự án đang gây quỹ" value="active" sx={tabStyle} />
+            <Tab label="Dự án đã kết thúc" value="completed" sx={tabStyle} />
+          </Tabs>
+        </Paper>
 
-
-
-
-        {/* Section Title */}
-        <Box sx={{ textAlign: "center", mb: 4 }}>
-          <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>
-            {selectedTab === "active" ? "Các dự án đang gây quỹ" : "Các dự án đã kết thúc"}
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ maxWidth: 600, mx: "auto" }}
-          >
-            Hãy lựa chọn dự án trong lĩnh vực mà bạn đang quan tâm nhất
-          </Typography>
-        </Box>
-
-        {/* Grid or loader */}
+        {/* Grid hoặc loader */}
         {loading ? (
           <Box sx={{ textAlign: "center", mt: 6 }}>
-            <CircularProgress />
+            <CircularProgress size={50} />
+          </Box>
+        ) : filteredCampaigns.length > 0 ? (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, 370px)", // Đồng bộ chiều rộng card
+              gap: 5,
+              justifyContent: "center",
+            }}
+          >
+            {filteredCampaigns.map((c) => (
+              <FundraisingCard
+                key={c._id}
+                campaign={c}
+                style={{ width: "370px", height: "100%" }}
+              />
+            ))}
           </Box>
         ) : (
-          renderGrid()
+          <EmptyState />
         )}
       </Container>
 
