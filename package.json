@@ -38,6 +38,7 @@
     "pubnub-react": "^3.0.2",
     "react": "^19.1.0",
     "react-calendar": "^6.0.0",
+    "react-chartjs-2": "^5.3.0",
     "react-countup": "^6.5.3",
     "react-dom": "^19.1.0",
     "react-fast-marquee": "^1.6.5",

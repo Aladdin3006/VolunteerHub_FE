@@ -41,6 +41,8 @@ import ManagerDonationStaff from "@/pages/staff/ManagerDonationStaff";
 import CampaignDonationView from "../components/staff/CampaignDonationView";
 import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
 import CalendarTask from "@/pages/campaignVolunteer/CalendarTask";
+import ManageCertificate from "@/pages/admin/ManageCertificate";
+import Dashboard from "@/pages/admin/Dashboard";
 
 const AppRoutes = () => (
   <Routes>
@@ -349,14 +351,7 @@ const AppRoutes = () => (
               path="dashboard"
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="admin">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Admin Dashboard
-                    </h1>
-                    <p className="text-gray-600">
-                      System administration and overview.
-                    </p>
-                  </div>
+                  <Dashboard />
                 </LayoutWrapper>
               }
             />
@@ -365,6 +360,14 @@ const AppRoutes = () => (
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="admin">
                   <ManagerUser />
+                </LayoutWrapper>
+              }
+            />
+            <Route
+              path="certificates"
+              element={
+                <LayoutWrapper requireAuth={true} requiredRole="admin">
+                  <ManageCertificate />
                 </LayoutWrapper>
               }
             />
@@ -389,36 +392,6 @@ const AppRoutes = () => (
               element={
                 <LayoutWrapper requireAuth={true} requiredRole="admin">
                   <EditNews />
-                </LayoutWrapper>
-              }
-            />
-            <Route
-              path="organizations"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="admin">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      Manage Organizations
-                    </h1>
-                    <p className="text-gray-600">
-                      View and manage registered organizations.
-                    </p>
-                  </div>
-                </LayoutWrapper>
-              }
-            />
-            <Route
-              path="events"
-              element={
-                <LayoutWrapper requireAuth={true} requiredRole="admin">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                      All Events
-                    </h1>
-                    <p className="text-gray-600">
-                      View and manage all volunteer events.
-                    </p>
-                  </div>
                 </LayoutWrapper>
               }
             />

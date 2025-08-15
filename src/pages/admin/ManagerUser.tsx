@@ -26,7 +26,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  SelectChangeEvent  
+  SelectChangeEvent,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonIcon from "@mui/icons-material/Person";
@@ -35,6 +35,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
 const ManagerUser: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("all");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +50,11 @@ const ManagerUser: React.FC = () => {
     communeId: "",
   } as { fullName: string; email: string; password: string; confirmPassword: string; phone: string; date_of_birth: string; communeId: string });
   const [showManagerPassword, setShowManagerPassword] = useState(false);
-  const [showManagerConfirmPassword, setShowManagerConfirmPassword] = useState(false);
-  const [communes, setCommunes] = useState<{ id: string; name: string; district: string; province: string }[]>([]);
+  const [showManagerConfirmPassword, setShowManagerConfirmPassword] =
+    useState(false);
+  const [communes, setCommunes] = useState<
+    { id: string; name: string; district: string; province: string }[]
+  >([]);
 
   useEffect(() => {
     fetchUsers();
@@ -82,15 +86,27 @@ const ManagerUser: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(
-    (user) =>
+  // Filter users by search term and role, mapping "organization" to "staff" for display
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
       user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole =
+      selectedRole === "all" ||
+      (selectedRole === "staff" && user.role === "organization") ||
+      user.role === selectedRole;
+    return matchesSearch && matchesRole;
+  });
 
-  const handleManagerInputChange = (e: ChangeEvent<HTMLInputElement | { name?: string; value: string }>) => {
+  const handleManagerInputChange = (
+    e: ChangeEvent<HTMLInputElement | { name?: string; value: string }>
+  ) => {
     const { name, value } = e.target as any;
     setManagerForm((prev) => ({ ...prev, [name || ""]: value }));
+  };
+
+  const handleRoleChange = (event: SelectChangeEvent) => {
+    setSelectedRole(event.target.value);
   };
 
   const handleCreateManager = async (e: React.FormEvent) => {
@@ -136,7 +152,9 @@ const ManagerUser: React.FC = () => {
     }
     try {
       const result = await usersService.importStaff({ file, role: "staff" });
-      alert(`Imported ${result.successCount} users successfully. Failed: ${result.failed.length}`);
+      alert(
+        `Imported ${result.successCount} staff successfully. Failed: ${result.failed.length}`
+      );
       fetchUsers();
       setError(null);
     } catch (err: any) {
@@ -148,7 +166,11 @@ const ManagerUser: React.FC = () => {
   const handleEnable = async (id: string) => {
     try {
       await usersService.enableUser(id);
-      setUsers(users.map((user) => (user.id === id ? { ...user, status: "active" } : user)));
+      setUsers(
+        users.map((user) =>
+          user.id === id ? { ...user, status: "active" } : user
+        )
+      );
       setError(null);
     } catch (err: any) {
       setError("Failed to enable user");
@@ -159,7 +181,11 @@ const ManagerUser: React.FC = () => {
   const handleDisable = async (id: string) => {
     try {
       await usersService.disableUser(id);
-      setUsers(users.map((user) => (user.id === id ? { ...user, status: "inactive" } : user)));
+      setUsers(
+        users.map((user) =>
+          user.id === id ? { ...user, status: "inactive" } : user
+        )
+      );
       setError(null);
     } catch (err: any) {
       setError("Failed to disable user");
@@ -177,12 +203,22 @@ const ManagerUser: React.FC = () => {
   };
 
   const handleCommuneChange = (event: SelectChangeEvent) => {
-    setManagerForm(prev => ({ ...prev, communeId: event.target.value }));
+    setManagerForm((prev) => ({ ...prev, communeId: event.target.value }));
+  };
+
+  // Display "staff" instead of "organization" in the table
+  const getDisplayRole = (role: string) => {
+    return role === "organization" ? "staff" : role;
   };
 
   return (
     <Box sx={{ ml: "310px", p: 3, mt: "80px" }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
         <Box display="flex" alignItems="center">
           <PersonIcon sx={{ mr: 1 }} />
           <Typography variant="h4">Users</Typography>
@@ -191,12 +227,14 @@ const ManagerUser: React.FC = () => {
           <Button
             variant="contained"
             onClick={() => setShowManagerModal(true)}
+            sx={{ height: "40px" }} // Match height with TextField
           >
             Create Manager
           </Button>
           <Button
             variant="contained"
             component="label"
+            sx={{ height: "40px" }} // Match height with TextField
           >
             Import Staff
             <Input
@@ -215,7 +253,7 @@ const ManagerUser: React.FC = () => {
         </Alert>
       )}
 
-      <Box mb={2}>
+      <Box display="flex" gap={2} mb={2}>
         <TextField
           fullWidth
           placeholder="Search"
@@ -224,7 +262,22 @@ const ManagerUser: React.FC = () => {
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: "grey.500" }} />,
           }}
+          sx={{ height: "40px" }} // Consistent height
         />
+        <FormControl sx={{ minWidth: 240, height: "60px" }}>
+          <InputLabel>Role</InputLabel>
+          <Select
+            value={selectedRole}
+            onChange={handleRoleChange}
+            label="Role"
+            sx={{ height: "55px" }} // Match height with TextField
+          >
+            <MenuItem value="all">All Roles</MenuItem>
+            <MenuItem value="manager">Manager</MenuItem>
+            <MenuItem value="staff">Staff</MenuItem>
+            <MenuItem value="user">User</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
 
       <TableContainer component={Paper}>
@@ -253,7 +306,7 @@ const ManagerUser: React.FC = () => {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.phone}</TableCell>
                   <TableCell>{formatDate(user.date_of_birth)}</TableCell>
-                  <TableCell>{user.role}</TableCell>
+                  <TableCell>{getDisplayRole(user.role)}</TableCell>
                   <TableCell>
                     <Box display="flex" gap={1}>
                       {user.status === "active" ? (
@@ -285,10 +338,20 @@ const ManagerUser: React.FC = () => {
       </TableContainer>
 
       {/* Manager Modal */}
-      <Dialog open={showManagerModal} onClose={() => setShowManagerModal(false)}>
+      <Dialog
+        open={showManagerModal}
+        onClose={() => setShowManagerModal(false)}
+      >
         <DialogTitle>Create Manager</DialogTitle>
         <DialogContent>
-          <Box component="form" onSubmit={handleCreateManager} display="flex" flexDirection="column" gap={2} sx={{ mt: 1 }}>
+          <Box
+            component="form"
+            onSubmit={handleCreateManager}
+            display="flex"
+            flexDirection="column"
+            gap={2}
+            sx={{ mt: 1 }}
+          >
             <TextField
               label="Full Name"
               name="fullName"
@@ -319,7 +382,9 @@ const ManagerUser: React.FC = () => {
                   <InputAdornment position="end">
                     <IconButton
                       aria-label="toggle password visibility"
-                      onClick={() => setShowManagerPassword(!showManagerPassword)}
+                      onClick={() =>
+                        setShowManagerPassword(!showManagerPassword)
+                      }
                       edge="end"
                     >
                       {showManagerPassword ? <VisibilityOff /> : <Visibility />}
@@ -341,10 +406,18 @@ const ManagerUser: React.FC = () => {
                   <InputAdornment position="end">
                     <IconButton
                       aria-label="toggle confirm password visibility"
-                      onClick={() => setShowManagerConfirmPassword(!showManagerConfirmPassword)}
+                      onClick={() =>
+                        setShowManagerConfirmPassword(
+                          !showManagerConfirmPassword
+                        )
+                      }
                       edge="end"
                     >
-                      {showManagerConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                      {showManagerConfirmPassword ? (
+                        <VisibilityOff />
+                      ) : (
+                        <Visibility />
+                      )}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -387,7 +460,9 @@ const ManagerUser: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowManagerModal(false)}>Cancel</Button>
-          <Button type="submit" onClick={handleCreateManager}>Create</Button>
+          <Button type="submit" onClick={handleCreateManager}>
+            Create
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
