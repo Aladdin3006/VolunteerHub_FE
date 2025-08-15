@@ -43,6 +43,8 @@ import { managerCampaignService } from "../../apis/manager";
 import { Category } from "../../apis/campaign";
 import CampaignModal from "../../components/manager/CampaignModal";
 import { useNavigate } from "react-router-dom";
+import { User } from "lucide-react";
+import usersService from "@/apis/admin";
 
 // Map settings
 const mapContainerStyle = {
@@ -77,7 +79,7 @@ interface Phase {
   phaseDays: PhaseDay[];
 }
 
-interface Campaign {
+export interface Campaign {
   _id: string;
   name: string;
   description: string;
@@ -135,6 +137,9 @@ const ManagerCampaign: React.FC = () => {
     [userId: string]: { evaluation: string; feedback: string };
   }>({});
   const [hasEvaluated, setHasEvaluated] = useState(false);
+  const [volunteersWithCertificates, setVolunteersWithCertificates] = useState<
+    Set<string>
+  >(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -234,6 +239,22 @@ const ManagerCampaign: React.FC = () => {
     }
   };
 
+  const fetchCertificatesForCampaign = async (campaignId: string) => {
+    try {
+      const { data: certificates } = await usersService.getAllCertificates({
+        searchCampaign: campaignId,
+        limit: 1000, // Adjust based on expected number of volunteers
+      });
+
+      const volunteerIds = new Set(
+        certificates.map((cert) => cert.volunteerId.id)
+      );
+      setVolunteersWithCertificates(volunteerIds);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+    }
+  };
+
   const handleAction = async (
     action: Function,
     id: string,
@@ -288,6 +309,7 @@ const ManagerCampaign: React.FC = () => {
     setCurrentCampaignId(campaignId);
     const campaign = await fetchCampaignDetails(campaignId);
     if (campaign) {
+      await fetchCertificatesForCampaign(campaignId);
       setVolunteerEvaluations(
         campaign.volunteers?.reduce((acc, volunteer) => {
           if (volunteer.status === "approved") {

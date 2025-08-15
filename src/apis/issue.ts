@@ -5,7 +5,7 @@ const API_BASE = "http://localhost:4000";
 
 export interface Issue {
   _id: string;
-  type: "task_issue" | "campaign_withdrawal";
+  type: "task_issue" | "campaign_withdrawal" | "cert_issue";
   title: string;
   relatedEntity: {
     type: "Task" | "Campaign";
@@ -24,7 +24,7 @@ export interface Issue {
 }
 
 export interface CreateIssueData {
-  type: "task_issue" | "campaign_withdrawal";
+  type: "task_issue" | "campaign_withdrawal" | "cert_issue";
   title: string;
   relatedEntity: {
     type: "Task" | "Campaign";
@@ -34,6 +34,12 @@ export interface CreateIssueData {
   description: string;
 }
 
+export interface CertificateEarlyData {
+  campaignId: string;
+  userId: string;
+  issuedDate: string;
+}
+
 export const ISSUE_API = {
   async createIssue(
     data: CreateIssueData,
@@ -41,6 +47,22 @@ export const ISSUE_API = {
   ): Promise<IDataResponseSuccess<Issue>> {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     return axios.post(`${API_BASE}/issue`, data, {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        "Content-Type": "application/json",
+      },
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async requestCertificateEarly(
+    data: CertificateEarlyData,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<any>> {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    return axios.post(`${API_BASE}/certificate/issue-early`, data, {
       headers: {
         Authorization: `Bearer ${user.token}`,
         "Content-Type": "application/json",

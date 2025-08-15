@@ -24,7 +24,6 @@ import ImageGallery from "../../components/image/ImageGallery";
 import RegisterFaceModal from "../../components/image/uploadFaceRecognize/FaceRegisterForm.js";
 import CheckinFaceModal from "../../components/image/uploadFaceRecognize/CheckinFace.js";
 import { suggestedSkills } from "@/configs/constant.js";
-import CampaignChatModal from "@/components/chat/CampaignChat.js";
 
 interface UserProfile {
   id: string;
@@ -757,7 +756,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
               </div>
             </div>
           </div>
-          <CampaignChatModal campaignId="665fabcd92cbe12beff12345" />
         </div>
       </div>
     </div>

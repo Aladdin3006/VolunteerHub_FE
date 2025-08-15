@@ -26,6 +26,8 @@ import DepartmentManager from "./DepartmentManager";
 import CheckInDialog from "./CheckInDialog";
 import { Phase, PhaseDay } from "@/apis/staff";
 import VolunteerRequestsModal from "./VolunteerRequestsModal";
+import { Campaign } from "@/pages/manager/ManagerCampaign";
+import { managerCampaignService } from "@/apis/manager";
 
 interface IssueDialogProps {
   open: boolean;
@@ -110,7 +112,9 @@ const IssueDetailDialog: React.FC<DetailDialogProps> = ({
               <strong>Loại:</strong>{" "}
               {issue.type === "task_issue"
                 ? "Task Issue"
-                : "Campaign Withdrawal"}
+                : issue.type === "campaign_withdrawal"
+                ? "Campaign Withdrawal"
+                : "Certificate Early"}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1 }}>
               <strong>Mô tả:</strong> {issue.description}
@@ -143,13 +147,14 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(5); // Issues tab
-  const [issueTypeTab, setIssueTypeTab] = useState(0); // 0: task_issue, 1: campaign_withdrawal
+  const [issueTypeTab, setIssueTypeTab] = useState(0); // 0: task_issue, 1: campaign_withdrawal, 2: cert_issue
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
     null
   );
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
 
   const handleOpenCheckInDialog = (phase: Phase, phaseDay: PhaseDay) => {
     setSelectedPhase(phase);
@@ -159,13 +164,19 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
   useEffect(() => {
     if (open && campaignId) {
       fetchIssues();
+      fetchCampaignDetails();
     }
   }, [open, campaignId, issueTypeTab]);
 
   const fetchIssues = async () => {
     try {
       setLoading(true);
-      const type = issueTypeTab === 0 ? "task_issue" : "campaign_withdrawal";
+      const type =
+        issueTypeTab === 0
+          ? "task_issue"
+          : issueTypeTab === 1
+          ? "campaign_withdrawal"
+          : "cert_issue";
       const data = await ISSUE_API.getIssues(
         { type },
         {
@@ -187,11 +198,72 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
     }
   };
 
-  const handleClosedIssue = async (issueId: string) => {
+  const fetchCampaignDetails = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      console.log("User context:", user); // Debug: Check user._id
-      await ISSUE_API.updateIssue(issueId, { status: "closed" });
+      const data = await managerCampaignService.getCampaignById(campaignId);
+      setCampaign({
+        ...data,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+      });
+    } catch (error) {
+      console.error("Error fetching campaign details:", error);
+    }
+  };
+
+  const calculateVolunteerStats = (volunteerId: string, campaign: Campaign) => {
+    let taskCount = 0;
+    let totalTaskScore = 0;
+    let taskScoreCount = 0;
+    let totalPeerScore = 0;
+    let peerScoreCount = 0;
+
+    campaign.phases?.forEach((phase) => {
+      phase.phaseDays.forEach((phaseDay) => {
+        phaseDay.tasks.forEach((task) => {
+          // Count tasks participated
+          if (task.assignedUsers.some((user) => user.userId === volunteerId)) {
+            taskCount++;
+            // Calculate average task score
+            if (task.staffReview?.finalScore) {
+              totalTaskScore += task.staffReview.finalScore;
+              taskScoreCount++;
+            }
+            // Calculate average peer review score
+            task.peerReviews.forEach((review) => {
+              if (review.reviewee === volunteerId) {
+                totalPeerScore += review.score;
+                peerScoreCount++;
+              }
+            });
+          }
+        });
+      });
+    });
+
+    return {
+      taskCount,
+      avgTaskScore:
+        taskScoreCount > 0
+          ? (totalTaskScore / taskScoreCount).toFixed(1)
+          : "__",
+      avgPeerScore:
+        peerScoreCount > 0
+          ? (totalPeerScore / peerScoreCount).toFixed(1)
+          : "__",
+    };
+  };
+
+  const handleClosedIssue = async (issue: Issue) => {
+    try {
+      if (issue.type === "cert_issue") {
+        await ISSUE_API.requestCertificateEarly({
+          campaignId: issue.relatedEntity.entityId,
+          userId: issue.reportedBy._id,
+          issuedDate: new Date().toISOString(),
+        });
+      }
+      await ISSUE_API.updateIssue(issue._id, { status: "closed" });
       fetchIssues(); // Refresh issues after resolving
     } catch (error) {
       console.error("Error resolving issue:", error);
@@ -304,6 +376,7 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
             >
               <Tab label="Nhiệm vụ" />
               <Tab label="Chiến dịch" />
+              <Tab label="Chứng chỉ" />
             </Tabs>
 
             {loading ? (
@@ -311,15 +384,17 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
                 <CircularProgress />
               </Box>
             ) : (
-              <Paper>
+              <Paper elevation={3} sx={{ borderRadius: 2 }}>
                 <List>
                   {issues.map((issue) => (
-                    <ListItemButton key={issue._id} divider>
+                    <ListItemButton key={issue._id} divider sx={{ p: 2 }}>
                       <Box
                         sx={{
                           display: "flex",
                           alignItems: "center",
                           flexGrow: 1,
+                          gap: 2,
+                          width: "100%",
                         }}
                       >
                         <ListItem>
@@ -328,24 +403,79 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
                               src={
                                 issue.reportedBy.avatar || "/default-avatar.png"
                               }
-                              sx={{ width: 32, height: 32, mr: 1 }}
+                              sx={{ width: 40, height: 40 }}
                             />
                           </ListItemAvatar>
                           <ListItemText
-                            primary={issue.title}
-                            secondary={`Người gửi: ${issue.reportedBy.fullName}`}
+                            primary={
+                              <Typography variant="subtitle1" fontWeight="bold">
+                                {issue.title}
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="body2" color="textSecondary">
+                                Người gửi: {issue.reportedBy.fullName}
+                              </Typography>
+                            }
                           />
                         </ListItem>
+                        {issue.type === "cert_issue" && campaign && (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 2,
+                              alignItems: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {(() => {
+                              const stats = calculateVolunteerStats(
+                                issue.reportedBy._id,
+                                campaign
+                              );
+                              return (
+                                <>
+                                  <Typography
+                                    variant="body2"
+                                    color="textSecondary"
+                                  >
+                                    Nhiệm vụ tham gia: {stats.taskCount}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="textSecondary"
+                                  >
+                                    Điểm NV TB: {stats.avgTaskScore}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="textSecondary"
+                                  >
+                                    Điểm đồng nghiệp đánh giá TB:{" "}
+                                    {stats.avgPeerScore}
+                                  </Typography>
+                                </>
+                              );
+                            })()}
+                          </Box>
+                        )}
                       </Box>
-                      <Box sx={{ display: "flex", gap: 1 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "center",
+                          ml: 2,
+                        }}
+                      >
                         <Button
                           variant="contained"
                           color={
                             issue.status === "closed" ? "success" : "primary"
                           }
                           disabled={issue.status === "closed"}
-                          onClick={() => handleClosedIssue(issue._id)}
-                          sx={{ minWidth: 140, width: 140 }} // Fixed width
+                          onClick={() => handleClosedIssue(issue)}
+                          sx={{ minWidth: 160, borderRadius: 1 }}
                         >
                           {issue.status === "closed"
                             ? "Đã giải quyết"
@@ -354,7 +484,7 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
                         <Button
                           variant="outlined"
                           onClick={() => handleViewDetails(issue)}
-                          sx={{ minWidth: 140, width: 140 }} // Fixed width
+                          sx={{ minWidth: 160, borderRadius: 1 }}
                         >
                           Xem chi tiết
                         </Button>
@@ -362,7 +492,7 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
                     </ListItemButton>
                   ))}
                   {issues.length === 0 && (
-                    <Typography p={2} color="textSecondary">
+                    <Typography p={2} color="textSecondary" textAlign="center">
                       Không có issues nào
                     </Typography>
                   )}
