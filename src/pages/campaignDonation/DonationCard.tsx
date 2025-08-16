@@ -103,7 +103,9 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
           <Box display="flex" alignItems="center">
             <LocationOnOutlined fontSize="small" sx={{ mr: 1 }} />
             <Typography variant="body2" noWrap>
-              {campaign.location?.address || "Nhiều địa điểm"}
+              {/* {campaign.location?.address || "Nhiều địa điểm"}
+               */}
+               Nhiều địa điểm
             </Typography>
           </Box>
         </Stack>
@@ -132,7 +134,19 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
           fullWidth
           variant="contained"
           size="large"
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: "bold" }}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: "bold",
+            ...(cardStatus === "completed" && {
+              backgroundColor: (theme) => theme.palette.primary.main,
+              color: (theme) => theme.palette.primary.contrastText,
+              '&:disabled': {
+                backgroundColor: (theme) => theme.palette.primary.main,
+                color: (theme) => theme.palette.primary.contrastText,
+              },
+            }),
+          }}
           onClick={() => navigate(`/donations/${campaign._id}`)}
           disabled={cardStatus === "completed"} // Vô hiệu hóa nếu đã kết thúc
         >

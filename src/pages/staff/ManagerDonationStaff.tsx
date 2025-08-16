@@ -54,7 +54,7 @@ const ManagerDonationStaff: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignDetailResponse | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const navigate = useNavigate();
-  const dialogRef = useRef<INewDonationDialogRef>(null); // Di chuyển vào trong component
+  const dialogRef = useRef<INewDonationDialogRef>(null);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -83,31 +83,23 @@ const ManagerDonationStaff: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-    setFilterStatus(["", "in-progress", "upcoming", "completed"][newValue]);
+    setFilterStatus(["", "in-progress", "upcoming", "completed", "cancelled"][newValue]);
   };
 
   const [filterStatus, setFilterStatus] = useState<string>("");
 
-  const getStatusCount = (status: string) => {
-    return campaigns.filter((campaign) => mapStatus(campaign.approvalStatus) === status).length;
+  const mapStatus = (campaign: Campaign) => {
+    if (campaign.approvalStatus === "rejected") return "cancelled";
+    if (campaign.status === "completed") return "completed";
+    return campaign.approvalStatus === "approved" ? "in-progress" : "upcoming";
   };
 
-  const mapStatus = (approvalStatus?: string) => {
-    switch (approvalStatus) {
-      case "draft":
-      case "pending":
-        return "upcoming";
-      case "approved":
-        return "in-progress";
-      case "rejected":
-        return "completed";
-      default:
-        return approvalStatus || "upcoming";
-    }
+  const getStatusCount = (status: string) => {
+    return campaigns.filter((campaign) => mapStatus(campaign) === status).length;
   };
 
   const filteredCampaigns = campaigns.filter((campaign) =>
-    filterStatus ? mapStatus(campaign.approvalStatus) === filterStatus : true
+    filterStatus ? mapStatus(campaign) === filterStatus : true
   );
 
   const handleAfterSubmit = async (data: IDonationDataUpload) => {
@@ -115,7 +107,7 @@ const ManagerDonationStaff: React.FC = () => {
       setLoading(true);
       const data = await getCampaigns();
       setCampaigns(data);
-      setError(null); // Xóa lỗi cũ nếu có
+      setError(null);
     } catch (err) {
       setError("Không thể làm mới danh sách chiến dịch");
     } finally {
@@ -237,6 +229,15 @@ const ManagerDonationStaff: React.FC = () => {
                 </Box>
               }
               value={3}
+            />
+            <Tab
+              label={
+                <Box display="flex" alignItems="center">
+                  <CheckCircleIcon sx={{ fontSize: "small", mr: 1 }} />
+                  Đã Bị Hủy ({getStatusCount("cancelled")})
+                </Box>
+              }
+              value={4}
             />
           </Tabs>
         </Box>
@@ -475,7 +476,7 @@ const ManagerDonationStaff: React.FC = () => {
       <NewDonationDialog
         ref={dialogRef}
         afterSubmit={handleAfterSubmit}
-        closeAfterSubmit={true} // Thêm prop
+        closeAfterSubmit={true}
       />
     </Box>
   );

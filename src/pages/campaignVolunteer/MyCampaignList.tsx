@@ -36,6 +36,14 @@ interface Campaign {
     coordinates: [number, number];
   };
   gallery?: string[];
+  phases?: { // Thêm phases
+    phaseId: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    description?: string;
+    status: string;
+  }[];
 }
 
 interface TabPanelProps {
@@ -110,6 +118,7 @@ const MyCampaignList: React.FC = () => {
               coordinates: item.location?.coordinates || [0, 0],
             },
             gallery: item.gallery || [],
+            phases: item.phases || [],
           };
         });
 

@@ -19,6 +19,9 @@ import { useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../apis/campaign";
 import DonationDetailDialog, { CampaignDetailResponse } from "../../components/manager/DonationDetailDialog";
 import { approveDonationCampaign, rejectDonationCampaign, completeDonationCampaign } from "@/apis/donation";
+import ManagerTabs from "./ManagerTabs";
+import CheckIcon from "@mui/icons-material/Check"; // Import CheckIcon
+import CloseIcon from "@mui/icons-material/Close";
 
 interface Campaign {
     _id: string;
@@ -128,7 +131,7 @@ const ManagerDonationStaff: React.FC = () => {
         } catch (err: any) {
             alert(err.message || "Lỗi khi kết thúc chiến dịch");
         }
-    }
+    };
 
     const handleCardClick = (campaign: Campaign) => {
         setSelectedCampaign(campaign);
@@ -142,10 +145,11 @@ const ManagerDonationStaff: React.FC = () => {
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setActiveTab(newValue);
-        setFilterStatus(["", "in-progress", "upcoming", "completed"][newValue]);
+        setFilterStatus(["", "in-progress", "upcoming", "completed", "rejected"][newValue]);
     };
 
     const mapStatus = (campaign: Campaign) => {
+        if (campaign.approvalStatus === "rejected") return "rejected";
         if (campaign.status === "completed") return "completed";
         return campaign.approvalStatus === "approved" ? "in-progress" : "upcoming";
     };
@@ -162,34 +166,13 @@ const ManagerDonationStaff: React.FC = () => {
         <Box sx={{ width: "100%", padding: { xs: 1, sm: 2 }, backgroundColor: "#f5f5f5" }}>
             {/* Navigation Tabs */}
             <Box sx={{ mb: 3 }}>
-                <div className="tab-list-container">
-                    <ul className="tab-list">
-                        <li
-                            className={activeLink === "ongoing" ? "active" : ""}
-                            onClick={() => {
-                                setActiveLink("ongoing");
-                                navigate("/manager/campaigns");
-                            }}
-                        >
-                            Quản lý Chiến dịch
-                        </li>
-                        <li
-                            className={activeLink === "ongoing" ? "active" : ""}
-                            onClick={() => setActiveLink("ongoing")}
-                        >
-                            Quản lý Quyên Góp
-                        </li>
-                        <li
-                            className={activeLink === "finished" ? "active" : ""}
-                            onClick={() => {
-                                setActiveLink("finished");
-                                navigate("/manager/storms");
-                            }}
-                        >
-                            Quản lý bão
-                        </li>
-                    </ul>
-                </div>
+                <ManagerTabs
+                    activeTab={activeLink === "ongoing" ? "donations" : "storms"} // Ánh xạ "ongoing" -> "donations", "finished" -> "storms"
+                    onTabChange={(value) => {
+                        setActiveLink(value === "donations" ? "ongoing" : "finished");
+                        // Thêm logic navigate nếu cần
+                    }}
+                />
             </Box>
 
             {/* Filter Tabs */}
@@ -240,6 +223,13 @@ const ManagerDonationStaff: React.FC = () => {
                                 </Badge>
                             }
                         />
+                        <Tab
+                            label={
+                                <Badge badgeContent={getStatusCount("rejected")} color="error">
+                                    <Typography>Đã bị Hủy</Typography>
+                                </Badge>
+                            }
+                        />
                     </Tabs>
                 </Paper>
             </Box>
@@ -263,7 +253,7 @@ const ManagerDonationStaff: React.FC = () => {
                     </Typography>
                 </Paper>
             ) : (
-                <Grid container spacing={3} sx={{ justifyContent: "flex-start" }}>
+                <Grid container spacing={3} sx={{ justifyContent: "center" }}>
                     {filteredCampaigns.map((campaign) => (
                         <Grid item key={campaign._id} xs={12} sm={6} md={4} lg={3}>
                             <Card
@@ -435,7 +425,7 @@ const ManagerDonationStaff: React.FC = () => {
                                                     label={tag.name}
                                                     size="small"
                                                     sx={{
-                                                        backgroundColor: tag.color || "#e0e0e0",
+                                                        backgroundColor: "#5bdb70ff",  //tag.color || "#e0e0e0"//
                                                         color: "#fff",
                                                         fontWeight: "bold",
                                                     }}
@@ -456,12 +446,10 @@ const ManagerDonationStaff: React.FC = () => {
                                                         e.stopPropagation();
                                                         handleApproveCampaign(campaign._id);
                                                     }}
-                                                    sx={{
-                                                        flex: 1,
-                                                        textTransform: "none",
-                                                    }}
+                                                    sx={{ padding: "4px 8px", textTransform: "none" }} // Điều chỉnh padding và loại bỏ flex: 1
+                                                    startIcon={<CheckIcon />}
                                                 >
-                                                    ACCEPT
+                                                    APPROVE
                                                 </Button>
                                                 <Button
                                                     variant="contained"
@@ -471,10 +459,8 @@ const ManagerDonationStaff: React.FC = () => {
                                                         e.stopPropagation();
                                                         handleRejectCampaign(campaign._id);
                                                     }}
-                                                    sx={{
-                                                        flex: 1,
-                                                        textTransform: "none",
-                                                    }}
+                                                    sx={{ padding: "4px 8px", textTransform: "none" }} // Điều chỉnh padding và loại bỏ flex: 1
+                                                    startIcon={<CloseIcon />}
                                                 >
                                                     REJECT
                                                 </Button>
@@ -489,12 +475,7 @@ const ManagerDonationStaff: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleEndCampaign(campaign._id);
                                                 }}
-                                                sx={{
-                                                    flex: 1,
-                                                    backgroundColor: "#9c27b0",
-                                                    color: "#fff",
-                                                    textTransform: "none",
-                                                }}
+                                                sx={{ padding: "4px 8px", backgroundColor: "#9c27b0", color: "#fff", textTransform: "none" }} // Điều chỉnh padding
                                             >
                                                 END CAMPAIGN
                                             </Button>
