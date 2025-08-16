@@ -12,12 +12,13 @@ const News: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch news from API
+  // Fetch news from API, filtering for type: "news"
   useEffect(() => {
     const fetchNews = async () => {
       try {
         const data = await newsService.getAllNews();
-        setNewsArticles(data);
+        const newsPosts = data.filter((item) => item.type === "news");
+        setNewsArticles(newsPosts);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load news");
       } finally {
@@ -82,7 +83,7 @@ const News: React.FC = () => {
           <li
             className={activeTab === "finished" ? "active" : ""}
             onClick={() => {
-              navigate("/forum")
+              navigate("/forum");
             }}
           >
             Diễn đàn

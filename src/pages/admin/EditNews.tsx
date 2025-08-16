@@ -11,6 +11,7 @@ const EditNews: React.FC = () => {
   const [formData, setFormData] = useState({
     title: "",
     content: "",
+    type: "news" as "news" | "forum",
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
@@ -27,6 +28,7 @@ const EditNews: React.FC = () => {
           setFormData({
             title: newsItem.title,
             content: newsItem.content,
+            type: newsItem.type || "news",
           });
           setExistingImages(newsItem.images || []);
         } catch (err) {
@@ -38,7 +40,9 @@ const EditNews: React.FC = () => {
   }, [id]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -110,6 +114,7 @@ const EditNews: React.FC = () => {
       const updateData: UpdateNewsData = {
         title: formData.title.trim(),
         content: formData.content.trim(),
+        type: formData.type,
         images: selectedImages,
       };
 
@@ -226,6 +231,23 @@ const EditNews: React.FC = () => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="type" className="form-label">
+                Type <span className="required">*</span>
+              </label>
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                className="form-select"
+                required
+              >
+                <option value="news">News</option>
+                <option value="forum">Forum</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Images (Optional)</label>
               <div className="image-upload-section">
                 <div className="upload-area">
@@ -264,7 +286,10 @@ const EditNews: React.FC = () => {
                 {(existingImages.length > 0 || imagePreviewUrls.length > 0) && (
                   <div className="image-preview-grid">
                     {existingImages.map((url, index) => (
-                      <div key={`existing-${index}`} className="image-preview-item">
+                      <div
+                        key={`existing-${index}`}
+                        className="image-preview-item"
+                      >
                         <img
                           src={url}
                           alt={`Existing ${index + 1}`}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 import {
   Box,
   Tabs,
@@ -10,16 +10,16 @@ import {
   Badge,
   Paper,
   Divider,
-} from '@mui/material';
+} from "@mui/material";
 import {
   PlayArrow,
   Schedule,
   CheckCircle,
   Campaign as CampaignIcon,
-} from '@mui/icons-material';
-import CampaignCard from './CampaignListCard';
-import Header from '../../components/Header/Header';
-import { useNavigate } from 'react-router-dom';
+} from "@mui/icons-material";
+import CampaignCard from "./CampaignListCard";
+import Header from "../../components/Header/Header";
+import { useNavigate } from "react-router-dom";
 
 interface Campaign {
   id: string;
@@ -27,7 +27,7 @@ interface Campaign {
   description: string;
   startDate: string | null;
   endDate: string | null;
-  status: 'in-progress' | 'upcoming' | 'completed';
+  status: "in-progress" | "upcoming" | "completed";
   imageUrl?: string;
   category: string[];
   registrationDate: string | null;
@@ -78,14 +78,14 @@ const MyCampaignList: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const userString = localStorage.getItem('user');
-        if (!userString) throw new Error('Không tìm thấy thông tin người dùng');
+        const userString = localStorage.getItem("user");
+        if (!userString) throw new Error("Không tìm thấy thông tin người dùng");
 
         const user = JSON.parse(userString);
         const token = user.token;
-        if (!token) throw new Error('Token không tồn tại trong user');
+        if (!token) throw new Error("Token không tồn tại trong user");
 
-        const response = await axios.get('http://localhost:4000/campaigns/me', {
+        const response = await axios.get("http://localhost:4000/campaigns/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -95,26 +95,36 @@ const MyCampaignList: React.FC = () => {
           const startDate = item.startDate ? new Date(item.startDate) : null;
           const endDate = item.endDate ? new Date(item.endDate) : null;
           const registeredAt =
-            item.volunteers?.find((v: any) => v.status === 'approved')?.registeredAt ||
-            item.createdAt;
+            item.volunteers?.find((v: any) => v.status === "approved")
+              ?.registeredAt || item.createdAt;
           const registrationDate = registeredAt ? new Date(registeredAt) : null;
 
           return {
             id: item.campaignId || item._id,
-            name: item.name || 'Không có tên',
-            description: item.description || 'Không có mô tả',
-            startDate: startDate && !isNaN(startDate.getTime()) ? startDate.toISOString() : null,
-            endDate: endDate && !isNaN(endDate.getTime()) ? endDate.toISOString() : null,
+            name: item.name || "Không có tên",
+            description: item.description || "Không có mô tả",
+            startDate:
+              startDate && !isNaN(startDate.getTime())
+                ? startDate.toISOString()
+                : null,
+            endDate:
+              endDate && !isNaN(endDate.getTime())
+                ? endDate.toISOString()
+                : null,
             status:
-              item.status === 'in-progress' || item.status === 'upcoming' || item.status === 'completed'
+              item.status === "in-progress" ||
+              item.status === "upcoming" ||
+              item.status === "completed"
                 ? item.status
-                : 'upcoming',
-            imageUrl: item.image || 'https://via.placeholder.com/400x200',
+                : "upcoming",
+            imageUrl: item.image || "https://via.placeholder.com/400x200",
             category: item.categories || [],
             registrationDate:
-              registrationDate && !isNaN(registrationDate.getTime()) ? registrationDate : null,
+              registrationDate && !isNaN(registrationDate.getTime())
+                ? registrationDate
+                : null,
             location: {
-              address: item.location?.address || 'Không có địa chỉ',
+              address: item.location?.address || "Không có địa chỉ",
               coordinates: item.location?.coordinates || [0, 0],
             },
             gallery: item.gallery || [],
@@ -125,9 +135,9 @@ const MyCampaignList: React.FC = () => {
         setCampaigns(mappedCampaigns);
         setLoading(false);
       } catch (error: any) {
-        setError(error.message || 'Lỗi khi lấy danh sách chiến dịch');
+        setError(error.message || "Lỗi khi lấy danh sách chiến dịch");
         setLoading(false);
-        console.error('Lỗi khi lấy danh sách chiến dịch:', error);
+        console.error("Lỗi khi lấy danh sách chiến dịch:", error);
       }
     };
 
@@ -135,15 +145,15 @@ const MyCampaignList: React.FC = () => {
   }, []);
 
   const handleCardClick = (campaign: Campaign) => {
-    if (campaign.status === 'in-progress') {
+    if (campaign.status === "in-progress") {
       navigate(`/campaigns/${campaign.id}/tasks`);
     }
   };
 
   const categorizedCampaigns = useMemo(() => {
-    const ongoing = campaigns.filter((c) => c.status === 'in-progress');
-    const upcoming = campaigns.filter((c) => c.status === 'upcoming');
-    const completed = campaigns.filter((c) => c.status === 'completed');
+    const ongoing = campaigns.filter((c) => c.status === "in-progress");
+    const upcoming = campaigns.filter((c) => c.status === "upcoming");
+    const completed = campaigns.filter((c) => c.status === "completed");
     return { ongoing, upcoming, completed };
   }, [campaigns]);
 
@@ -153,22 +163,22 @@ const MyCampaignList: React.FC = () => {
 
   const tabData = [
     {
-      label: 'Đang diễn ra',
+      label: "Đang diễn ra",
       icon: <PlayArrow />,
       campaigns: categorizedCampaigns.ongoing,
-      color: 'success',
+      color: "success",
     },
     {
-      label: 'Chưa diễn ra',
+      label: "Chưa diễn ra",
       icon: <Schedule />,
       campaigns: categorizedCampaigns.upcoming,
-      color: 'warning',
+      color: "warning",
     },
     {
-      label: 'Đã kết thúc',
+      label: "Đã kết thúc",
       icon: <CheckCircle />,
       campaigns: categorizedCampaigns.completed,
-      color: 'error',
+      color: "error",
     },
   ];
 
@@ -177,12 +187,12 @@ const MyCampaignList: React.FC = () => {
       elevation={0}
       sx={{
         p: 6,
-        textAlign: 'center',
-        backgroundColor: 'grey.50',
+        textAlign: "center",
+        backgroundColor: "grey.50",
         borderRadius: 2,
       }}
     >
-      <CampaignIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+      <CampaignIcon sx={{ fontSize: 64, color: "grey.400", mb: 2 }} />
       <Typography variant="h6" color="text.secondary">
         {message}
       </Typography>
@@ -191,7 +201,9 @@ const MyCampaignList: React.FC = () => {
 
   if (loading) {
     return (
-      <Container sx={{ maxWidth: '90vw', mt: '100px', py: 4, textAlign: 'center' }}>
+      <Container
+        sx={{ maxWidth: "90vw", mt: "100px", py: 4, textAlign: "center" }}
+      >
         <Typography variant="h6">Đang tải dữ liệu...</Typography>
       </Container>
     );
@@ -199,7 +211,9 @@ const MyCampaignList: React.FC = () => {
 
   if (error) {
     return (
-      <Container sx={{ maxWidth: '90vw', mt: '100px', py: 4, textAlign: 'center' }}>
+      <Container
+        sx={{ maxWidth: "90vw", mt: "100px", py: 4, textAlign: "center" }}
+      >
         <Typography variant="h6" color="error">
           {error}
         </Typography>
@@ -210,9 +224,13 @@ const MyCampaignList: React.FC = () => {
   return (
     <>
       <Header />
-      <Container maxWidth="lg" sx={{ px: 6, mt: '100px', py: 4 }}>
+      <Container maxWidth="lg" sx={{ px: 6, mt: "100px", py: 4 }}>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 2 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: 700, mb: 2 }}
+          >
             Danh sách Campaign đã đăng ký
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -220,15 +238,15 @@ const MyCampaignList: React.FC = () => {
           </Typography>
         </Box>
 
-        <Paper elevation={1} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper elevation={1} sx={{ borderRadius: 2, overflow: "hidden" }}>
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
             sx={{
               borderBottom: 1,
-              borderColor: 'divider',
-              '& .MuiTabs-flexContainer': {
-                justifyContent: 'space-around',
+              borderColor: "divider",
+              "& .MuiTabs-flexContainer": {
+                justifyContent: "space-around",
               },
             }}
           >
@@ -239,18 +257,18 @@ const MyCampaignList: React.FC = () => {
                   <Badge
                     badgeContent={tab.campaigns.length}
                     color={tab.color as any}
-                    sx={{ '& .MuiBadge-badge': { right: -3, top: 3 } }}
+                    sx={{ "& .MuiBadge-badge": { right: -3, top: 3 } }}
                   >
                     {tab.icon}
                   </Badge>
                 }
                 label={tab.label}
                 sx={{
-                  textTransform: 'none',
-                  fontSize: '1rem',
+                  textTransform: "none",
+                  fontSize: "1rem",
                   fontWeight: 500,
                   minWidth: 120,
-                  '&.Mui-selected': {
+                  "&.Mui-selected": {
                     fontWeight: 600,
                   },
                 }}
@@ -261,7 +279,9 @@ const MyCampaignList: React.FC = () => {
           {tabData.map((tab, index) => (
             <TabPanel key={index} value={activeTab} index={index}>
               {tab.campaigns.length === 0 ? (
-                <EmptyState message={`Không có campaign nào ${tab.label.toLowerCase()}`} />
+                <EmptyState
+                  message={`Không có campaign nào ${tab.label.toLowerCase()}`}
+                />
               ) : (
                 <>
                   <Box sx={{ mb: 3, px: 3 }}>
@@ -272,8 +292,11 @@ const MyCampaignList: React.FC = () => {
                   </Box>
                   <Grid container spacing={2} sx={{ px: 1 }}>
                     {tab.campaigns.map((campaign) => (
-                      <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={campaign.id}>
-                        <CampaignCard campaign={campaign} onClick={() => handleCardClick(campaign)} />
+                      <Grid key={campaign.id}>
+                        <CampaignCard
+                          campaign={campaign}
+                          onClick={() => handleCardClick(campaign)}
+                        />
                       </Grid>
                     ))}
                   </Grid>

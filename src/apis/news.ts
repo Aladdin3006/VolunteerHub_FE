@@ -2,6 +2,7 @@ const API_BASE = "http://localhost:4000";
 
 export interface NewsItem {
   id: string;
+  type: "news" | "forum";
   title: string;
   content: string;
   images: string[];
@@ -13,12 +14,14 @@ export interface NewsItem {
 export interface CreateNewsData {
   title: string;
   content: string;
+  type: "news" | "forum";
   images?: File[];
 }
 
 export interface UpdateNewsData {
   title?: string;
   content?: string;
+  type?: "news" | "forum";
   images?: File[];
 }
 
@@ -80,6 +83,7 @@ export const newsService = {
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("content", data.content);
+      formData.append("type", data.type);
 
       if (data.images && data.images.length > 0) {
         data.images.forEach((image) => {
@@ -113,6 +117,7 @@ export const newsService = {
 
     if (data.title) formData.append("title", data.title);
     if (data.content) formData.append("content", data.content);
+    if (data.type) formData.append("type", data.type);
 
     if (data.images && data.images.length > 0) {
       data.images.forEach((image) => {

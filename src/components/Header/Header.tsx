@@ -126,7 +126,6 @@ const Header: React.FC = () => {
     { label: "Chiến Dịch", path: "/campaigns" },
     { label: "Quyên góp", path: "/donations" },
     { label: "Chiến dịch của tôi", path: "/myCampaign" },
-    { label: "Về Chúng Tôi", path: "/about-us" },
     { label: "Cộng đồng", path: "/news" },
   ];
 

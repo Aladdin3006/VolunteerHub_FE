@@ -30,6 +30,7 @@ import WarningIcon from "@mui/icons-material/Warning";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import DirectionsIcon from "@mui/icons-material/Directions";
+import VerifiedIcon from "@mui/icons-material/Verified";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -76,8 +77,11 @@ const CampaignVolunteerDetail: React.FC = () => {
   const [withdrawalTitle, setWithdrawalTitle] = useState("");
   const [withdrawalDescription, setWithdrawalDescription] = useState("");
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+  const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
+  const [certificateLoading, setCertificateLoading] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
+  const [hasPendingCertificate, setHasPendingCertificate] = useState(false);
   const [addSkillDialogOpen, setAddSkillDialogOpen] = useState(false);
   const [newSkill, setNewSkill] = useState("");
   const [tempSkills, setTempSkills] = useState<string[]>([]);
@@ -168,12 +172,33 @@ const CampaignVolunteerDetail: React.FC = () => {
       }
     };
 
+    const checkPendingCertificate = async () => {
+      try {
+        const response = await ISSUE_API.getIssues({
+          type: "cert_issue",
+          status: "open",
+        });
+
+        const hasPending = response.data.some(
+          (issue) =>
+            issue.type === "cert_issue" &&
+            issue.relatedEntity.entityId === campaignId &&
+            issue.reportedBy._id === currentUserId
+        );
+
+        setHasPendingCertificate(hasPending);
+      } catch (error) {
+        console.error("Error checking pending certificates:", error);
+      }
+    };
+
     const fetchUserSkills = () => {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       setTempSkills(storedUser.skills || []);
     };
 
     checkPendingWithdrawal();
+    checkPendingCertificate();
     fetchUserSkills();
   }, [campaignId, currentUserId, isLoggedIn]);
 
@@ -353,6 +378,41 @@ const CampaignVolunteerDetail: React.FC = () => {
     setConfirmDialogOpen(false);
   };
 
+  const handleOpenCertificateDialog = () => {
+    setCertificateDialogOpen(true);
+  };
+
+  const handleCloseCertificateDialog = () => {
+    setCertificateDialogOpen(false);
+  };
+
+  const handleRequestCertificate = async () => {
+    if (!campaignId) return;
+    try {
+      setCertificateLoading(true);
+      const issueData: CreateIssueData = {
+        type: "cert_issue",
+        title: "Yêu cầu cấp chứng chỉ sớm",
+        relatedEntity: {
+          type: "Campaign",
+          entityId: campaignId,
+        },
+        description: `Yêu cầu cấp chứng chỉ sớm cho chiến dịch ${campaign?.name}`,
+        status: "open",
+      };
+      await ISSUE_API.createIssue(issueData);
+      setJoinMessage(
+        "Yêu cầu cấp chứng chỉ sớm đã được gửi, chờ quản lý duyệt."
+      );
+      setHasPendingCertificate(true);
+      handleCloseCertificateDialog();
+    } catch (err) {
+      setJoinMessage((err as Error).message);
+    } finally {
+      setCertificateLoading(false);
+    }
+  };
+
   const handleSubmitWithdrawal = async () => {
     if (!campaignId || !withdrawalTitle || !withdrawalDescription) return;
     try {
@@ -410,6 +470,7 @@ const CampaignVolunteerDetail: React.FC = () => {
   let joinLabel = "Gửi yêu cầu tham gia";
   let joinDisabled = joinLoading;
   let isWithdrawalButton = false;
+  let isCertificateButton = false;
 
   if (myVolunteer?.status === "pending") {
     joinLabel = "Đã gửi yêu cầu (chờ duyệt)";
@@ -421,6 +482,7 @@ const CampaignVolunteerDetail: React.FC = () => {
     } else {
       joinLabel = "Rút lui khỏi chiến dịch";
       isWithdrawalButton = true;
+      isCertificateButton = true;
       joinDisabled = false;
     }
   }
@@ -672,23 +734,48 @@ const CampaignVolunteerDetail: React.FC = () => {
               {joinLoading ? "Đang gửi..." : joinLabel}
             </Button>
             {myVolunteer?.status === "approved" && (
-              <Button
-                fullWidth
-                variant="contained"
-                color="success"
-                sx={{
-                  mt: 2,
-                  textTransform: "none",
-                  borderRadius: 2,
-                  bgcolor: "#4caf50",
-                  "&:hover": {
-                    bgcolor: "#388e3c",
-                  },
-                }}
-                onClick={() => navigate(`/campaigns/${campaignId}/tasks`)}
-              >
-                Xem nhiệm vụ
-              </Button>
+              <>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color={hasPendingCertificate ? "secondary" : "primary"}
+                  sx={{
+                    mt: 2,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    bgcolor: hasPendingCertificate ? "#9e9e9e" : "#1976d2",
+                    "&:hover": {
+                      bgcolor: hasPendingCertificate ? "#757575" : "#1565c0",
+                    },
+                  }}
+                  onClick={handleOpenCertificateDialog}
+                  disabled={hasPendingCertificate || certificateLoading}
+                  startIcon={<VerifiedIcon />}
+                >
+                  {hasPendingCertificate
+                    ? "Đang chờ cấp chứng chỉ"
+                    : certificateLoading
+                    ? "Đang gửi..."
+                    : "Yêu cầu cấp chứng chỉ sớm"}
+                </Button>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="success"
+                  sx={{
+                    mt: 2,
+                    textTransform: "none",
+                    borderRadius: 2,
+                    bgcolor: "#4caf50",
+                    "&:hover": {
+                      bgcolor: "#388e3c",
+                    },
+                  }}
+                  onClick={() => navigate(`/campaigns/${campaignId}/tasks`)}
+                >
+                  Xem nhiệm vụ
+                </Button>
+              </>
             )}
           </Paper>
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
@@ -857,6 +944,43 @@ const CampaignVolunteerDetail: React.FC = () => {
             startIcon={<ExitToAppIcon />}
           >
             Chắc chắn
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={certificateDialogOpen}
+        onClose={handleCloseCertificateDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <VerifiedIcon color="primary" fontSize="large" />
+          <span>Yêu cầu cấp chứng chỉ sớm</span>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn gửi yêu cầu cấp chứng chỉ sớm cho chiến dịch
+            này? Yêu cầu sẽ được gửi đến quản lý để duyệt.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseCertificateDialog}
+            color="primary"
+            variant="outlined"
+            sx={{ minWidth: 100 }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleRequestCertificate}
+            color="primary"
+            variant="contained"
+            sx={{ minWidth: 120 }}
+            disabled={certificateLoading}
+            startIcon={<VerifiedIcon />}
+          >
+            {certificateLoading ? "Đang gửi..." : "Gửi yêu cầu"}
           </Button>
         </DialogActions>
       </Dialog>
