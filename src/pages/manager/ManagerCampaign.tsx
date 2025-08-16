@@ -43,8 +43,12 @@ import { managerCampaignService } from "../../apis/manager";
 import { Category } from "../../apis/campaign";
 import CampaignModal from "../../components/manager/CampaignModal";
 import { useNavigate } from "react-router-dom";
+
+import ManagerTabs from "./ManagerTabs";
+
 import { User } from "lucide-react";
 import usersService from "@/apis/admin";
+
 
 // Map settings
 const mapContainerStyle = {
@@ -320,7 +324,7 @@ const ManagerCampaign: React.FC = () => {
           }
           return acc;
         }, {} as { [userId: string]: { evaluation: string; feedback: string } }) ||
-          {}
+        {}
       );
       setHasEvaluated(campaign.volunteers?.some((v) => v.evaluation) || false);
       setOpenEvaluateDialog(true);
@@ -675,7 +679,7 @@ const ManagerCampaign: React.FC = () => {
                           volunteerEvaluations[volunteer.user._id]
                             ?.evaluation || "average",
                           volunteerEvaluations[volunteer.user._id]?.feedback ||
-                            ""
+                          ""
                         )
                       }
                     >
@@ -842,34 +846,13 @@ const ManagerCampaign: React.FC = () => {
           {alertMessage}
         </Alert>
       )}
-      <div className="tab-list-container">
-        <ul className="tab-list">
-          <li
-            className={activeLink === "ongoing" ? "active" : ""}
-            onClick={() => setActiveLink("ongoing")}
-          >
-            Quản lý Chiến dịch
-          </li>
-          <li
-            className={activeLink === "ongoing" ? "active" : ""}
-            onClick={() => {
-              setActiveLink("ongoing");
-              navigate("/manager/donations");
-            }}
-          >
-            Quản lý Quyên Góp
-          </li>
-          <li
-            className={activeLink === "finished" ? "active" : ""}
-            onClick={() => {
-              setActiveLink("finished");
-              navigate("/manager/storms");
-            }}
-          >
-            Quản lý bão
-          </li>
-        </ul>
-      </div>
+      <ManagerTabs
+        activeTab={activeLink === "ongoing" ? "campaigns" : "storms"} // Ánh xạ "ongoing" -> "campaigns", "finished" -> "storms"
+        onTabChange={(value) => {
+          setActiveLink(value === "campaigns" ? "ongoing" : "finished");
+          // Thêm logic navigate nếu cần
+        }}
+      />
       <Paper
         sx={{
           mb: 3,
@@ -903,29 +886,41 @@ const ManagerCampaign: React.FC = () => {
             label={
               <Badge
                 badgeContent={
-                  allCampaigns.filter((c) => c.acceptStatus === "pending")
-                    .length
+                  allCampaigns.filter((c) => c.status === "completed").length
                 }
-                color="warning"
+                color="primary"
               >
-                <Typography>Pending</Typography>
+                <Typography>Đã Hoàn Thành</Typography>
               </Badge>
             }
-            value="pending"
+            value="completed"
           />
           <Tab
             label={
               <Badge
                 badgeContent={
-                  allCampaigns.filter((c) => c.acceptStatus === "approved")
-                    .length
+                  allCampaigns.filter((c) => c.status === "in-progress").length
                 }
-                color="success"
+                color="info"
               >
-                <Typography>Approved</Typography>
+                <Typography>Đang Diễn Ra</Typography>
               </Badge>
             }
-            value="approved"
+            value="in-progress"
+          />
+          <Tab
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.acceptStatus === "pending")
+                    .length
+                }
+                color="warning"
+              >
+                <Typography>Chưa diễn ra</Typography>
+              </Badge>
+            }
+            value="pending"
           />
           <Tab
             label={
@@ -936,50 +931,11 @@ const ManagerCampaign: React.FC = () => {
                 }
                 color="error"
               >
-                <Typography>Rejected</Typography>
+                <Typography>Đã bị hủy</Typography>
               </Badge>
             }
             value="rejected"
-          />
-          <Tab
-            label={
-              <Badge
-                badgeContent={
-                  allCampaigns.filter((c) => c.status === "upcoming").length
-                }
-                color="info"
-              >
-                <Typography>Upcoming</Typography>
-              </Badge>
-            }
-            value="upcoming"
-          />
-          <Tab
-            label={
-              <Badge
-                badgeContent={
-                  allCampaigns.filter((c) => c.status === "in-progress").length
-                }
-                color="info"
-              >
-                <Typography>In Progress</Typography>
-              </Badge>
-            }
-            value="in-progress"
-          />
-          <Tab
-            label={
-              <Badge
-                badgeContent={
-                  allCampaigns.filter((c) => c.status === "completed").length
-                }
-                color="primary"
-              >
-                <Typography>Completed</Typography>
-              </Badge>
-            }
-            value="completed"
-          />
+          />        
         </Tabs>
       </Paper>
 
@@ -1181,11 +1137,9 @@ const ManagerCampaign: React.FC = () => {
                               label={category.name}
                               size="small"
                               sx={{
-                                backgroundColor: category.color,
-                                color: "white",
-                                "& .MuiChip-label": {
-                                  fontSize: "0.7rem",
-                                },
+                                backgroundColor: "#35c04cff",
+                                color: "#fff",
+                                fontWeight: "bold",
                                 maxWidth: "100%",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",

@@ -34,7 +34,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import getCampaignDetail, {
-  Campaign,
   DonationTransaction,
 } from "../../apis/campaign";
 import { fetchExpensesByCampaignId1, DonationExpense } from "../../apis/expense";
@@ -172,9 +171,9 @@ const DonationDetail: React.FC = () => {
       setCampaign((prev) =>
         prev
           ? {
-              ...prev,
-              currentAmount: prev.currentAmount + d.transaction.amount,
-            }
+            ...prev,
+            currentAmount: prev.currentAmount + d.transaction.amount,
+          }
           : prev
       );
     };
@@ -259,6 +258,11 @@ const DonationDetail: React.FC = () => {
                   avatar={<Avatar src={campaign?.createdBy?.avatar} />}
                   title={campaign?.title}
                   subheader={`Bởi ${campaign?.createdBy?.fullName || "Tổ chức"}`}
+                  sx={{
+                    '& .MuiCardHeader-title': {
+                      fontSize: '1.30rem', // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này
+                    },
+                  }}
                 />
                 <CardContent>
                   {campaign?.status === "completed" ? (

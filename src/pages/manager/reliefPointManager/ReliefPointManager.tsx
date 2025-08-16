@@ -37,7 +37,7 @@ import "leaflet/dist/leaflet.css"; // Import CSS cho Leaflet
 import { StormAPI } from "@/apis/storm.api";
 import { ReliefPointAPI } from "@/apis/reliefpoint.api"; // Import API
 import { useNavigate } from "react-router-dom";
-
+import ManagerTabs from "../ManagerTabs";
 // Interface Storm giữ nguyên
 interface Storm {
   _id: string;
@@ -420,34 +420,10 @@ const ReliefPointManager: React.FC = () => {
   };
   return (
     <Box>
-      <div className="tab-list-container">
-        <ul className="tab-list">
-          <li
-            className={activeLink === "campaigns" ? "active" : ""}
-            onClick={() => {
-              setActiveLink("campaigns");
-              navigate("/manager/campaigns");
-            }}
-          >
-            Quản lý Chiến dịch
-          </li>
-         <li
-            className={activeLink === "ongoing" ? "active" : ""}
-            onClick={() => {
-              setActiveLink("ongoing");
-              navigate("/manager/donations");
-            }}
-          >
-            Quản lý Quyên Góp
-          </li>
-          <li
-            className={activeLink === "storms" ? "active" : ""}
-            onClick={() => setActiveLink("storms")}
-          >
-            Quản lý bão
-          </li>
-        </ul>
-      </div>
+      <ManagerTabs
+    activeTab={activeLink}
+    onTabChange={(value) => setActiveLink(value)}
+/>
 
       <Typography variant="h5" fontWeight="bold" p={3}>
         📍 Quản lý điểm cứu trợ

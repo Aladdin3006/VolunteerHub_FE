@@ -24,8 +24,8 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
 
   // Tính toán giả lập cho thanh tiến độ (bạn có thể thay bằng dữ liệu thật)
   const volunteersJoined = campaign.volunteers?.length || 0;
-  const volunteersNeeded = campaign.volunteerJobs?.reduce((sum, job) => sum + (job.quantity || 0), 0) || 1;
-  const progress = Math.min((volunteersJoined / volunteersNeeded) * 100, 100);
+
+  const progress = Math.min((volunteersJoined ) * 100, 100);
 
   return (
     <Card
@@ -105,7 +105,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
 
             {/* Số TNV sang bên phải */}
             <Typography variant="caption" fontWeight="bold">
-              {volunteersJoined}/{volunteersNeeded} TNV
+              {volunteersJoined} TNV
             </Typography>
           </Box>
 
@@ -124,9 +124,21 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           fullWidth
           variant="contained"
           size="large"
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 'bold' }}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 'bold',
+            ...(campaign.status === 'completed' && {
+              backgroundColor: (theme) => theme.palette.primary.main,
+              color: (theme) => theme.palette.primary.contrastText,
+              '&:disabled': {
+                backgroundColor: (theme) => theme.palette.primary.main,
+                color: (theme) => theme.palette.primary.contrastText,
+              },
+            }),
+          }}
           onClick={() => navigate(`/campaigns/${campaign._id}`)}
-          disabled={campaign.status === 'completed'} // Vô hiệu hóa nếu đã kết thúc
+          disabled={campaign.status === 'completed'}
         >
           {campaign.status === 'completed' ? 'Xem lại dự án' : 'Xem chi tiết'}
         </Button>

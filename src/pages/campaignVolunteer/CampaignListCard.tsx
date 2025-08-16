@@ -35,11 +35,12 @@ interface Campaign {
     description: string;
   };
   phases: {
-    id: string;
+    phaseId: string;
     name: string;
     startDate: string;
     endDate: string;
-    description: string;
+    description?: string;
+    status: string;
   }[];
   imageUrl?: string;
   category: string;
@@ -52,7 +53,7 @@ interface CampaignCardProps {
 }
 
 const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
-  const formatDate = (dateString: string ) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("vi-VN", {
       day: "2-digit",
@@ -101,31 +102,60 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
     return Math.round((elapsed / total) * 100);
   };
 
-  const calculatePhaseProgress = () => {
-    if (!campaign.currentPhase) return 0;
+  const findNearestPhase = () => {
+    console.log("Danh sách giai đoạn:", campaign.phases);
 
-    const now = new Date();
-    const start = new Date(campaign.currentPhase.startDate);
-    const end = new Date(campaign.currentPhase.endDate);
+    if (!campaign.phases || campaign.phases.length === 0) {
+      console.warn("Không có giai đoạn nào cho chiến dịch:", campaign.name);
+      return null;
+    }
 
-    if (now < start) return 0;
-    if (now > end) return 100;
+    const now = new Date().getTime();
+    let nearestPhase = null;
+    let minDiff = Infinity;
 
-    const total = end.getTime() - start.getTime();
-    const elapsed = now.getTime() - start.getTime();
+    // Kiểm tra giai đoạn đang hoạt động trước (startDate <= now <= endDate)
+    const activePhase = campaign.phases.find((phase) => {
+      const start = new Date(phase.startDate).getTime();
+      const end = new Date(phase.endDate).getTime();
+      return !isNaN(start) && !isNaN(end) && start <= now && now <= end;
+    });
 
-    return Math.round((elapsed / total) * 100);
+    if (activePhase) {
+      console.log("Giai đoạn đang hoạt động:", activePhase);
+      return activePhase;
+    }
+
+    // Nếu không có giai đoạn đang hoạt động, tìm giai đoạn có startDate gần nhất
+    campaign.phases.forEach((phase) => {
+      const phaseStartDate = new Date(phase.startDate);
+      console.log(
+        `Giai đoạn: ${phase.name}, Ngày bắt đầu: ${phase.startDate}, Parsed Date: ${phaseStartDate}`
+      );
+      if (isNaN(phaseStartDate.getTime())) {
+        console.warn(`Ngày bắt đầu không hợp lệ cho giai đoạn: ${phase.name}`);
+        return;
+      }
+      const diff = Math.abs(now - phaseStartDate.getTime());
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearestPhase = phase;
+      }
+    });
+
+    return nearestPhase;
   };
 
   const progress = calculateProgress();
-  const phaseProgress = calculatePhaseProgress();
+  console.log("Dữ liệu campaign.phases trước khi tìm giai đoạn gần nhất:", campaign.phases);
+  const nearestPhase = findNearestPhase();
 
   return (
     <Card
       onClick={onClick}
       sx={{
         width: 360,
-        height: 480,
+        height: 580,
         display: "flex",
         flexDirection: "column",
         borderRadius: 3,
@@ -203,49 +233,38 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
                 </Typography>
               </Box>
             </Box>
-
-            {campaign.currentPhase && (
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                  Giai đoạn hiện tại
-                </Typography>
-                <Box
-                  sx={{
-                    backgroundColor: "primary.light",
-                    borderRadius: 2,
-                    p: 2,
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
-                    {campaign.currentPhase.name}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mb: 1, display: "block" }}
-                  >
-                    {formatDate(campaign.currentPhase.startDate)} -{" "}
-                    {formatDate(campaign.currentPhase.endDate)}
-                  </Typography>
-                  <Box display="flex" alignItems="center">
-                    <LinearProgress
-                      variant="determinate"
-                      value={phaseProgress}
-                      sx={{ flex: 1, mr: 1, height: 6, borderRadius: 3 }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {phaseProgress}%
-                    </Typography>
-                  </Box>
+            <Box mb={2}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                Giai đoạn hiện tại
+              </Typography>
+              {/* Nâng cấp giao diện cho giai đoạn gần nhất */}
+              {nearestPhase ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Chip
+                    label={nearestPhase.name}
+                    color="primary"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 500,
+                       fontSize: "1.0rem",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                         theme.palette.primary.light,
+                      },
+                    }}
+                  />
+                 
                 </Box>
-              </Box>
-            )}
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Không có giai đoạn hoặc dữ liệu không hợp lệ
+                </Typography>
+              )}
+            </Box>
           </>
         )}
 
-        <Divider sx={{ mt: 2, mb: 1 }} />
-        
+        <Divider sx={{ mt: "auto", mb: 1 }} />
       </CardContent>
     </Card>
   );
