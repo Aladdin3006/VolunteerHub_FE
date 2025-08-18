@@ -227,6 +227,14 @@ const ManagerNews: React.FC = () => {
               <MenuItem value="oldest">Oldest First</MenuItem>
               <MenuItem value="title">Sort by Title</MenuItem>
             </Select>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddNews}
+              sx={{ borderRadius: 2 }}
+            >
+              Add News
+            </Button>
           </Box>
 
           <Box
@@ -370,23 +378,56 @@ const ManagerNews: React.FC = () => {
                 </TableBody>
               </Table>
             ) : (
-              <Box sx={{ textAlign: "center", py: 5 }}>
-                <SvgIcon
-                  component={ArticleIcon}
-                  sx={{ fontSize: 48, color: "text.secondary" }}
-                />
-                <Typography variant="h6" sx={{ mt: 2 }}>
-                  No news articles found
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  mb: 3,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                    flexWrap: "wrap",
+                    flexGrow: 1,
+                  }}
                 >
-                  Try adjusting your search terms or create a new article
-                </Typography>
-                <Button variant="contained" onClick={handleAddNews}>
-                  Create News
+                  <TextField
+                    placeholder="Search news..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{ width: { xs: "100%", sm: 300 } }}
+                    variant="outlined"
+                  />
+                  <Select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    sx={{ width: { xs: "100%", sm: 200 } }}
+                    variant="outlined"
+                  >
+                    <MenuItem value="newest">Newest First</MenuItem>
+                    <MenuItem value="oldest">Oldest First</MenuItem>
+                    <MenuItem value="title">Sort by Title</MenuItem>
+                  </Select>
+                </Box>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddNews}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Add News
                 </Button>
               </Box>
             )}
