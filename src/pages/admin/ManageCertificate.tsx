@@ -47,7 +47,7 @@ const ManageCertificate: React.FC = () => {
     try {
       const response = await usersService.getAllCertificates({
         page: 1, // Fetch all data on initial load
-        limit: 10000, // Set a high limit to get all certificates (adjust based on your needs)
+        limit: 1000, // Set a high limit to get all certificates (adjust based on your needs)
       });
       console.log("Fetched all certificates:", response);
       setAllCertificates(response.data);
