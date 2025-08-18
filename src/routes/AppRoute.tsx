@@ -38,6 +38,7 @@ import Dashboard from "@/pages/admin/Dashboard";
 import DefaultLayout from "@/layouts/DefaultLayout";
 import UserLayout from "@/layouts/UserLayout";
 import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
+import ThankYou from "@/pages/campaignVolunteer/Thanhyou";
 
 const AppRoutes = () => (
   <Routes>
@@ -121,6 +122,14 @@ const AppRoutes = () => (
         <UserLayout>
           <CampaignHome />
         </UserLayout>
+      }
+    />
+    <Route
+      path="/thankyou"
+      element={
+        <LayoutWrapper>
+          <ThankYou />
+        </LayoutWrapper>
       }
     />
     <Route
