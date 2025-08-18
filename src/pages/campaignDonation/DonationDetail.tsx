@@ -137,6 +137,12 @@ const DonationDetail: React.FC = () => {
       query: { userId: "guest", campaignId },
     });
 
+    socketInstance.on("connect", () => {
+      console.log("socket connected", socketInstance.id);
+      console.log("socket url", (socketInstance.io as any).uri);
+    });
+    socketInstance.on("connect_error", (e) => console.error("socket error", e));
+
     const fetchCampaignData = async () => {
       try {
         setLoading(true);
