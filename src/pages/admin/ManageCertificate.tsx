@@ -125,16 +125,6 @@ const ManageCertificate: React.FC = () => {
     );
   };
 
-  const formatDate = (isoDate: string) => {
-    if (!isoDate) return "N/A";
-    const date = new Date(isoDate);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   const handleDeleteClick = (certificateId: string) => {
     setSelectedCertificateId(certificateId);
     setOpenDeleteDialog(true);
@@ -256,6 +246,7 @@ const ManageCertificate: React.FC = () => {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+        sx={{ mb: 8 }}
       />
 
       <Dialog

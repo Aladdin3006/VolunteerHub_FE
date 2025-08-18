@@ -4,7 +4,7 @@ import StormInfoModal from "@/components/storm/StormInfoModal";
 const UserLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="user-layout">
     {/* ⚠️ Thông tin cơn bão */}
-    <StormInfoModal />
+    {/* <StormInfoModal /> */}
 
     {/* 📦 Nội dung chính */}
     <main>{children}</main>

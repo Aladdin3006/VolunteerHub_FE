@@ -1,25 +1,25 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import authService from '../../services/Authentication.service';
+import React from "react";
+import { Link } from "react-router-dom";
+import authService from "../../services/Authentication.service";
 
 const Unauthorized: React.FC = () => {
   const isAuthenticated = authService.isAuthenticated();
   const user = authService.getUser();
 
   const getHomeRoute = () => {
-    if (!isAuthenticated) return '/';
-    
+    if (!isAuthenticated) return "/";
+
     switch (user?.role?.toLowerCase()) {
-      case 'admin':
-        return '/admin/dashboard';
-      case 'manager':
-        return '/manager/dashboard';
-      case 'organization':
-        return '/organization/dashboard';
-      case 'user':
-        return '/user/dashboard';
+      case "admin":
+        return "/";
+      case "manager":
+        return "/";
+      case "organization":
+        return "/";
+      case "user":
+        return "/";
       default:
-        return '/';
+        return "/";
     }
   };
 
@@ -40,7 +40,7 @@ const Unauthorized: React.FC = () => {
                 to={getHomeRoute()}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {isAuthenticated ? 'Go to Dashboard' : 'Go to Home'}
+                {isAuthenticated ? "Go back" : "Go to Home"}
               </Link>
               {!isAuthenticated && (
                 <Link

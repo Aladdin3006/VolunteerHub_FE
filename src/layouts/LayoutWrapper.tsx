@@ -66,7 +66,10 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({
   }
 
   // If specific role is required but user doesn't have it
-  if (requiredRole && !authService.hasRole(requiredRole)) {
+  if (
+    requiredRole &&
+    authState.userRole?.toLowerCase() !== requiredRole.toLowerCase()
+  ) {
     return <Navigate to="/unauthorized" replace />;
   }
 

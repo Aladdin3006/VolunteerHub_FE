@@ -35,7 +35,7 @@ const AdminHeader: React.FC = () => {
 
         <div className="header-right">
           <div className="notification-bell-wrapper">
-            <NotificationBell/>
+            <NotificationBell />
           </div>
 
           <div className="user-menu" ref={dropdownRef}>
@@ -49,14 +49,15 @@ const AdminHeader: React.FC = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span>{(user?.name || "A").charAt(0).toUpperCase()}</span>
-              {isDropdownOpen && (
-                <div className="dropdown-menu">
-                  <div className="dropdown-item" onClick={handleLogout}>
-                    Logout
-                  </div>
-                </div>
-              )}
             </div>
+
+            {isDropdownOpen && (
+              <div className="dropdown-menu">
+                <div className="dropdown-item" onClick={handleLogout}>
+                  Logout
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
