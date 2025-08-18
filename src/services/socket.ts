@@ -4,9 +4,13 @@ import { io, Socket } from "socket.io-client";
 export interface ServerToClientEvents {
   "storm-activated": (data: any) => void;
   "storm-deactivated": (stormId: string) => void;
-  "notification": (data: any) => void;
+  notification: (data: any) => void;
   "relief-point:new": (data: any) => void;
-  "weather:update": (data: { alerts: any[]; current: any; location: any }) => void;
+  "weather:update": (data: {
+    alerts: any[];
+    current: any;
+    location: any;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -14,7 +18,7 @@ export interface ClientToServerEvents {
 }
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-  import.meta.env.VITE_API_URL || "http://localhost:4000",
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL,
   {
     transports: ["websocket"],
     autoConnect: true,

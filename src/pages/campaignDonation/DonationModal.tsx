@@ -68,11 +68,12 @@ const DonationModal: React.FC<DonationModalProps> = ({
         userId: user?._id || null, // 👈 vẫn backup nếu không có token
       };
 
-      const res = await fetch("http://localhost:4000/payments/zalopay_payment_url", {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${API_BASE}/payments/zalopay_payment_url`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }), // 👈 Truyền token nếu có
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(payload),
       });
@@ -129,14 +130,18 @@ const DonationModal: React.FC<DonationModalProps> = ({
               fullWidth
               required
               value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, fullName: e.target.value })
+              }
             />
             <TextField
               label="Số điện thoại"
               fullWidth
               type="tel"
               value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phoneNumber: e.target.value })
+              }
             />
             <TextField
               label="Email *"
@@ -144,7 +149,9 @@ const DonationModal: React.FC<DonationModalProps> = ({
               fullWidth
               required
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
             />
             <FormControlLabel
               control={
@@ -164,7 +171,9 @@ const DonationModal: React.FC<DonationModalProps> = ({
               required
               placeholder="Nhập số tiền"
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, amount: e.target.value })
+              }
             />
             <TextField
               label="Lời nhắn (tuỳ chọn)"
@@ -172,7 +181,9 @@ const DonationModal: React.FC<DonationModalProps> = ({
               multiline
               minRows={2}
               value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, message: e.target.value })
+              }
             />
           </Stack>
         </DialogContent>

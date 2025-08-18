@@ -1,18 +1,16 @@
 // apis/task.ts
 import axios from "axios";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export const fetchPhasesByCampaignId = async (
   campaignId: string,
   token: string
 ) => {
-  const response = await axios.get(
-    `http://localhost:4000/task/${campaignId}/campaign`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const response = await axios.get(`${API_BASE}/task/${campaignId}/campaign`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
 };
 
@@ -27,7 +25,7 @@ export const submitTaskApi = async (
   images.forEach((file) => formData.append("images", file));
 
   const response = await axios.post(
-    `http://localhost:4000/task/${taskId}/submit`,
+    `${API_BASE}/task/${taskId}/submit`,
     formData,
     {
       headers: {
@@ -48,7 +46,7 @@ export const reviewPeerTaskApi = async (
   token: string
 ) => {
   const response = await axios.post(
-    `http://localhost:4000/task/${taskId}/peer-review/${revieweeId}`,
+    `${API_BASE}/task/${taskId}/peer-review/${revieweeId}`,
     { score, comment },
     {
       headers: {
@@ -67,14 +65,11 @@ export const fetchTasksByVolunteer = async (
   month: number,
   token: string
 ) => {
-  const response = await axios.get(
-    `http://localhost:4000/task/${userId}/volunteer`,
-    {
-      params: { year, month },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const response = await axios.get(`${API_BASE}/task/${userId}/volunteer`, {
+    params: { year, month },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
 };

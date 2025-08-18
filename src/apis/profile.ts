@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export const getUserProfile = async (userId: string, token: string) => {
   try {
@@ -12,7 +12,9 @@ export const getUserProfile = async (userId: string, token: string) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const result = await response.json();
@@ -22,7 +24,7 @@ export const getUserProfile = async (userId: string, token: string) => {
     };
   } catch (error) {
     console.error("Fetch user profile error:", error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error("Network error: Unable to connect to server");
     } else if (error instanceof Error) {
       throw new Error(`Fetch user profile failed: ${error.message}`);
@@ -51,7 +53,9 @@ export const updateUserAvatar = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const result = await response.json();
@@ -62,7 +66,7 @@ export const updateUserAvatar = async (
     };
   } catch (error) {
     console.error("Avatar upload error:", error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error("Network error: Unable to connect to server");
     } else if (error instanceof Error) {
       throw new Error(`Avatar upload failed: ${error.message}`);
@@ -72,10 +76,7 @@ export const updateUserAvatar = async (
   }
 };
 
-export const getSkillsVolunteer = async (
-  userId: string,
-  token: string
-) => {
+export const getSkillsVolunteer = async (userId: string, token: string) => {
   try {
     const response = await fetch(`${API_BASE}/users/${userId}/skills`, {
       method: "GET",
@@ -86,7 +87,9 @@ export const getSkillsVolunteer = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const result = await response.json();
@@ -96,7 +99,7 @@ export const getSkillsVolunteer = async (
     };
   } catch (error) {
     console.error("Get skills error:", error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error("Network error: Unable to connect to server");
     } else if (error instanceof Error) {
       throw new Error(`Get skills failed: ${error.message}`);
@@ -123,7 +126,9 @@ export const addSkillsToUser = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const result = await response.json();
@@ -133,7 +138,7 @@ export const addSkillsToUser = async (
     };
   } catch (error) {
     console.error("Add skills error:", error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error("Network error: Unable to connect to server");
     } else if (error instanceof Error) {
       throw new Error(`Add skills failed: ${error.message}`);
@@ -160,7 +165,9 @@ export const updateSkillsOfUser = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const result = await response.json();
@@ -170,7 +177,7 @@ export const updateSkillsOfUser = async (
     };
   } catch (error) {
     console.error("Update skills error:", error);
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error("Network error: Unable to connect to server");
     } else if (error instanceof Error) {
       throw new Error(`Update skills failed: ${error.message}`);

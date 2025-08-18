@@ -19,8 +19,8 @@ import { useNavigate } from "react-router-dom";
 
 dayjs.extend(relativeTime);
 
-const API_URL = "http://localhost:4000";
-const SOCKET_URL = "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
+const SOCKET_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface NotificationBellProps {
   color?: string;

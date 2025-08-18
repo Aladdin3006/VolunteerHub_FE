@@ -6,7 +6,6 @@ import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
-  envDir: "./env",
   plugins: [react(), tsconfigPaths(), svgrPlugin()],
   server: {
     port: 3000,

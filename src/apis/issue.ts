@@ -1,7 +1,7 @@
 import axios from "axios";
 import { IAxiosExtraConfigOptions, IDataResponseSuccess } from "./utils";
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export interface Issue {
   _id: string;

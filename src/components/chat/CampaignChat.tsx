@@ -98,15 +98,13 @@ const ChatRoom: React.FC<{
       setUploading(true);
       const formData = new FormData();
       formData.append("images", image);
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
       try {
-        const res = await fetch(
-          `http://localhost:4000/cloud/upload-img-single`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        const res = await fetch(`${API_BASE}/cloud/upload-img-single`, {
+          method: "POST",
+          body: formData,
+        });
         const data = await res.json();
         const imageUrl = data?.file?.url;
 
@@ -256,7 +254,7 @@ const ChatRoom: React.FC<{
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                e.preventDefault(); 
+                e.preventDefault();
                 sendMessage();
               }
             }}

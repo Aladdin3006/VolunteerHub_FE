@@ -36,7 +36,8 @@ interface Campaign {
     coordinates: [number, number];
   };
   gallery?: string[];
-  phases?: { // Thêm phases
+  phases?: {
+    // Thêm phases
     phaseId: string;
     name: string;
     startDate: string;
@@ -71,6 +72,7 @@ const MyCampaignList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -85,7 +87,7 @@ const MyCampaignList: React.FC = () => {
         const token = user.token;
         if (!token) throw new Error("Token không tồn tại trong user");
 
-        const response = await axios.get("http://localhost:4000/campaigns/me", {
+        const response = await axios.get(`${API_BASE}/campaigns/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

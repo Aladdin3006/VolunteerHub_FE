@@ -5,6 +5,7 @@ import {
   IDataResponseSuccess,
   toBase64,
 } from "./utils";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import axios from "axios";
 /**
  * Donation data
@@ -64,57 +65,57 @@ export const DONATION_API = {
   },
 
   async updateDonation(id: string, data: IDonationDataUpload): Promise<any> {
-  try {
-    const formData = new FormData();
+    try {
+      const formData = new FormData();
 
-    formData.append("title", data.title || "");
-    formData.append("description", data.description || "");
-    formData.append("goalAmount", data.goalAmount.toString());
+      formData.append("title", data.title || "");
+      formData.append("description", data.description || "");
+      formData.append("goalAmount", data.goalAmount.toString());
 
-    if (data.thumbnail instanceof File) {
-      formData.append("thumbnail", data.thumbnail);
-    } else {
-      formData.append("thumbnail", data.thumbnail); // nếu là base64 hoặc URL
+      if (data.thumbnail instanceof File) {
+        formData.append("thumbnail", data.thumbnail);
+      } else {
+        formData.append("thumbnail", data.thumbnail); // nếu là base64 hoặc URL
+      }
+
+      data.images.forEach((img) => {
+        formData.append("images", img); // img có thể là File hoặc base64/URL
+      });
+
+      data.tags.forEach((tagId) => {
+        formData.append("tags[]", tagId);
+      });
+
+      const res = await axiosInstance.put(`/donate/${id}`, formData);
+
+      if (!res.data) throw new Error("Không có dữ liệu trả về");
+
+      return res.data;
+    } catch (err: any) {
+      // In rõ toàn bộ lỗi để debug
+      console.error("❌ Axios error:", err);
+
+      if (err.response) {
+        console.error("📛 Response data:", err.response.data);
+        throw {
+          message: err.response.data?.message || "Request failed",
+          origin: err,
+        };
+      } else if (err.request) {
+        console.error("📛 Request không phản hồi:", err.request);
+        throw {
+          message: "No response received from server",
+          origin: err,
+        };
+      } else {
+        console.error("📛 Lỗi khác:", err.message);
+        throw {
+          message: err.message || "axios error",
+          origin: err,
+        };
+      }
     }
-
-    data.images.forEach((img) => {
-      formData.append("images", img); // img có thể là File hoặc base64/URL
-    });
-
-    data.tags.forEach((tagId) => {
-      formData.append("tags[]", tagId);
-    });
-
-    const res = await axiosInstance.put(`/donate/${id}`, formData);
-
-    if (!res.data) throw new Error("Không có dữ liệu trả về");
-
-    return res.data;
-  } catch (err: any) {
-    // In rõ toàn bộ lỗi để debug
-    console.error("❌ Axios error:", err);
-
-    if (err.response) {
-      console.error("📛 Response data:", err.response.data);
-      throw {
-        message: err.response.data?.message || "Request failed",
-        origin: err,
-      };
-    } else if (err.request) {
-      console.error("📛 Request không phản hồi:", err.request);
-      throw {
-        message: "No response received from server",
-        origin: err,
-      };
-    } else {
-      console.error("📛 Lỗi khác:", err.message);
-      throw {
-        message: err.message || "axios error",
-        origin: err,
-      };
-    }
-  }
-},
+  },
 
   async getById(
     id: string,
@@ -128,7 +129,6 @@ export const DONATION_API = {
   },
 } as const;
 
-
 export const approveDonationCampaign = async (id: string) => {
   try {
     const userStr = localStorage.getItem("user");
@@ -137,7 +137,7 @@ export const approveDonationCampaign = async (id: string) => {
     if (!token) throw new Error("Không tìm thấy token");
 
     const response = await axios.put(
-      `http://localhost:4000/donate/${id}/approve`,
+      `${API_BASE}/donate/${id}/approve`,
       {}, // no body
       {
         headers: {
@@ -148,10 +148,11 @@ export const approveDonationCampaign = async (id: string) => {
 
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Lỗi khi duyệt chiến dịch");
+    throw new Error(
+      error.response?.data?.message || "Lỗi khi duyệt chiến dịch"
+    );
   }
 };
-
 
 export const rejectDonationCampaign = async (id: string) => {
   try {
@@ -161,7 +162,7 @@ export const rejectDonationCampaign = async (id: string) => {
     if (!token) throw new Error("Không tìm thấy token");
 
     const response = await axios.post(
-      `http://localhost:4000/donate/${id}/reject`,
+      `${API_BASE}/donate/${id}/reject`,
       {}, // không có body
       {
         headers: {
@@ -172,7 +173,9 @@ export const rejectDonationCampaign = async (id: string) => {
 
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Lỗi khi từ chối chiến dịch");
+    throw new Error(
+      error.response?.data?.message || "Lỗi khi từ chối chiến dịch"
+    );
   }
 };
 
@@ -184,7 +187,7 @@ export const completeDonationCampaign = async (id: string) => {
     if (!token) throw new Error("Không tìm thấy token");
 
     const response = await axios.put(
-      `http://localhost:4000/donate/${id}/complete`,
+      `${API_BASE}/donate/${id}/complete`,
       {}, // không có body
       {
         headers: {
@@ -195,6 +198,8 @@ export const completeDonationCampaign = async (id: string) => {
 
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || "Lỗi khi kết thúc chiến dịch");
+    throw new Error(
+      error.response?.data?.message || "Lỗi khi kết thúc chiến dịch"
+    );
   }
 };

@@ -33,10 +33,11 @@ import EmailIcon from "@mui/icons-material/Email";
 import CloseIcon from "@mui/icons-material/Close";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import getCampaignDetail, {
-  DonationTransaction,
-} from "../../apis/campaign";
-import { fetchExpensesByCampaignId1, DonationExpense } from "../../apis/expense";
+import getCampaignDetail, { DonationTransaction } from "../../apis/campaign";
+import {
+  fetchExpensesByCampaignId1,
+  DonationExpense,
+} from "../../apis/expense";
 import DonationModal from "./DonationModal";
 import ImageGallery from "../../components/image/ImageGallery";
 import { io } from "socket.io-client";
@@ -128,7 +129,7 @@ const DonationDetail: React.FC = () => {
 
     console.log("Campaign ID:", campaignId); // Log để kiểm tra campaignId
 
-    const socketInstance = io("http://localhost:4000", {
+    const socketInstance = io(import.meta.env.VITE_API_BASE_URL, {
       query: {
         userId: "guest",
         campaignId,
@@ -152,9 +153,16 @@ const DonationDetail: React.FC = () => {
         try {
           const expenseData = await fetchExpensesByCampaignId1(campaignId);
           console.log("Expenses set:", expenseData); // Log để kiểm tra expenses
-          setExpenses(expenseData.filter((exp: DonationExpense) => exp.approvalStatus === "approved"));
+          setExpenses(
+            expenseData.filter(
+              (exp: DonationExpense) => exp.approvalStatus === "approved"
+            )
+          );
         } catch (expenseError: any) {
-          console.error("Lỗi khi lấy danh sách chi tiêu:", expenseError.message);
+          console.error(
+            "Lỗi khi lấy danh sách chi tiêu:",
+            expenseError.message
+          );
           setExpenses([]);
           setError("Lỗi khi lấy danh sách chi tiêu: " + expenseError.message);
         }
@@ -171,9 +179,9 @@ const DonationDetail: React.FC = () => {
       setCampaign((prev) =>
         prev
           ? {
-            ...prev,
-            currentAmount: prev.currentAmount + d.transaction.amount,
-          }
+              ...prev,
+              currentAmount: prev.currentAmount + d.transaction.amount,
+            }
           : prev
       );
     };
@@ -257,10 +265,12 @@ const DonationDetail: React.FC = () => {
                 <CardHeader
                   avatar={<Avatar src={campaign?.createdBy?.avatar} />}
                   title={campaign?.title}
-                  subheader={`Bởi ${campaign?.createdBy?.fullName || "Tổ chức"}`}
+                  subheader={`Bởi ${
+                    campaign?.createdBy?.fullName || "Tổ chức"
+                  }`}
                   sx={{
-                    '& .MuiCardHeader-title': {
-                      fontSize: '1.30rem', // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này
+                    "& .MuiCardHeader-title": {
+                      fontSize: "1.30rem", // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này
                     },
                   }}
                 />
@@ -278,7 +288,10 @@ const DonationDetail: React.FC = () => {
                         📋 Danh sách chi tiêu
                       </Typography>
                       {pagedExpenses.length > 0 ? (
-                        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                        <TableContainer
+                          component={Paper}
+                          sx={{ borderRadius: 2 }}
+                        >
                           <Table>
                             <TableHead>
                               <TableRow>
@@ -291,22 +304,43 @@ const DonationDetail: React.FC = () => {
                             </TableHead>
                             <TableBody>
                               {pagedExpenses.map((expense, idx) => (
-                                <TableRow key={expense._id} sx={{ backgroundColor: idx % 2 === 0 ? "#f9f9f9" : "white" }}>
-                                  <TableCell>{new Date(expense.createdAt).toLocaleString("vi-VN")}</TableCell>
+                                <TableRow
+                                  key={expense._id}
+                                  sx={{
+                                    backgroundColor:
+                                      idx % 2 === 0 ? "#f9f9f9" : "white",
+                                  }}
+                                >
+                                  <TableCell>
+                                    {new Date(expense.createdAt).toLocaleString(
+                                      "vi-VN"
+                                    )}
+                                  </TableCell>
                                   <TableCell>{expense.description}</TableCell>
-                                  <TableCell sx={{ color: "red", fontWeight: 500 }}>
+                                  <TableCell
+                                    sx={{ color: "red", fontWeight: 500 }}
+                                  >
                                     -{expense.amount.toLocaleString("vi-VN")}
                                   </TableCell>
-                                  <TableCell>{expense.createdBy?.fullName || "Không xác định"}</TableCell>
+                                  <TableCell>
+                                    {expense.createdBy?.fullName ||
+                                      "Không xác định"}
+                                  </TableCell>
                                   <TableCell>
                                     {expense.evidences.length > 0 ? (
                                       <Button
                                         variant="text"
-                                        onClick={() => handleOpenImageModal(expense.evidences[0])}
+                                        onClick={() =>
+                                          handleOpenImageModal(
+                                            expense.evidences[0]
+                                          )
+                                        }
                                       >
                                         Xem minh chứng
                                       </Button>
-                                    ) : "Không có"}
+                                    ) : (
+                                      "Không có"
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -324,7 +358,9 @@ const DonationDetail: React.FC = () => {
                           />
                         </TableContainer>
                       ) : (
-                        <Typography color="text.secondary">Chưa có thông tin chi tiêu.</Typography>
+                        <Typography color="text.secondary">
+                          Chưa có thông tin chi tiêu.
+                        </Typography>
                       )}
                     </Box>
                   ) : (
@@ -345,7 +381,11 @@ const DonationDetail: React.FC = () => {
                           {campaign?.goalAmount.toLocaleString("vi-VN")}đ
                         </Typography>
                       </Box>
-                      <LinearProgress variant="determinate" value={progress} sx={{ my: 1, height: 8 }} />
+                      <LinearProgress
+                        variant="determinate"
+                        value={progress}
+                        sx={{ my: 1, height: 8 }}
+                      />
                       <Box display="flex" justifyContent="space-between">
                         <Typography fontWeight={600}>✅ Đã đạt:</Typography>
                         <Typography fontWeight={700} color="success.main">
@@ -359,19 +399,37 @@ const DonationDetail: React.FC = () => {
                           type="number"
                           label="Số tiền muốn ủng hộ"
                           value={donationAmount}
-                          onChange={(e) => setDonationAmount(Number(e.target.value))}
-                          InputProps={{ endAdornment: <Typography ml={1}>VNĐ</Typography> }}
+                          onChange={(e) =>
+                            setDonationAmount(Number(e.target.value))
+                          }
+                          InputProps={{
+                            endAdornment: <Typography ml={1}>VNĐ</Typography>,
+                          }}
                         />
-                        <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={() => setShowModal(true)}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          sx={{ mt: 2 }}
+                          onClick={() => setShowModal(true)}
+                        >
                           Ủng hộ ngay
                         </Button>
 
-                        <Typography variant="body2" fontWeight={600} mt={2} mb={1}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          mt={2}
+                          mb={1}
+                        >
                           Chọn nhanh số tiền
                         </Typography>
                         <Stack direction="row" spacing={1} flexWrap="wrap">
                           {[1000, 5000, 10000, 50000].map((a) => (
-                            <Button key={a} variant="outlined" onClick={() => setDonationAmount(a)}>
+                            <Button
+                              key={a}
+                              variant="outlined"
+                              onClick={() => setDonationAmount(a)}
+                            >
                               {a.toLocaleString("vi-VN")} Vnđ
                             </Button>
                           ))}

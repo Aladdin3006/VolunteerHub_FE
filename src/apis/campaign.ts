@@ -1,5 +1,4 @@
-const API_BASE = "http://localhost:4000";
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 import axios from "axios";
 import {
@@ -272,7 +271,7 @@ export const CAMPAIGN_API = {
 
 export const getCampaigns = async (): Promise<Campaign[]> => {
   try {
-    const res = await axios.get("http://localhost:4000/donate");
+    const res = await axios.get(`${API_BASE}/donate`);
     const campaignData = res.data.data;
 
     if (Array.isArray(campaignData)) {

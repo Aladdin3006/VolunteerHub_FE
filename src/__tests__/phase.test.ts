@@ -15,7 +15,7 @@ beforeAll(() => {
 });
 
 describe("startPhase", () => {
-  const API_BASE = "http://localhost:4000";
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
   const mockPhaseId = "5f8d0401b54764421b7156c3"; // Valid ObjectId format
   const mockPhaseResponse = {
     _id: mockPhaseId,

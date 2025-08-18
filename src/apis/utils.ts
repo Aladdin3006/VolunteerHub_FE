@@ -82,7 +82,7 @@ export interface IAxiosExtraConfigOptions {
 }
 
 const BASE_API_URL =
-  import.meta.env.VITE_BASE_API_URL || "http://localhost:4000";
+  import.meta.env.VITE_BASE_API_URL || import.meta.env.VITE_API_BASE_URL;
 export const axiosInstance = axios.create({
   baseURL: BASE_API_URL,
   withCredentials: true,

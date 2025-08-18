@@ -1,6 +1,7 @@
 import { getAccessToken } from "./utils";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_BASE =
+  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
 
 /** ================================
  * 🧠 Interface kiểu dữ liệu Storm
@@ -87,7 +88,7 @@ export const StormAPI = {
     return res.json();
   },
 
-   async activateStorm(id: string): Promise<Storm> {
+  async activateStorm(id: string): Promise<Storm> {
     const res = await fetch(`${API_BASE}/storm/${id}/activate`, {
       method: "PATCH",
       headers: {

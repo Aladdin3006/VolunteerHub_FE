@@ -6,7 +6,7 @@ import {
 import fetchMock from "jest-fetch-mock";
 
 // describe("getUserProfile", () => {
-//   const API_BASE = "http://localhost:4000";
+//   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 //   const mockUserId = "user123";
 //   const mockToken = "test-token";
 //   const mockUserData = {
@@ -90,7 +90,7 @@ import fetchMock from "jest-fetch-mock";
 // });
 
 // describe("updateUserAvatar", () => {
-//   const API_BASE = "http://localhost:4000";
+//   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 //   const mockUserId = "user123";
 //   const mockToken = "test-token";
 //   const mockFile = new File(["test"], "avatar.jpg", { type: "image/jpeg" });
@@ -188,7 +188,7 @@ import fetchMock from "jest-fetch-mock";
 // });
 
 // describe("addSkillsToUser", () => {
-//   const API_BASE = "http://localhost:4000";
+//   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 //   const mockUserId = "user123";
 //   const mockToken = "test-token";
 //   const mockSkills = ["JavaScript", "React", "TypeScript"];

@@ -1,9 +1,6 @@
-const API_BASE = "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-export const loginUser = async (data: {
-  email: string;
-  password: string;
-}) => {
+export const loginUser = async (data: { email: string; password: string }) => {
   const response = await fetch(`${API_BASE}/users/login`, {
     method: "POST",
     headers: {

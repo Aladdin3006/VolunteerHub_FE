@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export const resetPassword = async (data: { email: string }) => {
   const response = await fetch(`${API_BASE}/users/forgot-password`, {
@@ -18,7 +18,10 @@ export const resetPassword = async (data: { email: string }) => {
   return result;
 };
 
-export const resetPasswordFinal = async (data: { token: string; newPassword: string }) => {
+export const resetPasswordFinal = async (data: {
+  token: string;
+  newPassword: string;
+}) => {
   const response = await fetch(`${API_BASE}/users/reset-password`, {
     method: "POST",
     headers: {
@@ -35,4 +38,3 @@ export const resetPasswordFinal = async (data: { token: string; newPassword: str
 
   return result;
 };
-

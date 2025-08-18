@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:4000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export interface DonationExpense {
   _id: string;
@@ -36,10 +36,10 @@ export const createExpenseApi = async (
   data.images.forEach((image) => {
     formData.append("images", image);
   });
-//    console.log("📦 FormData gửi đi:");
-//   for (let [key, value] of formData.entries()) {
-//     console.log(`${key}:`, value);
-//   }
+  //    console.log("📦 FormData gửi đi:");
+  //   for (let [key, value] of formData.entries()) {
+  //     console.log(`${key}:`, value);
+  //   }
 
   const response = await axios.post(`${BASE_URL}/expense`, formData, {
     headers: {
@@ -52,26 +52,38 @@ export const createExpenseApi = async (
 };
 
 // lay danh sach expense
-export const fetchExpensesByCampaignId = async (campaignId: string, token: string) => {
-  const response = await axios.get(`${BASE_URL}/expense/campaign/${campaignId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const fetchExpensesByCampaignId = async (
+  campaignId: string,
+  token: string
+) => {
+  const response = await axios.get(
+    `${BASE_URL}/expense/campaign/${campaignId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
   return response.data;
 };
 
-export const fetchExpensesByCampaignId1 = async (campaignId: string): Promise<DonationExpense[]> => {
-  const response = await axios.get(`${BASE_URL}/expense/campaign/${campaignId}`);
+export const fetchExpensesByCampaignId1 = async (
+  campaignId: string
+): Promise<DonationExpense[]> => {
+  const response = await axios.get(
+    `${BASE_URL}/expense/campaign/${campaignId}`
+  );
   console.log("API response:", response.data);
   return response.data.data; // ✅ lấy đúng mảng
 };
 
-
-
-//edit expens 
-export const editExpense = async (id: string, token: string, formData: FormData) => {
-  const response = await axios.patch(`http://localhost:4000/expense/${id}`, formData, {
+//edit expens
+export const editExpense = async (
+  id: string,
+  token: string,
+  formData: FormData
+) => {
+  const response = await axios.patch(`${BASE_URL}/expense/${id}`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
@@ -84,7 +96,7 @@ export const editExpense = async (id: string, token: string, formData: FormData)
 //accept expense
 export const acceptExpense = async (expenseId: string, token: string) => {
   const response = await axios.patch(
-    `http://localhost:4000/expense/${expenseId}/approve`,
+    `${BASE_URL}/expense/${expenseId}/approve`,
     {
       note: "Chi phí được chấp nhận", // hoặc truyền note từ phía frontend nếu cần
     },
@@ -98,11 +110,10 @@ export const acceptExpense = async (expenseId: string, token: string) => {
   return response.data;
 };
 
-
 //denyExpense
 export const denyExpense = async (expenseId: string, token: string) => {
   const response = await axios.patch(
-    `http://localhost:4000/expense/${expenseId}/reject`,
+    `${BASE_URL}/expense/${expenseId}/reject`,
     {
       note: "Chi phí bị từ chối", // hoặc truyền từ frontend nếu muốn
     },
@@ -119,9 +130,9 @@ export const denyExpense = async (expenseId: string, token: string) => {
 //deletedExpense
 export const deleteExpense = async (id: string, token: string) => {
   try {
-    const response = await axios.delete(`http://localhost:4000/expense/${id}`, {
+    const response = await axios.delete(`${BASE_URL}/expense/${id}`, {
       // Nếu cần gửi token:
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   } catch (error: any) {
