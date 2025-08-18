@@ -182,6 +182,7 @@ const DonationDetail: React.FC = () => {
     };
 
     const handleNewDonate = (d: { transaction: DonationTransaction }) => {
+      console.log("📥 Nhận new_donation:", d);
       setDonations2((prev) => [d.transaction, ...prev]);
       setCampaign((prev) =>
         prev
