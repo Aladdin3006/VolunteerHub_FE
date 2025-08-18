@@ -129,11 +129,12 @@ const DonationDetail: React.FC = () => {
 
     console.log("Campaign ID:", campaignId); // Log để kiểm tra campaignId
 
-    const socketInstance = io(import.meta.env.VITE_API_BASE_URL, {
-      query: {
-        userId: "guest",
-        campaignId,
-      },
+    const SOCKET_URL = import.meta.env.VITE_API_BASE_URL
+
+    const socketInstance = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      query: { userId: "guest", campaignId },
     });
 
     const fetchCampaignData = async () => {
@@ -179,9 +180,9 @@ const DonationDetail: React.FC = () => {
       setCampaign((prev) =>
         prev
           ? {
-              ...prev,
-              currentAmount: prev.currentAmount + d.transaction.amount,
-            }
+            ...prev,
+            currentAmount: prev.currentAmount + d.transaction.amount,
+          }
           : prev
       );
     };
@@ -265,9 +266,8 @@ const DonationDetail: React.FC = () => {
                 <CardHeader
                   avatar={<Avatar src={campaign?.createdBy?.avatar} />}
                   title={campaign?.title}
-                  subheader={`Bởi ${
-                    campaign?.createdBy?.fullName || "Tổ chức"
-                  }`}
+                  subheader={`Bởi ${campaign?.createdBy?.fullName || "Tổ chức"
+                    }`}
                   sx={{
                     "& .MuiCardHeader-title": {
                       fontSize: "1.30rem", // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này
