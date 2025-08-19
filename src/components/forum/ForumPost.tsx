@@ -65,11 +65,12 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       borderRadius={"8px"}
       {...rest}
       sx={{
-        minHeight: "575px",
+        minHeight: "fit-content",
         maxHeight: "1000px",
         p: "12px",
         pb: "5px",
         color: "#080809",
+        backgroundColor: "white",
         ...rest.sx,
       }}
       boxShadow={1}

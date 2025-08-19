@@ -39,8 +39,10 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
     if (inputRef.current) {
       const len = value.length;
       inputRef.current.setSelectionRange(len, len);
+      inputRef.current.focus();
     }
-  }, []);
+    setValue(relyTo?.fullName ? `@${relyTo.fullName} ` : "")
+  }, [relyTo]);
 
   return (
     <Box

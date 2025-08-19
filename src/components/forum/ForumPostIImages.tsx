@@ -65,7 +65,7 @@ export const ForumPostImages = forwardRef<HTMLDivElement, IProps>(
                   alt={`img-${index}`}
                   loading="lazy"
                   style={{
-                    objectFit: "cover",
+                    objectFit: "fill",
                     width: "100%",
                     height: "100%",
                   }}

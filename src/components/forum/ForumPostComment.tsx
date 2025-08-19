@@ -26,6 +26,7 @@ interface IProps extends BoxProps {
   onUnLike?: (comment: ICommentListItem) => void;
   onReply?: (comment: ICommentListItem, text: string) => Promise<boolean>;
   onShowReplies?: (comment: ICommentListItem) => Promise<boolean>;
+  childReply?: (Comment: ICommentListItem) => void;
   level: number;
   maxLevel: number;
 }
@@ -38,14 +39,13 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
       onUnLike,
       onReply,
       onShowReplies,
+      childReply,
       level,
       maxLevel,
       ...rest
     } = props;
 
-    const [showReplies, setShowReplies] = useState(
-      Boolean(comment.isLoadedAllComments)
-    );
+    const [showReplies, setShowReplies] = useState(comment.updateCount != null);
     const [showCommentInput, setShowCommentInput] = useState(false);
     const [replyTo, setReplyTo] = useState<IUserShort | null>(null);
 
@@ -67,6 +67,14 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
           el.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
+    };
+
+    const handleChildReply = (comment: ICommentListItem) => {
+      if (!showCommentInput) {
+        setShowCommentInput(true);
+      }
+      setReplyTo({ ...comment.createdBy });
+      scrollToCommentInput();
     };
 
     return (
@@ -123,25 +131,29 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
                 <ThumbDownAltOutlined fontSize="small" />
               )}
             </IconButton>
-            {level < maxLevel && (
+            {level <= maxLevel && (
               <IconButton
                 size="small"
                 color={"default"}
                 onClick={() => {
-                  if (!showCommentInput) {
-                    setReplyTo(comment.createdBy);
-                    setShowCommentInput(true);
-                    scrollToCommentInput();
+                  if (level === maxLevel) {
+                    childReply && childReply(comment);
                   } else {
-                    setReplyTo(null);
-                    setShowCommentInput(false);
+                    if (!showCommentInput) {
+                      setReplyTo(comment.createdBy);
+                      setShowCommentInput(true);
+                      scrollToCommentInput();
+                    } else {
+                      setReplyTo(null);
+                      setShowCommentInput(false);
+                    }
                   }
                 }}
               >
                 <ReplyOutlined fontSize="small" />
               </IconButton>
             )}
-            {showReplies && (
+            {level < maxLevel && showReplies && (
               <Button
                 onClick={handleToggleReplies}
                 size="small"
@@ -180,13 +192,14 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
                     }}
                   /> */}
                     <ForumPostComment
-                      key={reply._id + reply._id}
+                      key={reply._id}
                       comment={reply}
                       onLike={onLike}
                       onUnLike={onUnLike}
                       onReply={onReply}
                       level={level + 1}
                       maxLevel={maxLevel}
+                      childReply={handleChildReply}
                     />
                   </Box>
                 ))}
@@ -196,7 +209,14 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
 
           {showCommentInput && onReply && (
             <CommentInput
-              onSend={(text) => onReply(comment, text)}
+              onSend={async (text) => {
+                const result = await onReply(comment, text);
+                if (result && onShowReplies) {
+                  onShowReplies(comment);
+                  setShowReplies(true);
+                }
+                return result;
+              }}
               relyTo={replyTo}
               id={`comment-input-${comment._id}`}
             />
