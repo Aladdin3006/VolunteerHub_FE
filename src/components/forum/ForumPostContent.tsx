@@ -40,7 +40,13 @@ export const ForumPostContent = forwardRef<HTMLDivElement, IProps>(
           ))}
         </Stack>
         {/* Images */}
-        <ForumPostImages images={post.images} onImageClick={onImageClick} />
+        <ForumPostImages
+          images={post.images}
+          onImageClick={onImageClick}
+          sx={{
+            maxHeight: "500px",
+          }}
+        />
       </Stack>
     );
   }

@@ -129,12 +129,19 @@ const DonationDetail: React.FC = () => {
 
     console.log("Campaign ID:", campaignId); // Log để kiểm tra campaignId
 
-    const socketInstance = io(import.meta.env.VITE_API_BASE_URL, {
-      query: {
-        userId: "guest",
-        campaignId,
-      },
+    const SOCKET_URL = import.meta.env.VITE_API_BASE_URL
+
+    const socketInstance = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      query: { userId: "guest", campaignId },
     });
+
+    socketInstance.on("connect", () => {
+      console.log("socket connected", socketInstance.id);
+      console.log("socket url", (socketInstance.io as any).uri);
+    });
+    socketInstance.on("connect_error", (e) => console.error("socket error", e));
 
     const fetchCampaignData = async () => {
       try {
@@ -175,13 +182,14 @@ const DonationDetail: React.FC = () => {
     };
 
     const handleNewDonate = (d: { transaction: DonationTransaction }) => {
+      console.log("📥 Nhận new_donation:", d);
       setDonations2((prev) => [d.transaction, ...prev]);
       setCampaign((prev) =>
         prev
           ? {
-              ...prev,
-              currentAmount: prev.currentAmount + d.transaction.amount,
-            }
+            ...prev,
+            currentAmount: prev.currentAmount + d.transaction.amount,
+          }
           : prev
       );
     };
@@ -265,9 +273,8 @@ const DonationDetail: React.FC = () => {
                 <CardHeader
                   avatar={<Avatar src={campaign?.createdBy?.avatar} />}
                   title={campaign?.title}
-                  subheader={`Bởi ${
-                    campaign?.createdBy?.fullName || "Tổ chức"
-                  }`}
+                  subheader={`Bởi ${campaign?.createdBy?.fullName || "Tổ chức"
+                    }`}
                   sx={{
                     "& .MuiCardHeader-title": {
                       fontSize: "1.30rem", // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này

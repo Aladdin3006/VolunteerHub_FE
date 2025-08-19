@@ -33,6 +33,7 @@ import { keyframes } from "@emotion/react";
 import authService from "../../services/Authentication.service";
 import EmergencyButton from "./EmergencyButton";
 import NotificationBell from "../Notification/NotificationBell";
+import StormInfoModal from "../storm/StormInfoModal";
 
 interface User {
   fullName: string;
@@ -96,17 +97,6 @@ const Header: React.FC = () => {
       label: "Chỉnh sửa hồ sơ",
       icon: <FaUserEdit />,
       action: () => navigate("/profile"),
-    },
-    { label: "Thông báo", icon: <FaBell />, action: () => {} },
-    {
-      label: "Cài đặt & bảo mật",
-      icon: <FaCog />,
-      action: () => navigate("/settings"),
-    },
-    {
-      label: "Trợ giúp & hỗ trợ",
-      icon: <FaQuestionCircle />,
-      action: () => navigate("/help"),
     },
     {
       label: "Nhiệm vụ trong tháng",
@@ -177,11 +167,16 @@ const Header: React.FC = () => {
                 <FaBars />
               </IconButton>
               <Drawer
+                sx={{ zIndex: 1800 }}
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
+                ModalProps={{ keepMounted: true }}
+                container={
+                  typeof window !== "undefined" ? () => window.document.body : undefined
+                }
               >
-                <List>
+                <List onClick={() => setDrawerOpen(false)}>
                   {navLinks.map((item) => (
                     <ListItem disablePadding key={item.path}>
                       <ListItemButton component={Link} to={item.path}>
@@ -190,12 +185,13 @@ const Header: React.FC = () => {
                     </ListItem>
                   ))}
                   <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate("/contact")}>
-                      <ListItemText primary="Liên hệ" />
+                    <ListItemButton component={Link} to="/login">
+                      <ListItemText primary="Đăng nhập" />
                     </ListItemButton>
                   </ListItem>
                 </List>
               </Drawer>
+              <StormInfoModal />
             </>
           ) : (
             <Box display="flex" alignItems="center" gap={3}>
@@ -231,7 +227,7 @@ const Header: React.FC = () => {
               ))}
               {user && (
                 <Box display="flex" alignItems="center" gap={1}>
-                  <NotificationBell />
+                  <NotificationBell color="black" />
                   <Typography variant="body2" color="#1976d2" fontWeight={500}>
                     Xin chào, {user.fullName.split(" ")[0]} 👋
                   </Typography>
@@ -257,8 +253,9 @@ const Header: React.FC = () => {
                   Đăng Nhập
                 </Button>
               )}
-              <EmergencyButton />
+              <StormInfoModal />
             </Box>
+            
           )}
         </Toolbar>
       </AppBar>

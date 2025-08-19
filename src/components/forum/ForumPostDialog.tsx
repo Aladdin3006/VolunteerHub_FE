@@ -153,7 +153,13 @@ export const ForumPostDialog = forwardRef<IForumPostDialogRef, IProps>(
 
         comment.isLoadingComments = false;
         comment.isErrorComments = false;
-        comment.comments = [...(comment.comments ?? []), ...comments];
+        const oldComments = comment.comments ?? [];
+        comments.forEach((comment) => {
+          if (oldComments.find((c) => c._id === comment._id) == null) {
+            oldComments.push(comment);
+          }
+        });
+        comment.comments = [...oldComments];
         comment.isLoadedAllComments =
           comments.length < MAX_ITEM_FETCH_COUNT ? true : false;
         comment.updateCount = (comment.updateCount ?? 0) + 1;
@@ -278,6 +284,7 @@ export const ForumPostDialog = forwardRef<IForumPostDialogRef, IProps>(
               comments: [],
             },
           ];
+          comment.commentsCount++;
           updatePost();
           return true;
         }
@@ -399,7 +406,8 @@ export const ForumPostDialog = forwardRef<IForumPostDialogRef, IProps>(
           {post != null && (
             <ForumPost
               post={post}
-              sx={{ boxShadow: 0 }}
+              user={userRef.current}
+              sx={{ boxShadow: 0, height: "100%" }}
               onImageClick={(images, idx) => {
                 imageViewerDialogRef.current &&
                   imageViewerDialogRef.current.open(images, idx);

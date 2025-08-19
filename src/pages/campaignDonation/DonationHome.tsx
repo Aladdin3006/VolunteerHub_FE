@@ -47,7 +47,7 @@ const DonationHome: React.FC = () => {
   const Banner = () => (
     <Box
       sx={{
-        height: 260, // Đồng bộ chiều cao
+        height: 360, // Đồng bộ chiều cao
         backgroundImage:
           "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
         backgroundSize: "cover",

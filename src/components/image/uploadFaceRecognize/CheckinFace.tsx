@@ -58,10 +58,11 @@ const CheckinFaceModal: React.FC<Props> = ({
       phasedayId: phaseDayId,
       method: "face",
     };
+    const fastAPIurl = import.meta.env.VITE_FAST_API
 
     try {
       setLoading(true);
-      const res = await axios.post("http://localhost:8000/checkin", payload, {
+      const res = await axios.post(`${fastAPIurl}/checkin`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert(res.data.status || "✅ Check-in thành công!");

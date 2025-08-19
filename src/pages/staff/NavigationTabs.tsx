@@ -2,63 +2,52 @@
 import React from "react";
 import { Box, Tabs, Tab } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Campaign, MonetizationOn, FlashOn } from "@mui/icons-material";
+import { Campaign, MonetizationOn } from "@mui/icons-material";
 
-type ManagerTabType = "campaigns" | "donations" | "storms";
-
-interface TabItem {
-  label: string;
-  value: ManagerTabType;
-  path: string;
-  icon: JSX.Element;
+interface NavigationTabsProps {
+  activeLink: "ongoing" | "finished";
 }
 
-interface ManagerTabsProps {
-  activeTab: ManagerTabType;
-  onTabChange: (value: ManagerTabType) => void;
-}
-
-const ManagerTabs: React.FC<ManagerTabsProps> = ({ activeTab, onTabChange }) => {
+const NavigationTabs: React.FC<NavigationTabsProps> = ({ activeLink }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const tabs: TabItem[] = [
+  // Định nghĩa các tab
+  const tabs = [
     {
       label: "Quản lý Chiến dịch",
-      value: "campaigns",
-      path: "/manager/campaigns",
+      value: 0,
+      path: "/staff/campaigns",
       icon: <Campaign />,
     },
     {
-      label: "Quản lý Quyên Góp",
-      value: "donations",
-      path: "/manager/donations",
+      label: "Quản lý Quyên góp",
+      value: 1,
+      path: "/staff/donations",
       icon: <MonetizationOn />,
-    },
-    {
-      label: "Quản lý Bão",
-      value: "storms",
-      path: "/manager/storms",
-      icon: <FlashOn />,
     },
   ];
 
-  // Xác định tab đang active dựa trên URL hiện tại
+  // Xác định tab đang active dựa trên URL hoặc activeLink
   const getActiveTab = () => {
     const currentTab = tabs.find((tab) => location.pathname === tab.path);
-    return currentTab ? currentTab.value : activeTab;
+    if (currentTab) return currentTab.value;
+    return activeLink === "ongoing" ? 0 : 1;
+  };
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    const selectedTab = tabs.find((tab) => tab.value === newValue);
+    if (selectedTab?.path) {
+      navigate(selectedTab.path);
+    }
   };
 
   return (
     <Box sx={{ mb: 3, bgcolor: "#ffffff", borderRadius: 2, p: 1, boxShadow: 1 }}>
       <Tabs
         value={getActiveTab()}
-        onChange={(event, newValue) => {
-          onTabChange(newValue);
-          const selectedTab = tabs.find((tab) => tab.value === newValue);
-          if (selectedTab?.path) navigate(selectedTab.path);
-        }}
-        variant="fullWidth"
+        onChange={handleTabChange}
+        variant="fullWidth" // Hoặc "scrollable" cho mobile
         sx={{
           "& .MuiTab-root": {
             textTransform: "none",
@@ -98,4 +87,4 @@ const ManagerTabs: React.FC<ManagerTabsProps> = ({ activeTab, onTabChange }) => 
   );
 };
 
-export default ManagerTabs;
+export default NavigationTabs;
