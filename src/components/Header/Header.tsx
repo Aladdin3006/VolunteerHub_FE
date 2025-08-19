@@ -167,9 +167,7 @@ const Header: React.FC = () => {
                 <FaBars />
               </IconButton>
               <Drawer
-                sx={{
-                  zIndex: 1800, // put drawer above header
-                }}
+                sx={{ zIndex: 1800 }}
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
@@ -187,13 +185,13 @@ const Header: React.FC = () => {
                     </ListItem>
                   ))}
                   <ListItem disablePadding>
-                    <ListItemButton component={Link} to="/contact">
-                      <ListItemText primary="Liên hệ" />
+                    <ListItemButton component={Link} to="/login">
+                      <ListItemText primary="Đăng nhập" />
                     </ListItemButton>
                   </ListItem>
                 </List>
               </Drawer>
-
+              <StormInfoModal />
             </>
           ) : (
             <Box display="flex" alignItems="center" gap={3}>
@@ -229,7 +227,7 @@ const Header: React.FC = () => {
               ))}
               {user && (
                 <Box display="flex" alignItems="center" gap={1}>
-                  <NotificationBell color = "black"/>
+                  <NotificationBell color="black" />
                   <Typography variant="body2" color="#1976d2" fontWeight={500}>
                     Xin chào, {user.fullName.split(" ")[0]} 👋
                   </Typography>
@@ -257,6 +255,7 @@ const Header: React.FC = () => {
               )}
               <StormInfoModal />
             </Box>
+            
           )}
         </Toolbar>
       </AppBar>
