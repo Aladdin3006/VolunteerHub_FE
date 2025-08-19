@@ -24,6 +24,8 @@ const FloatingChat = () => {
   const user = authService.getUser();
   const token = authService.getToken();
   const userId = user?._id || user?.id || null;
+  const fastAPIurl = import.meta.env.VITE_FAST_API
+
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -43,7 +45,7 @@ const FloatingChat = () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch(`${fastAPIurl}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

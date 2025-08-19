@@ -48,7 +48,7 @@ const CampaignHome: React.FC = () => {
   const Banner = () => (
     <Box
       sx={{
-        height: 260, // Tăng chiều cao một chút
+        height: 420, // Tăng chiều cao một chút
         backgroundImage: "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
         backgroundSize: "cover",
         backgroundPosition: "center",

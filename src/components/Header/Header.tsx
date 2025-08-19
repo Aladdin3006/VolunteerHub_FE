@@ -97,7 +97,7 @@ const Header: React.FC = () => {
       icon: <FaUserEdit />,
       action: () => navigate("/profile"),
     },
-    { label: "Thông báo", icon: <FaBell />, action: () => {} },
+    { label: "Thông báo", icon: <FaBell />, action: () => { } },
     {
       label: "Cài đặt & bảo mật",
       icon: <FaCog />,
@@ -177,11 +177,18 @@ const Header: React.FC = () => {
                 <FaBars />
               </IconButton>
               <Drawer
+                sx={{
+                  zIndex: 1800, // put drawer above header
+                }}
                 anchor="right"
                 open={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
+                ModalProps={{ keepMounted: true }}
+                container={
+                  typeof window !== "undefined" ? () => window.document.body : undefined
+                }
               >
-                <List>
+                <List onClick={() => setDrawerOpen(false)}>
                   {navLinks.map((item) => (
                     <ListItem disablePadding key={item.path}>
                       <ListItemButton component={Link} to={item.path}>
@@ -190,12 +197,13 @@ const Header: React.FC = () => {
                     </ListItem>
                   ))}
                   <ListItem disablePadding>
-                    <ListItemButton onClick={() => navigate("/contact")}>
+                    <ListItemButton component={Link} to="/contact">
                       <ListItemText primary="Liên hệ" />
                     </ListItemButton>
                   </ListItem>
                 </List>
               </Drawer>
+
             </>
           ) : (
             <Box display="flex" alignItems="center" gap={3}>
