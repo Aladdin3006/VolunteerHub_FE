@@ -406,6 +406,7 @@ export const ForumPostDialog = forwardRef<IForumPostDialogRef, IProps>(
           {post != null && (
             <ForumPost
               post={post}
+              user={userRef.current}
               sx={{ boxShadow: 0, height: "100%" }}
               onImageClick={(images, idx) => {
                 imageViewerDialogRef.current &&

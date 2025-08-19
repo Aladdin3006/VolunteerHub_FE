@@ -224,6 +224,7 @@ export default function ForumPage() {
           {posts.map((post) => (
             <ForumPost
               post={post}
+              user={userRef.current ?? undefined}
               key={post._id}
               onCommentClick={() => {
                 setShortcuts([

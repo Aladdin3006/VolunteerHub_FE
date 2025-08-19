@@ -29,6 +29,7 @@ interface IProps extends BoxProps {
   childReply?: (Comment: ICommentListItem) => void;
   level: number;
   maxLevel: number;
+  user?: IUserShort;
 }
 
 export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
@@ -42,6 +43,7 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
       childReply,
       level,
       maxLevel,
+      user,
       ...rest
     } = props;
 
@@ -218,6 +220,7 @@ export const ForumPostComment = forwardRef<HTMLDivElement, IProps>(
                 return result;
               }}
               relyTo={replyTo}
+              user={user}
               id={`comment-input-${comment._id}`}
             />
           )}

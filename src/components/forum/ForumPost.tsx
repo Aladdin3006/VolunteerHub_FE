@@ -1,5 +1,9 @@
 import { forwardRef } from "react";
-import { ICommentListItem, IForumPostListItem } from "../../apis/forum";
+import {
+  ICommentListItem,
+  IForumPostListItem,
+  IUserShort,
+} from "../../apis/forum";
 import { Divider, Stack, StackProps } from "@mui/material";
 import { ForumPostHeader } from "./ForumPostHeader";
 import { ForumPostFooter } from "./ForumPostFooter";
@@ -12,6 +16,7 @@ interface IProps extends StackProps {
    * Post data
    */
   post: IForumPostListItem;
+  user?: IUserShort;
 
   onHideClick?: () => void;
   onDeleteClick?: () => void;
@@ -38,6 +43,7 @@ interface IProps extends StackProps {
 export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const {
     post,
+    user,
     onHideClick,
     onDeleteClick,
     onLikeClick,
@@ -107,7 +113,11 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         />
       )}
       {onReply && (
-        <CommentInput onSend={(text) => onReply(null, text)} relyTo={null} />
+        <CommentInput
+          onSend={(text) => onReply(null, text)}
+          relyTo={null}
+          user={user}
+        />
       )}
     </Stack>
   );

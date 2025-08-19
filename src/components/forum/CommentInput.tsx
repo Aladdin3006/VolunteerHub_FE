@@ -11,13 +11,13 @@ import SendIcon from "@mui/icons-material/Send";
 import { IUserShort } from "@/apis/forum";
 
 interface IProps extends BoxProps {
-  avatar?: string;
+  user?: IUserShort;
   onSend: (text: string) => Promise<boolean>;
   relyTo: IUserShort | null;
 }
 
 export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
-  const { avatar, onSend, relyTo, ...rest } = props;
+  const { user, onSend, relyTo, ...rest } = props;
 
   const [value, setValue] = useState(
     relyTo?.fullName ? `@${relyTo.fullName} ` : ""
@@ -41,7 +41,7 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       inputRef.current.setSelectionRange(len, len);
       inputRef.current.focus();
     }
-    setValue(relyTo?.fullName ? `@${relyTo.fullName} ` : "")
+    setValue(relyTo?.fullName ? `@${relyTo.fullName} ` : "");
   }, [relyTo]);
 
   return (
@@ -51,7 +51,9 @@ export const CommentInput = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       sx={{ display: "flex", flexDirection: "column-reverse", ...rest.sx }}
     >
       <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-        <Avatar src={avatar} sx={{ mt: "4px" }} />
+        <Avatar src={user?.avatar} sx={{ mt: "4px" }}>
+          {user?.fullName?.slice(0, 2)}
+        </Avatar>
 
         <Paper
           elevation={0}
