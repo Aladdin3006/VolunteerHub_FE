@@ -40,6 +40,10 @@ export interface CertificateEarlyData {
   issuedDate: string;
 }
 
+export interface CampaignByTaskIdResponse {
+  campaignId: string;
+}
+
 export const ISSUE_API = {
   async createIssue(
     data: CreateIssueData,
@@ -95,6 +99,21 @@ export const ISSUE_API = {
   ): Promise<IDataResponseSuccess<Issue>> {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     return axios.get(`${API_BASE}/issue/${id}`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+      extraOptions: {
+        ...options,
+      },
+    });
+  },
+
+  async getCampaignByTaskId(
+    taskId: string,
+    options?: IAxiosExtraConfigOptions
+  ): Promise<IDataResponseSuccess<CampaignByTaskIdResponse>> {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    return axios.get(`${API_BASE}/task/${taskId}/campaignTasks`, {
       headers: {
         Authorization: `Bearer ${user.token}`,
       },

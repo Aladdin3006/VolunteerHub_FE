@@ -18,6 +18,8 @@ import {
   Avatar,
   ListItem,
   ListItemAvatar,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { ISSUE_API, Issue } from "../../apis/issue";
 import CreatePhaseModal from "./CreatePhaseModal";
@@ -28,6 +30,7 @@ import { Phase, PhaseDay } from "@/apis/staff";
 import VolunteerRequestsModal from "./VolunteerRequestsModal";
 import { Campaign } from "@/pages/manager/ManagerCampaign";
 import { managerCampaignService } from "@/apis/manager";
+import axios from "axios";
 
 interface IssueDialogProps {
   open: boolean;
@@ -43,6 +46,34 @@ interface DetailDialogProps {
   onClose: () => void;
   issueId: string | null;
 }
+
+interface VolunteerTask {
+  _id: string;
+  title: string;
+  description: string;
+  status: string;
+  phaseDayDate: string;
+  phaseName: string;
+  campaignName: string;
+  campaignId: string;
+}
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+const fetchTasksByVolunteer = async (
+  userId: string,
+  year: number,
+  month: number,
+  token: string
+): Promise<VolunteerTask[]> => {
+  const response = await axios.get(`${API_BASE}/task/${userId}/volunteer`, {
+    params: { year, month },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data.data;
+};
 
 const TabPanel: React.FC<{
   children?: React.ReactNode;
@@ -155,6 +186,8 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
     null
   );
   const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const handleOpenCheckInDialog = (phase: Phase, phaseDay: PhaseDay) => {
     setSelectedPhase(phase);
@@ -177,20 +210,42 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
           : issueTypeTab === 1
           ? "campaign_withdrawal"
           : "cert_issue";
-      const data = await ISSUE_API.getIssues(
-        { type },
-        {
-          params: {
-            "relatedEntity.entityId": campaignId,
-          },
-        }
+
+      // First, get all issues of the specific type
+      const data = await ISSUE_API.getIssues({ type });
+
+      // Filter issues by campaign ID
+      const filteredIssues = await Promise.all(
+        data.data.map(async (issue: Issue) => {
+          if (issue.type === "task_issue") {
+            // For task issues, get the campaign ID from the task
+            try {
+              const campaignResponse = await ISSUE_API.getCampaignByTaskId(
+                issue.relatedEntity.entityId
+              );
+              return campaignResponse.data.campaignId === campaignId
+                ? issue
+                : null;
+            } catch (error) {
+              console.error("Error fetching campaign for task:", error);
+              return null;
+            }
+          } else {
+            // For cert_issue and campaign_withdrawal, check if entityId matches campaignId
+            return issue.relatedEntity.entityId === campaignId ? issue : null;
+          }
+        })
       );
-      // Sort issues by createdAt in descending order (newest first)
-      const sortedIssues = data.data.sort(
-        (a: Issue, b: Issue) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      setIssues(sortedIssues);
+
+      // Remove null values and sort by createdAt in descending order
+      const validIssues = filteredIssues
+        .filter((issue): issue is Issue => issue !== null)
+        .sort(
+          (a: Issue, b: Issue) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+      setIssues(validIssues);
     } catch (error) {
       console.error("Error fetching issues:", error);
     } finally {
@@ -257,12 +312,46 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
   const handleClosedIssue = async (issue: Issue) => {
     try {
       if (issue.type === "cert_issue") {
+        // Check for unfinished tasks
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+
+        const tasks = await fetchTasksByVolunteer(
+          issue.reportedBy._id,
+          year,
+          month,
+          user.token
+        );
+
+        // Filter tasks for current campaign and unfinished status
+        const unfinishedTasks = tasks.filter(
+          (task) =>
+            task.campaignId === campaignId &&
+            task.status !== "completed" &&
+            task.status !== "cancelled"
+        );
+
+        if (unfinishedTasks.length > 0) {
+          const taskTitles = unfinishedTasks
+            .map((task) => `"${task.title}"`)
+            .join(", ");
+          setAlertMessage(
+            `Tình nguyện viên này còn nhiệm vụ ${taskTitles} chưa hoàn thành.`
+          );
+          setAlertOpen(true);
+          return;
+        }
+
+        // If no unfinished tasks, proceed with certificate issuance
         await ISSUE_API.requestCertificateEarly({
           campaignId: issue.relatedEntity.entityId,
           userId: issue.reportedBy._id,
           issuedDate: new Date().toISOString(),
         });
       }
+
       await ISSUE_API.updateIssue(issue._id, { status: "closed" });
       fetchIssues(); // Refresh issues after resolving
     } catch (error) {
@@ -293,6 +382,10 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
     newValue: number
   ) => {
     setIssueTypeTab(newValue);
+  };
+
+  const handleCloseAlert = () => {
+    setAlertOpen(false);
   };
 
   return (
@@ -510,6 +603,21 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
         onClose={handleCloseDetailDialog}
         issueId={selectedIssueId}
       />
+
+      <Snackbar
+        open={alertOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity="warning"
+          sx={{ width: "100%" }}
+        >
+          {alertMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

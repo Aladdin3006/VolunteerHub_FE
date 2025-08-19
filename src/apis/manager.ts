@@ -1,3 +1,4 @@
+// Updated manager.ts
 import { Category } from "./campaign";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -33,6 +34,13 @@ export interface Campaign {
   volunteers?: Volunteer[];
 }
 
+export interface CertificateTemplate {
+  _id: string;
+  name: string;
+  description: string;
+  url: string;
+}
+
 const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   return {
@@ -42,6 +50,27 @@ const getAuthHeaders = () => {
 };
 
 export const managerCampaignService = {
+  getCertificateTemplates: async (): Promise<CertificateTemplate[]> => {
+    try {
+      const response = await fetch(`${API_BASE}/tempCert`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch certificate templates: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error("Error fetching certificate templates:", error);
+      return [];
+    }
+  },
   getListCampaigns: async (): Promise<Campaign[]> => {
     try {
       const response = await fetch(`${API_BASE}/campaigns?all=true`, {
@@ -187,12 +216,19 @@ export const managerCampaignService = {
 
   endCampaign: async (
     id: string,
-    options: { certificate: string }
+    generateCertificate: boolean,
+    templateUrl?: string
   ): Promise<Campaign> => {
+    const body: { generateCertificate: boolean; templateUrl?: string } = {
+      generateCertificate,
+    };
+    if (templateUrl) {
+      body.templateUrl = templateUrl;
+    }
     const response = await fetch(`${API_BASE}/campaigns/${id}/end`, {
       method: "PUT",
       headers: getAuthHeaders(),
-      body: JSON.stringify(options),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

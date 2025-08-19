@@ -39,16 +39,17 @@ import {
 } from "@mui/icons-material";
 import TaskIcon from "@mui/icons-material/Task";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
-import { managerCampaignService } from "../../apis/manager";
+import {
+  managerCampaignService,
+  CertificateTemplate,
+} from "../../apis/manager";
 import { Category } from "../../apis/campaign";
 import CampaignModal from "../../components/manager/CampaignModal";
 import { useNavigate } from "react-router-dom";
-
 import ManagerTabs from "./ManagerTabs";
-
 import { User } from "lucide-react";
 import usersService from "@/apis/admin";
-
+import RenderEndDialog from "@/components/manager/RenderEndDialog";
 
 // Map settings
 const mapContainerStyle = {
@@ -262,7 +263,8 @@ const ManagerCampaign: React.FC = () => {
   const handleAction = async (
     action: Function,
     id: string,
-    generateCert?: boolean
+    generateCert?: boolean,
+    templateUrl?: string
   ) => {
     try {
       if (action === managerCampaignService.startCampaign) {
@@ -271,7 +273,7 @@ const ManagerCampaign: React.FC = () => {
         setIsEndingCampaign(true);
       }
 
-      const response = await action(id, generateCert);
+      const response = await action(id, generateCert, templateUrl);
       await fetchAllCampaigns();
       setAlertMessage(response.message);
       setTimeout(() => setAlertMessage(null), 5000);
@@ -324,22 +326,20 @@ const ManagerCampaign: React.FC = () => {
           }
           return acc;
         }, {} as { [userId: string]: { evaluation: string; feedback: string } }) ||
-        {}
+          {}
       );
       setHasEvaluated(campaign.volunteers?.some((v) => v.evaluation) || false);
       setOpenEvaluateDialog(true);
     }
   };
 
-  const confirmEndCampaign = async () => {
+  const confirmEndCampaign = async (templateUrl?: string) => {
     if (currentCampaignId) {
       await handleAction(
-        (id: string, generateCert: boolean) =>
-          managerCampaignService.endCampaign(id, {
-            certificate: generateCert.toString(),
-          }),
+        managerCampaignService.endCampaign,
         currentCampaignId,
-        generateCertificate
+        generateCertificate,
+        templateUrl
       );
     }
     setOpenConfirmDialog(false);
@@ -408,15 +408,12 @@ const ManagerCampaign: React.FC = () => {
     campaign.phases?.forEach((phase) => {
       phase.phaseDays.forEach((phaseDay) => {
         phaseDay.tasks.forEach((task) => {
-          // Count tasks participated
           if (task.assignedUsers.some((user) => user.userId === volunteerId)) {
             taskCount++;
-            // Calculate average task score
             if (task.staffReview?.finalScore) {
               totalTaskScore += task.staffReview.finalScore;
               taskScoreCount++;
             }
-            // Calculate average peer review score
             task.peerReviews.forEach((review) => {
               if (review.reviewee === volunteerId) {
                 totalPeerScore += review.score;
@@ -599,7 +596,6 @@ const ManagerCampaign: React.FC = () => {
                       pb: 2,
                     }}
                   >
-                    {/* Avatar - Fixed width */}
                     <Box sx={{ width: 60 }}>
                       <Avatar
                         src={volunteer.user.avatar || ""}
@@ -607,21 +603,15 @@ const ManagerCampaign: React.FC = () => {
                         sx={{ width: 40, height: 40 }}
                       />
                     </Box>
-
-                    {/* Name - Fixed width */}
                     <Typography variant="subtitle1" sx={{ width: 150 }}>
                       {volunteer.user.fullName}
                     </Typography>
-
-                    {/* Tasks count - Fixed width */}
                     <Box
                       sx={{ width: 300, display: "flex", alignItems: "center" }}
                     >
                       <TaskIcon sx={{ fontSize: "1rem", mr: 1 }} />
                       <span>Nhiệm vụ đã tham gia: {stats.taskCount}</span>
                     </Box>
-
-                    {/* Average task score - Fixed width */}
                     <Box
                       sx={{ width: 300, display: "flex", alignItems: "center" }}
                     >
@@ -630,8 +620,6 @@ const ManagerCampaign: React.FC = () => {
                         ★
                       </Box>
                     </Box>
-
-                    {/* Average peer score - Fixed width */}
                     <Box
                       sx={{ width: 300, display: "flex", alignItems: "center" }}
                     >
@@ -640,8 +628,6 @@ const ManagerCampaign: React.FC = () => {
                         ★
                       </Box>
                     </Box>
-
-                    {/* Evaluation dropdown - Fixed width */}
                     <FormControl sx={{ width: 200, mr: 2 }}>
                       <InputLabel>Đánh giá</InputLabel>
                       <Select
@@ -666,8 +652,6 @@ const ManagerCampaign: React.FC = () => {
                         ))}
                       </Select>
                     </FormControl>
-
-                    {/* Save button - Fixed width */}
                     <Button
                       variant="contained"
                       size="small"
@@ -679,7 +663,7 @@ const ManagerCampaign: React.FC = () => {
                           volunteerEvaluations[volunteer.user._id]
                             ?.evaluation || "average",
                           volunteerEvaluations[volunteer.user._id]?.feedback ||
-                          ""
+                            ""
                         )
                       }
                     >
@@ -772,63 +756,6 @@ const ManagerCampaign: React.FC = () => {
     </Dialog>
   );
 
-  const renderEndDialog = () => (
-    <Dialog
-      open={openConfirmDialog}
-      onClose={() => setOpenConfirmDialog(false)}
-    >
-      <DialogTitle fontWeight="bold">Xác nhận kết thúc chiến dịch</DialogTitle>
-      <DialogContent>
-        <Typography>
-          Bạn có chắc chắn muốn tạo chứng chỉ tham gia chiến dịch cho các tình
-          nguyện viên không?
-        </Typography>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={generateCertificate}
-              onChange={(e) => setGenerateCertificate(e.target.checked)}
-              disabled={isEndingCampaign}
-            />
-          }
-          label="Tạo chứng chỉ (Chỉ áp dụng cho chiến dịch đã kết thúc)"
-        />
-        {isEndingCampaign && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              mt: 2,
-            }}
-          >
-            <CircularProgress size={30} thickness={5} color="primary" />
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button
-          onClick={() => setOpenConfirmDialog(false)}
-          disabled={isEndingCampaign}
-        >
-          Hủy
-        </Button>
-        <Button
-          onClick={confirmEndCampaign}
-          color="secondary"
-          disabled={isEndingCampaign}
-          startIcon={
-            isEndingCampaign ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : null
-          }
-        >
-          {isEndingCampaign ? "Đang xử lý..." : "Kết thúc chiến dịch"}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-
   return (
     <Box
       sx={{
@@ -847,10 +774,9 @@ const ManagerCampaign: React.FC = () => {
         </Alert>
       )}
       <ManagerTabs
-        activeTab={activeLink === "ongoing" ? "campaigns" : "storms"} // Ánh xạ "ongoing" -> "campaigns", "finished" -> "storms"
+        activeTab={activeLink === "ongoing" ? "campaigns" : "storms"}
         onTabChange={(value) => {
           setActiveLink(value === "campaigns" ? "ongoing" : "finished");
-          // Thêm logic navigate nếu cần
         }}
       />
       <Paper
@@ -912,15 +838,42 @@ const ManagerCampaign: React.FC = () => {
             label={
               <Badge
                 badgeContent={
-                  allCampaigns.filter((c) => c.acceptStatus === "pending")
-                    .length
+                  allCampaigns.filter((c) => c.status === "upcoming").length
                 }
                 color="warning"
               >
                 <Typography>Chưa diễn ra</Typography>
               </Badge>
             }
+            value="upcoming"
+          />
+          <Tab
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.acceptStatus === "pending")
+                    .length
+                }
+                color="warning"
+              >
+                <Typography>Chưa được duyệt</Typography>
+              </Badge>
+            }
             value="pending"
+          />
+          <Tab
+            label={
+              <Badge
+                badgeContent={
+                  allCampaigns.filter((c) => c.acceptStatus === "approved")
+                    .length
+                }
+                color="info"
+              >
+                <Typography>Đã được duyệt</Typography>
+              </Badge>
+            }
+            value="approved"
           />
           <Tab
             label={
@@ -935,7 +888,7 @@ const ManagerCampaign: React.FC = () => {
               </Badge>
             }
             value="rejected"
-          />        
+          />
         </Tabs>
       </Paper>
 
@@ -1020,7 +973,6 @@ const ManagerCampaign: React.FC = () => {
                     fontWeight: "bold",
                   }}
                 />
-
                 {campaign.image?.length > 0 ? (
                   <Box
                     sx={{
@@ -1061,7 +1013,6 @@ const ManagerCampaign: React.FC = () => {
                     <ImageIcon fontSize="large" color="disabled" />
                   </Box>
                 )}
-
                 <CardContent
                   sx={{
                     border: "1px solid #f0f0f0",
@@ -1080,11 +1031,9 @@ const ManagerCampaign: React.FC = () => {
                       sx={{ width: "100%" }}
                     />
                   </Box>
-
                   <Typography variant="h6" gutterBottom noWrap>
                     {campaign.name}
                   </Typography>
-
                   <Stack spacing={1} sx={{ mb: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <LocationOn
@@ -1096,7 +1045,6 @@ const ManagerCampaign: React.FC = () => {
                         {truncateAddress(campaign.location.address)}
                       </Typography>
                     </Box>
-
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <DateRange
                         fontSize="small"
@@ -1108,7 +1056,6 @@ const ManagerCampaign: React.FC = () => {
                         {formatDate(campaign.endDate)}
                       </Typography>
                     </Box>
-
                     {campaign.categories.length > 0 && (
                       <Box
                         sx={{
@@ -1157,7 +1104,6 @@ const ManagerCampaign: React.FC = () => {
                       </Box>
                     )}
                   </Stack>
-
                   <Box
                     sx={{
                       display: "flex",
@@ -1177,7 +1123,14 @@ const ManagerCampaign: React.FC = () => {
 
       {renderStartDialog()}
       {renderEvaluateDialog()}
-      {renderEndDialog()}
+      <RenderEndDialog
+        open={openConfirmDialog}
+        onClose={() => setOpenConfirmDialog(false)}
+        isEndingCampaign={isEndingCampaign}
+        generateCertificate={generateCertificate}
+        setGenerateCertificate={setGenerateCertificate}
+        confirmEndCampaign={confirmEndCampaign}
+      />
 
       <CampaignModal
         open={isDialogOpen}
