@@ -38,6 +38,7 @@ import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import CheckInDialog from "@/components/staff/CheckInDialog";
 import IssueDialog from "@/components/staff/IssueDialog";
+import NavigationTabs from "./NavigationTabs";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -170,41 +171,7 @@ const ManagerCampaignStaff: React.FC = () => {
         top: 0,
       }}
     >
-      <Box sx={{ mb: 3 }}>
-        <Tabs
-          value={activeLink === "ongoing" ? 0 : 1}
-          onChange={(_, newValue) => {
-            const link = newValue === 0 ? "ongoing" : "finished";
-            setActiveLink(link);
-            if (link === "finished") {
-              navigate("/staff/donations");
-            }
-          }}
-          variant="fullWidth"
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "#1976d2",
-            },
-          }}
-        >
-          <Tab
-            label="Quản lý Chiến dịch"
-            sx={{
-              fontWeight: "bold",
-              textTransform: "none",
-              fontSize: "1rem",
-            }}
-          />
-          <Tab
-            label="Quản lý Quyên góp"
-            sx={{
-              fontWeight: "bold",
-              textTransform: "none",
-              fontSize: "1rem",
-            }}
-          />
-        </Tabs>
-      </Box>
+       <NavigationTabs activeLink={activeLink} />
       <Box
         sx={{
           mb: 4,
