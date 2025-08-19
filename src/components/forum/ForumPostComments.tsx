@@ -1,5 +1,5 @@
 import { Box, BoxProps } from "@mui/material";
-import { ICommentListItem } from "../../apis/forum";
+import { ICommentListItem, IUserShort } from "../../apis/forum";
 import { ForumPostComment } from "./ForumPostComment";
 import { forwardRef, useMemo } from "react";
 
@@ -11,6 +11,7 @@ interface IProps extends BoxProps {
   onReply?: (comment: ICommentListItem, text: string) => Promise<boolean>;
   onShowReplies?: (comment: ICommentListItem) => Promise<boolean>;
   maxLevel?: number;
+  user?: IUserShort;
 }
 
 const DEFAULT_MAX_LEVEL = 2;
@@ -25,6 +26,7 @@ export const ForumPostComments = forwardRef<HTMLDivElement, IProps>(
       onReply,
       onShowReplies,
       maxLevel,
+      user,
       ...rest
     } = props;
 

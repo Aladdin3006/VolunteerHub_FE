@@ -1,58 +1,110 @@
-import React, { useState } from "react";
-import "./Register.css";
-import { registerUser } from "../../apis/register";
+import React, { useState } from 'react';
+import { registerUser } from '../../apis/register';
+import {
+  Box,
+  Button,
+  Checkbox,
+  Container,
+  FormControlLabel,
+  Grid,
+  TextField,
+  Typography,
+  Link,
+  Paper,
+  Avatar,
+  Fade,
+  ThemeProvider,
+  createTheme,
+  InputAdornment,
+  IconButton,
+} from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#f50057',
+    },
+    background: {
+      default: '#f4f6f8',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 700,
+    },
+    body2: {
+      fontSize: '0.9rem',
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '999px',
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '8px',
+          },
+        },
+      },
+    },
+  },
+});
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    fullName: "",
-    phone: "",
-    date_of_birth: "",
+    email: '',
+    password: '',
+    confirmPassword: '',
+    fullName: '',
+    phone: '',
+    date_of_birth: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const validateForm = () => {
-    const errors: string[] = [];
-
-    if (!formData.fullName.trim()) errors.push("Full Name is required.");
-    if (!formData.email.trim()) errors.push("Email is required.");
-    if (!formData.phone.trim()) errors.push("Phone number is required.");
-    if (!formData.date_of_birth) errors.push("Date of birth is required.");
-    if (!formData.password.trim()) errors.push("Password is required.");
-    if (!formData.confirmPassword.trim())
-      errors.push("Confirm Password is required.");
-    if (formData.password !== formData.confirmPassword)
-      errors.push("Passwords do not match.");
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
-      errors.push("Please enter a valid email address.");
-    }
-
-    const phoneRegex = /^\d{10,15}$/;
-    if (formData.phone && !phoneRegex.test(formData.phone.replace(/\D/g, ""))) {
-      errors.push("Please enter a valid phone number.");
-    }
-
+    const errors: { [key: string]: string } = {};
+    if (!formData.fullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên.';
+    if (!formData.email.trim()) errors.email = 'Vui lòng nhập email.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'Email không hợp lệ.';
+    if (!formData.phone.trim()) errors.phone = 'Vui lòng nhập số điện thoại.';
+    else if (!/^\d{10,15}$/.test(formData.phone.replace(/\D/g, ''))) errors.phone = 'Số điện thoại không hợp lệ.';
+    if (!formData.date_of_birth) errors.date_of_birth = 'Vui lòng chọn ngày sinh.';
+    if (!formData.password) errors.password = 'Vui lòng nhập mật khẩu.';
+    if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Mật khẩu không khớp.';
     setFormErrors(errors);
-    return errors.length === 0;
+    return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-
     try {
       const submitData = {
         email: formData.email.trim(),
@@ -61,182 +113,254 @@ const Register: React.FC = () => {
         phone: formData.phone.trim(),
         date_of_birth: formData.date_of_birth,
       };
-
       const response = await registerUser(submitData);
-      alert(response.message || "Registration successful. Please verify email.");
-
-      setFormData({
-        email: "",
-        password: "",
-        confirmPassword: "",
-        fullName: "",
-        phone: "",
-        date_of_birth: "",
-      });
+      alert(response.message || 'Đăng ký thành công. Vui lòng xác thực email.');
+      setFormData({ email: '', password: '', confirmPassword: '', fullName: '', phone: '', date_of_birth: '' });
+      setFormErrors({});
     } catch (err: any) {
-      alert(err.message || "Error during registration. Please try again.");
+      alert(err.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="registerPage">
-      <img src="/logo-remove-bg.png" alt="Logo" className="logo" />
-      {formErrors.length > 0 && (
-        <div className="errorContainer">
-          {formErrors.map((error, index) => (
-            <p key={index} className="errorText">
-              {error}
-            </p>
-          ))}
-        </div>
-      )}
-      <div className="loginBox">
-        <input
-          type="text"
-          name="fullName"
-          placeholder="Full Name"
-          className="input"
-          value={formData.fullName}
-          onChange={handleChange}
-          required
-        />
-        <small className="inputNote">
-          Please enter your real full name. It will appear on your certificate.
-        </small>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          className="input"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone Number"
-          className="input"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="date"
-          name="date_of_birth"
-          className="input"
-          value={formData.date_of_birth}
-          onChange={handleChange}
-          required
-        />
-        <div className="passwordWrapper">
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            className="input"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <span
-            className="showLink"
-            style={{ cursor: "pointer" }}
-            onClick={() => setShowPassword((prev) => !prev)}
-          >
-            {showPassword ? "Hide" : "Show"}
-          </span>
-        </div>
-
-        <div className="passwordWrapper">
-          <input
-            type={showPassword ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            className="input"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-          />
-          <span
-            className="showLink"
-            style={{ cursor: "pointer" }}
-            onClick={() => setShowPassword((prev) => !prev)}
-          >
-            {showPassword ? "Hide" : "Show"}
-          </span>
-        </div>
-
-        <div className="checkboxWrapper">
-          <input type="checkbox" id="keepLoggedIn" defaultChecked />
-        </div>
-
-        <p className="agreement-text">
-          By clicking Agree & Join or Continue, you agree to the VolunteerHub Ha
-          Tinh&nbsp;
-          <a
-            href="https://www.linkedin.com/legal/user-agreement"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="agreement-link"
-          >
-            User Agreement
-          </a>
-          ,&nbsp;
-          <a
-            href="https://www.linkedin.com/legal/privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="agreement-link"
-          >
-            Privacy Policy
-          </a>
-          , and&nbsp;
-          <a
-            href="https://www.linkedin.com/legal/cookie-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="agreement-link"
-          >
-            Cookie Policy.
-          </a>
-        </p>
-
-        <div className="divider">
-          <span>or</span>
-        </div>
-
-        <button className="socialButton">
-          <img src="/google-icon.png" alt="Google" />
-          Continue with Google
-        </button>
-
-        <button
-          className="signInButton"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
+    <ThemeProvider theme={theme}>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          backgroundImage: 'url("/bg-login.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          position: 'relative',
+        }}
+      >
+        <Container
+          component="main"
+          maxWidth="sm"
+          sx={{
+            py: { xs: 2, md: 4 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1, // Đảm bảo nội dung nằm trên background
+          }}
         >
-          {isSubmitting ? "Processing..." : "Agree & Join"}
-        </button>
+          <Fade in timeout={600}>
+            <Paper
+              elevation={6}
+              sx={{
+                py: { xs: 4, md: 6 },
+                px: { xs: 3, md: 5 },
+                borderRadius: 4,
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              }}
+            >
+              <Avatar
+                src="/logo-remove-bg.png"
+                alt="VolunteerHub Logo"
+                sx={{ width: 80, height: 80, mb: 3, boxShadow: 3 }}
+              />
+              <Typography component="h1" variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>
+                Tạo tài khoản
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 4, textAlign: 'center' }}>
+                Tham gia cộng đồng VolunteerHub Hà Tĩnh ngay hôm nay!
+              </Typography>
 
-        <p className="joinNow">
-          Already on VolunteerHub Ha Tinh? <a href="/login">Log in</a>
-        </p>
-      </div>
-
-      <footer className="footer">
-        <span>VolunteerHub Ha Tinh © 2025</span>
-        <a href="#">User Agreement</a>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Community Guidelines</a>
-        <a href="#">Cookie Policy</a>
-        <a href="#">Copyright Policy</a>
-        <a href="#">Send Feedback</a>
-        <a href="#">Language</a>
-      </footer>
-    </div>
+              <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
+                <Grid container spacing={2} direction="column">
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      required
+                      id="fullName"
+                      label="Họ và Tên"
+                      name="fullName"
+                      autoComplete="name"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      error={!!formErrors.fullName}
+                      helperText={formErrors.fullName || 'Tên sẽ được dùng trên chứng nhận.'}
+                      aria-describedby="fullName-helper-text"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      required
+                      id="phone"
+                      label="Số điện thoại"
+                      name="phone"
+                      autoComplete="tel"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      error={!!formErrors.phone}
+                      helperText={formErrors.phone}
+                      aria-describedby="phone-helper-text"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      required
+                      id="email"
+                      label="Địa chỉ Email"
+                      name="email"
+                      autoComplete="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      error={!!formErrors.email}
+                      helperText={formErrors.email}
+                      aria-describedby="email-helper-text"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      required
+                      id="date_of_birth"
+                      label="Ngày sinh"
+                      name="date_of_birth"
+                      type="date"
+                      value={formData.date_of_birth}
+                      onChange={handleChange}
+                      error={!!formErrors.date_of_birth}
+                      helperText={formErrors.date_of_birth}
+                      InputLabelProps={{ shrink: true }}
+                      aria-describedby="date_of_birth-helper-text"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      required
+                      name="password"
+                      label="Mật khẩu"
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      error={!!formErrors.password}
+                      helperText={formErrors.password}
+                      aria-describedby="password-helper-text"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              aria-label="toggle password visibility"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                              edge="end"
+                            >
+                              {showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      required
+                      name="confirmPassword"
+                      label="Xác nhận mật khẩu"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      error={!!formErrors.confirmPassword}
+                      helperText={formErrors.confirmPassword}
+                      aria-describedby="confirmPassword-helper-text"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              aria-label="toggle confirm password visibility"
+                              onClick={() => setShowConfirmPassword((prev) => !prev)}
+                              edge="end"
+                            >
+                              {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={<Checkbox defaultChecked id="keepLoggedIn" />}
+                      label="Duy trì đăng nhập"
+                      sx={{ color: 'text.secondary' }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', px: 2, mt: 1 }}>
+                      Bằng việc đăng ký, bạn đồng ý với{' '}
+                      <Link href="#" underline="hover" color="primary.main">
+                        Điều khoản Dịch vụ
+                      </Link>{' '}
+                      và{' '}
+                      <Link href="#" underline="hover" color="primary.main">
+                        Chính sách Bảo mật
+                      </Link>{' '}
+                      của chúng tôi.
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      color="primary"
+                      disabled={isSubmitting}
+                      sx={{
+                        py: 1.5,
+                        mt: 2,
+                        fontSize: '1.1rem',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: 6,
+                        },
+                        borderRadius: '8px',
+                        minWidth: '100%',
+                      }}
+                    >
+                      {isSubmitting ? 'Đang xử lý...' : 'Đăng Ký'}
+                    </Button>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" align="center" sx={{ mt: 4, color: 'text.secondary' }}>
+                      Đã có tài khoản?{' '}
+                      <Link href="/login" underline="hover" color="primary.main" fontWeight="bold">
+                        Đăng nhập ngay
+                      </Link>
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Paper>
+          </Fade>
+          <Box sx={{ mt: 4, textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              VolunteerHub Hà Tĩnh © 2025
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
+    </ThemeProvider>
   );
 };
 

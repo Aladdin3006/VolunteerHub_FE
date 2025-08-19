@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../apis/campaign";
 import { NewDonationDialog, INewDonationDialogRef } from "../../components/staff/NewDonationDialog";
 import { IDonationDataUpload } from "../../apis/donation";
+import NavigationTabs from "./NavigationTabs";
 
 interface Campaign {
   _id: string;
@@ -129,41 +130,7 @@ const ManagerDonationStaff: React.FC = () => {
       }}
     >
       {/* Navigation Tabs */}
-      <Box sx={{ mb: 3 }}>
-        <Tabs
-          value={activeLink === "ongoing" ? 0 : 1}
-          onChange={(_, newValue) => {
-            const link = newValue === 0 ? "ongoing" : "finished";
-            setActiveLink(link);
-            if (link === "ongoing") {
-              navigate("/staff/campaigns");
-            }
-          }}
-          variant="fullWidth"
-          sx={{
-            "& .MuiTabs-indicator": {
-              backgroundColor: "#1976d2",
-            },
-          }}
-        >
-          <Tab
-            label="Quản lý Chiến dịch"
-            sx={{
-              fontWeight: "bold",
-              textTransform: "none",
-              fontSize: "1rem",
-            }}
-          />
-          <Tab
-            label="Quản lý Quyên góp"
-            sx={{
-              fontWeight: "bold",
-              textTransform: "none",
-              fontSize: "1rem",
-            }}
-          />
-        </Tabs>
-      </Box>
+      <NavigationTabs activeLink={activeLink} />
 
       {/* Header and Filter Tabs */}
       <Box

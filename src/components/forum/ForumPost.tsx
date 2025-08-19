@@ -1,5 +1,9 @@
 import { forwardRef } from "react";
-import { ICommentListItem, IForumPostListItem } from "../../apis/forum";
+import {
+  ICommentListItem,
+  IForumPostListItem,
+  IUserShort,
+} from "../../apis/forum";
 import { Divider, Stack, StackProps } from "@mui/material";
 import { ForumPostHeader } from "./ForumPostHeader";
 import { ForumPostFooter } from "./ForumPostFooter";
@@ -12,6 +16,7 @@ interface IProps extends StackProps {
    * Post data
    */
   post: IForumPostListItem;
+  user?: IUserShort;
 
   onHideClick?: () => void;
   onDeleteClick?: () => void;
@@ -38,6 +43,7 @@ interface IProps extends StackProps {
 export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const {
     post,
+    user,
     onHideClick,
     onDeleteClick,
     onLikeClick,
@@ -65,11 +71,12 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       borderRadius={"8px"}
       {...rest}
       sx={{
-        minHeight: "575px",
+        minHeight: "fit-content",
         maxHeight: "1000px",
         p: "12px",
         pb: "5px",
         color: "#080809",
+        backgroundColor: "white",
         ...rest.sx,
       }}
       boxShadow={1}
@@ -96,17 +103,24 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         onShareClick={onShareClick}
       />
       {!hideComment && (
-        <ForumPostComments
-          comments={post.comments ?? []}
-          maxComments={maxComments ?? 1}
-          onReply={onReply}
-          onShowReplies={onShowReplies}
-          onLike={onLikeCommentClick}
-          onUnLike={onUnLikeCommentClick}
-        />
+        <>
+          <Divider />
+          <ForumPostComments
+            comments={post.comments ?? []}
+            maxComments={maxComments ?? 1}
+            onReply={onReply}
+            onShowReplies={onShowReplies}
+            onLike={onLikeCommentClick}
+            onUnLike={onUnLikeCommentClick}
+          />
+        </>
       )}
       {onReply && (
-        <CommentInput onSend={(text) => onReply(null, text)} relyTo={null} />
+        <CommentInput
+          onSend={(text) => onReply(null, text)}
+          relyTo={null}
+          user={user}
+        />
       )}
     </Stack>
   );

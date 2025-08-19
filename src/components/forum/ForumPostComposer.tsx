@@ -48,7 +48,9 @@ export const ForumPostComposer = forwardRef<HTMLDivElement, IProps>(
         }}
       >
         <Stack direction="row" spacing={2} alignItems="center">
-          <Avatar src={avatarUrl} alt={userName} sx={{ mt: 0.5 }} />
+          <Avatar src={avatarUrl} alt={userName} sx={{ mt: 0.5 }}>
+            {userName.slice(0, 2)}
+          </Avatar>
           <Box flex={1}>
             <Box
               onClick={onPostClick}
