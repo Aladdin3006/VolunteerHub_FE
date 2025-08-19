@@ -26,6 +26,7 @@ const RegisterFaceModal = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<{ status?: string; error?: string }>({});
+  const fastAPIurl = import.meta.env.VITE_FAST_API
 
   const captureImage = async () => {
     if (!webcamRef.current) return;
@@ -63,7 +64,7 @@ const RegisterFaceModal = () => {
 
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:8000/register", {
+      const res = await fetch(`${fastAPIurl}/register`, {
         method: "POST",
         body: formData,
       });
