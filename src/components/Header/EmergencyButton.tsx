@@ -11,12 +11,22 @@ const shake = keyframes`
   80% { transform: translateX(2px); }
 `;
 
-const EmergencyButton: React.FC = () => {
+type Props = {
+    onClick?: () => void;
+    to?: string;
+};
+
+const EmergencyButton: React.FC<Props> = ({ onClick, to = "/contact" }) => {
     const navigate = useNavigate();
+
+    const handleClick = () => {
+        if (onClick) onClick();
+        else navigate(to);
+    };
 
     return (
         <Button
-            onClick={() => navigate("/contact")}
+            onClick={handleClick}
             sx={{
                 textTransform: "none",
                 borderRadius: "50px",
@@ -58,7 +68,6 @@ const EmergencyButton: React.FC = () => {
         >
             🚨<span> Báo Cáo Khẩn Cấp</span>
         </Button>
-
     );
 };
 

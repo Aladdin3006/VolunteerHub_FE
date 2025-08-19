@@ -138,8 +138,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f0f0f0", // gray background
-          borderRadius: "50%", // make it circular
           width: "40px",
           height: "40px",
           cursor: "pointer",
