@@ -103,14 +103,17 @@ export const ForumPost = forwardRef<HTMLDivElement, IProps>((props, ref) => {
         onShareClick={onShareClick}
       />
       {!hideComment && (
-        <ForumPostComments
-          comments={post.comments ?? []}
-          maxComments={maxComments ?? 1}
-          onReply={onReply}
-          onShowReplies={onShowReplies}
-          onLike={onLikeCommentClick}
-          onUnLike={onUnLikeCommentClick}
-        />
+        <>
+          <Divider />
+          <ForumPostComments
+            comments={post.comments ?? []}
+            maxComments={maxComments ?? 1}
+            onReply={onReply}
+            onShowReplies={onShowReplies}
+            onLike={onLikeCommentClick}
+            onUnLike={onUnLikeCommentClick}
+          />
+        </>
       )}
       {onReply && (
         <CommentInput
