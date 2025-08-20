@@ -6,7 +6,11 @@ export interface Certificate {
     _id: string;
     name: string;
   };
-  volunteerId: string;
+  volunteerId: {
+    _id: string;
+    fullname: string;
+    email: string;
+  };
   fileUrl: string;
   verifyCode: string;
   createdAt: Date;
@@ -134,6 +138,51 @@ export const certificateService = {
       return await response.json();
     } catch (error) {
       console.error("Error deleting certificate:", error);
+      throw error;
+    }
+  },
+
+  // Get certificate details by verify code
+  getCertificateDetailByVerifyCode: async (
+    verifyCode: string
+  ): Promise<Certificate> => {
+    try {
+      const response = await fetch(
+        `${API_BASE}/certificate/verify/${verifyCode}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch certificate details: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      const certificateData = result.result || {};
+      return {
+        ...certificateData,
+        _id: certificateData._id || certificateData.id,
+        campaignId: {
+          _id: certificateData.campaignId._id,
+          name: certificateData.campaignId.name,
+        },
+        volunteerId: {
+          _id: certificateData.volunteerId._id,
+          fullname: certificateData.volunteerId.fullname,
+          email: certificateData.volunteerId.email,
+        },
+        createdAt: new Date(certificateData.createdAt),
+        updatedAt: certificateData.updatedAt
+          ? new Date(certificateData.updatedAt)
+          : undefined,
+      };
+    } catch (error) {
+      console.error("Error fetching certificate by verify code:", error);
       throw error;
     }
   },

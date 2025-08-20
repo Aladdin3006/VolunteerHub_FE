@@ -39,6 +39,7 @@ import DefaultLayout from "@/layouts/DefaultLayout";
 import UserLayout from "@/layouts/UserLayout";
 import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
 import ThankYou from "@/pages/campaignVolunteer/Thanhyou";
+import VerifyCertificate from "@/pages/profile/VerifyCertificate";
 
 const AppRoutes = () => (
   <Routes>
@@ -162,6 +163,14 @@ const AppRoutes = () => (
         <UserLayout>
           <CalendarTask />
         </UserLayout>
+      }
+    />
+    <Route
+      path="/certificates/verify/:verifyCode"
+      element={
+        <DefaultLayout>
+          <VerifyCertificate />
+        </DefaultLayout>
       }
     />
     <Route
