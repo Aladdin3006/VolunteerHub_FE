@@ -78,9 +78,9 @@ const calculateDistance = (
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c; // Khoảng cách (km)
   return distance;
@@ -646,19 +646,17 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                 alignItems: "center",
                 gap: 1,
                 mt: 1,
-                flexWrap: "wrap",
-                minHeight: "56px", // Đảm bảo mỗi hàng có chiều cao tối thiểu
               }}
             >
-              <FormControl margin="dense" sx={{ minWidth: 150, flex: 1 }}>
+              <FormControl
+                size="small"
+                sx={{ minWidth: 150, flex: 1 }}
+              >
                 <InputLabel>Loại nhu cầu</InputLabel>
                 <Select
                   value={need.type}
-                  onChange={(e) =>
-                    handleNeedChange(index, "type", e.target.value as string)
-                  }
+                  onChange={(e) => handleNeedChange(index, "type", e.target.value as string)}
                   label="Loại nhu cầu"
-                  size="small"
                 >
                   {needTypes.map((type) => (
                     <MenuItem key={type} value={type}>
@@ -667,36 +665,30 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                   ))}
                 </Select>
               </FormControl>
+
               <TextField
+                size="small"
                 label="Số lượng"
                 value={need.quantity}
-                onChange={(e) =>
-                  handleNeedChange(index, "quantity", e.target.value)
-                }
+                onChange={(e) => handleNeedChange(index, "quantity", e.target.value)}
                 type="number"
-                margin="dense"
-                size="small"
-                sx={{ width: 100, flex: "none" }}
+                sx={{ width: 120 }}
               />
+
               <TextField
+                size="small"
                 label="Ghi chú"
                 value={need.note}
-                onChange={(e) =>
-                  handleNeedChange(index, "note", e.target.value)
-                }
-                margin="dense"
-                size="small"
-                sx={{ flex: 1, minWidth: 150 }}
+                onChange={(e) => handleNeedChange(index, "note", e.target.value)}
+                sx={{ flex: 1, minWidth: 200 }}
               />
-              <IconButton
-                onClick={() => removeNeed(index)}
-                color="error"
-                sx={{ ml: 1 }}
-              >
+
+              <IconButton onClick={() => removeNeed(index)} color="error">
                 <RemoveIcon />
               </IconButton>
             </Box>
           ))}
+
           <Button onClick={addNeed} startIcon={<AddIcon />} sx={{ mt: 1 }}>
             Thêm nhu cầu
           </Button>
