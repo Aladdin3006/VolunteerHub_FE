@@ -421,9 +421,9 @@ const ReliefPointManager: React.FC = () => {
   return (
     <Box>
       <ManagerTabs
-    activeTab={activeLink}
-    onTabChange={(value) => setActiveLink(value)}
-/>
+        activeTab={activeLink}
+        onTabChange={(value) => setActiveLink(value)}
+      />
 
       <Typography variant="h5" fontWeight="bold" p={3}>
         📍 Quản lý điểm cứu trợ
@@ -444,9 +444,16 @@ const ReliefPointManager: React.FC = () => {
           </MenuItem>
           {storms.map((storm) => (
             <MenuItem key={storm._id} value={storm._id}>
-              {storm.name}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {storm.name}
+                <Chip
+                  label={storm.isActive ? "🟢" : "⚪"}
+                  color={storm.isActive ? "success" : "default"}
+                />
+              </Box>
             </MenuItem>
           ))}
+
         </Select>
 
         {/* Hiển thị trạng thái */}
@@ -469,7 +476,7 @@ const ReliefPointManager: React.FC = () => {
                     onClick={async () => {
                       if (
                         window.confirm(
-                          "Bạn có chắc chắn muốn kết thúc bão này không?"
+                          "Bạn có chắc chắn muốn kết thúc bão này không?, hãy chắc chắn các điểm cứu hộ đã được hỗ trợ"
                         )
                       ) {
                         try {
