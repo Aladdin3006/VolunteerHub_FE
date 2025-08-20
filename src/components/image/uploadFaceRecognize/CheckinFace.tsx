@@ -92,7 +92,8 @@ const CheckinFaceModal: React.FC<Props> = ({
             audio={false}
             screenshotFormat="image/jpeg"
             videoConstraints={{ width: 480, height: 360 }}
-            style={{ borderRadius: 8 }}
+            style={{ borderRadius: 8, marginTop: 8, transform: "scaleX(-1)" }}
+
           />
           <Typography variant="body2" mt={1} color="text.secondary">
             Đảm bảo mặt bạn rõ nét và không bị ngược sáng nhé 😎

@@ -209,7 +209,7 @@ const StormTrigger: React.FC = () => {
 
             {!showForm && (
               <Button variant="contained" color="error" sx={{ mt: 3 }} onClick={() => setShowForm(true)}>
-                🚀 Tạo Cơn Bão
+               💨 Tạo Cảnh báo cho cơn bão
               </Button>
             )}
           </Box>
@@ -217,7 +217,7 @@ const StormTrigger: React.FC = () => {
           {showForm && (
             <Box flex={1} component="form" onSubmit={(e) => e.preventDefault()}>
               <Typography variant="h6" fontWeight="bold" mb={2}>
-                ✍️ Tạo Bão
+                Thông tin cơn bão sắp tới
               </Typography>
               <TextField
                 label="Tên bão"
