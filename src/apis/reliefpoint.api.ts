@@ -1,206 +1,153 @@
-// Nếu chưa có types, bạn có thể định nghĩa interface ReliefPoint ở đây dựa trên schema
+// types
 interface ReliefPoint {
   _id: string;
   name: string;
   description?: string;
   address?: string;
   type: "need" | "supply";
-  stormId: string; // ObjectId as string
+  stormId: string;
   needs?: Array<{
     type:
-      | "người mắc kẹt"
-      | "bị thương"
-      | "thiếu đồ ăn"
-      | "thiếu nước"
-      | "thiếu thuốc"
-      | "khác";
+    | "người mắc kẹt"
+    | "bị thương"
+    | "thiếu đồ ăn"
+    | "thiếu nước"
+    | "thiếu thuốc"
+    | "khác";
     quantity?: number;
     note?: string;
   }>;
   surplus?: Array<{
     type:
-      | "thực phẩm"
-      | "nước uống"
-      | "quần áo"
-      | "thuốc men"
-      | "chăn màn"
-      | "dụng cụ y tế"
-      | "khác";
+    | "thực phẩm"
+    | "nước uống"
+    | "quần áo"
+    | "thuốc men"
+    | "chăn màn"
+    | "dụng cụ y tế"
+    | "khác";
     quantity?: number;
     note?: string;
   }>;
   status: "pending" | "in-progress" | "resolved" | "rejected";
   contact?: string;
   verified: boolean;
-  verifiedBy?: string; // ObjectId as string
+  verifiedBy?: string;
   responders?: Array<{
     userId: string;
     note?: string;
-    joinedAt?: string; // Date as ISO string
+    joinedAt?: string;
   }>;
   location: {
     type: "Point";
-    coordinates: [number, number]; // [lng, lat]
+    coordinates: [number, number];
   };
-  createdBy?: string; // ObjectId as string
-  createdAt: string; // Date as ISO string
-  updatedAt: string; // Date as ISO string
+  createdBy?: string;
+  rescueStatus?: boolean;
+  rescueList?: Array<{
+    rescuedAt?: string;
+    rescueNote?: string;
+    rescueProofs?: Array<{
+      images: string[];
+      note?: string;
+      uploadedAt?: string;
+    }>;
+  }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
+type RescuePayload = {
+  images?: File[];
+  rescueNote?: string;
+  note?: string;
+  rescuedAt?: string;
+  markAsRescued?: boolean;
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
-const BASE_URL = `${API_BASE}/relief-point`; // Thay đổi nếu cần (ví dụ: process.env.API_URL)
+const BASE_URL = `${API_BASE}/relief-point`;
 
 export const ReliefPointAPI = {
-  // Tạo mới điểm cứu trợ
-  createReliefPoint: async (
-    data: Partial<ReliefPoint>
-  ): Promise<ReliefPoint> => {
-    try {
-      const response = await fetch(`${BASE_URL}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Nếu cần auth: 'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi khi tạo điểm cứu trợ:", error);
-      throw error;
-    }
+  createReliefPoint: async (data: Partial<ReliefPoint>): Promise<ReliefPoint> => {
+    const res = await fetch(`${BASE_URL}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   },
 
-  // Lấy danh sách điểm cứu trợ với filters
-  getAllReliefPoints: async (
-    filters: {
-      stormId?: string;
-      type?: "need" | "supply";
-      verified?: boolean;
-      status?: "pending" | "in-progress" | "resolved" | "rejected";
-    } = {}
-  ): Promise<ReliefPoint[]> => {
-    try {
-      const params = new URLSearchParams();
-      if (filters.stormId) params.append("stormId", filters.stormId);
-      if (filters.type) params.append("type", filters.type);
-      if (filters.verified !== undefined)
-        params.append("verified", filters.verified.toString());
-      if (filters.status) params.append("status", filters.status);
-
-      const response = await fetch(`${BASE_URL}?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách điểm cứu trợ:", error);
-      return [];
-    }
+  getAllReliefPoints: async (filters: {
+    stormId?: string;
+    type?: "need" | "supply";
+    verified?: boolean;
+    status?: "pending" | "in-progress" | "resolved" | "rejected";
+  } = {}): Promise<ReliefPoint[]> => {
+    const params = new URLSearchParams();
+    if (filters.stormId) params.append("stormId", filters.stormId);
+    if (filters.type) params.append("type", filters.type);
+    if (filters.verified !== undefined) params.append("verified", String(filters.verified));
+    if (filters.status) params.append("status", filters.status);
+    const res = await fetch(`${BASE_URL}?${params.toString()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
-  // Lấy chi tiết một điểm cứu trợ theo ID
   getReliefPointById: async (id: string): Promise<ReliefPoint | null> => {
-    try {
-      const response = await fetch(`${BASE_URL}/${id}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi khi tải chi tiết điểm cứu trợ:", error);
-      return null;
-    }
+    const res = await fetch(`${BASE_URL}/${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   },
 
-  // Xác minh điểm cứu trợ (cần auth nếu có)
   verifyReliefPoint: async (id: string): Promise<ReliefPoint> => {
-    try {
-      const response = await fetch(`${BASE_URL}/${id}/verify`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          // Nếu cần auth: 'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi khi xác minh điểm cứu trợ:", error);
-      throw error;
-    }
+    const res = await fetch(`${BASE_URL}/${id}/verify`, { method: "PATCH" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   },
 
-  // Cập nhật trạng thái điểm cứu trợ
   updateStatus: async (
     id: string,
     status: "pending" | "in-progress" | "resolved" | "rejected"
   ): Promise<ReliefPoint> => {
-    try {
-      const response = await fetch(`${BASE_URL}/${id}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          // Nếu cần auth: 'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi khi cập nhật trạng thái:", error);
-      throw error;
-    }
+    const res = await fetch(`${BASE_URL}/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   },
 
-  // Đăng ký hỗ trợ cho điểm cứu trợ (cần auth nếu có)
-  respondToReliefPoint: async (
-    id: string,
-    note?: string
-  ): Promise<ReliefPoint> => {
-    try {
-      const response = await fetch(`${BASE_URL}/${id}/respond`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          // Nếu cần auth: 'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ note }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("Lỗi khi đăng ký hỗ trợ:", error);
-      throw error;
-    }
+  respondToReliefPoint: async (id: string, note?: string): Promise<ReliefPoint> => {
+    const res = await fetch(`${BASE_URL}/${id}/respond`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   },
 
-  // Xóa điểm cứu trợ theo ID
   deleteReliefPoint: async (id: string): Promise<void> => {
-    try {
-      const response = await fetch(`${BASE_URL}/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          // Nếu cần auth: 'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-    } catch (error) {
-      console.error("Lỗi khi xóa điểm cứu trợ:", error);
-      throw error;
-    }
+    const res = await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   },
+
+  addRescueEntry: async (id: string, payload: RescuePayload): Promise<ReliefPoint> => {
+    const fd = new FormData();
+    if (payload.images) payload.images.forEach(f => fd.append("images", f));
+    if (payload.rescueNote) fd.append("rescueNote", payload.rescueNote);
+    if (payload.note) fd.append("note", payload.note);
+    if (payload.rescuedAt) fd.append("rescuedAt", payload.rescuedAt);
+    if (payload.markAsRescued !== undefined) fd.append("markAsRescued", String(payload.markAsRescued));
+    const res = await fetch(`${BASE_URL}/${id}/rescues`, {
+      method: "POST",
+      body: fd
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
 };
