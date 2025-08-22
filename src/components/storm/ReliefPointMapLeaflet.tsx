@@ -241,32 +241,55 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
             return (
               <ListItem key={p._id} disablePadding>
                 <ListItemButton
-                  onClick={() => { setSelectedPoint(p); mapRef.current?.flyTo([p.lat, p.lng], 14); }}
+                  onClick={() => {
+                    setSelectedPoint(p);
+                    mapRef.current?.flyTo([p.lat, p.lng], 14);
+                  }}
                   selected={selectedPoint?._id === p._id}
+                  sx={{ alignItems: "flex-start" }}
                 >
                   <ListItemText
                     primary={
-                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                        <span>{p.name}</span>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {p.name}
+                        </Typography>
                         {p.rescueStatus !== undefined && (
                           <Chip
                             size="small"
-                            label={p.rescueStatus ? "Đã nhận được trợ giúp" : ""}
+                            label={p.rescueStatus ? "Đã nhận được trợ giúp" : "Vẫn cần sự trợ giúp"}
                             color={p.rescueStatus ? "success" : "warning"}
+                            sx={{ fontSize: "0.75rem" }}
                           />
                         )}
-
                       </Stack>
                     }
-                    secondary={p.type === "supply" ? "🟢 Điểm cung cấp" : "🔴 Điểm cần cứu trợ"}
+                    secondary={
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        mt={0.5}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {p.type === "supply" ? "🟢 Điểm cung cấp" : "🔴 Điểm cần cứu trợ"}
+                        </Typography>
+                        {p.distance != null && (
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDistance(p.distance)}
+                          </Typography>
+                        )}
+                      </Stack>
+                    }
                   />
-                  {p.distance != null && (
-                    <Typography variant="body2" color="textSecondary" sx={{ ml: "auto" }}>
-                      {formatDistance(p.distance)}
-                    </Typography>
-                  )}
                 </ListItemButton>
               </ListItem>
+
             );
           })}
           {filteredSorted.length === 0 && (
@@ -315,19 +338,24 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
               width: 320,
               maxHeight: "calc(100% - 20px)",
               overflowY: "auto",
-              bgcolor: "#fff",
-              border: "1px solid #e0e0e0",
+              bgcolor: "background.paper",
               borderRadius: 2,
               p: 2,
               zIndex: 1000,
-              boxShadow: 3
+              boxShadow: 4
             }}
           >
+            {/* Header */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-              <Typography variant="h6" fontWeight={700}>📍 {selectedPoint.name}</Typography>
-              <IconButton onClick={() => setSelectedPoint(null)} size="small"><CloseIcon /></IconButton>
+              <Typography variant="h5" fontWeight={700}>
+                📍 {selectedPoint.name}
+              </Typography>
+              <IconButton onClick={() => setSelectedPoint(null)} size="small">
+                <CloseIcon />
+              </IconButton>
             </Box>
 
+            {/* Trạng thái */}
             <Stack direction="row" spacing={1} mb={1} flexWrap="wrap">
               <Chip
                 size="small"
@@ -340,9 +368,9 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                   size="small"
                   label={selectedPoint.rescueStatus ? "ĐÃ CỨU HỘ" : "CHƯA CỨU"}
                   color={selectedPoint.rescueStatus ? "success" : "warning"}
-                  variant="filled"
                 />
               )}
+            </Stack>
               <Button
                 size="small"
                 variant="outlined"
@@ -351,38 +379,54 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
               >
                 {(selectedPoint.rescueList?.length ?? 0)} lượt cứu trợ
               </Button>
+            {/* Danh sách nhu cầu/cung cấp */}
+            <Stack spacing={1} mb={2} pt={1}>
+              {(selectedPoint.type === "need" ? selectedPoint.needs : selectedPoint.surplus)?.map((it, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    p: 1.2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 1.5,
+                    bgcolor: "grey.50"
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={600}>📦 {it.type}</Typography>
+                  <Typography variant="body2">🔢 Số lượng: {it.quantity ?? "?"}</Typography>
+                  <Typography variant="body2">📝 {it.note || "Không có ghi chú"}</Typography>
+                  <Chip
+                    size="small"
+                    label={selectedPoint.verified ? "ĐÃ XÁC MINH" : "CHƯA XÁC MINH"}
+                    color={selectedPoint.verified ? "success" : "error"}
+                    variant="outlined"
+                    sx={{ mt: 0.5 }}
+                  />
+                </Box>
+              ))}
             </Stack>
 
-            {(selectedPoint.type === "need" ? selectedPoint.needs : selectedPoint.surplus)?.map((it, i) => (
-              <Box key={i} mt={1}>
-                📦 <strong>{it.type}</strong><br />
-                🔢 Số lượng: {it.quantity ?? "?"}<br />
-                📝 {it.note || "Không có ghi chú"}<br />
-                <Chip
-                  size="small"
-                  label={selectedPoint.verified ? "ĐÃ XÁC MINH" : "CHƯA XÁC MINH"}
-                  color={selectedPoint.verified ? "success" : "error"}
-                  variant="outlined"
-                />
-
-              </Box>
-            ))}
-
+            {/* Liên hệ */}
             {selectedPoint.contact && (
-              <Typography mt={1} variant="body2">
+              <Typography variant="body2" mb={2}>
                 📞 Liên hệ: <strong>{selectedPoint.contact}</strong>
               </Typography>
             )}
+
+            {/* Nút thêm cứu trợ */}
             <Button
-              size="small"
+              fullWidth
+              size="medium"
               variant="contained"
               color="primary"
               onClick={() => setOpenAddRescue(true)}
+              sx={{ borderRadius: 2 }}
             >
-              Thêm cứu trợ
+               Thêm cứu trợ
             </Button>
           </Box>
         )}
+
       </Box>
 
       <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
