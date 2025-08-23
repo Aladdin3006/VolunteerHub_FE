@@ -10,14 +10,15 @@ import {
   IconButton,
   Typography,
 } from "@mui/material";
+import { Close } from "@mui/icons-material";
 import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
 import { CampaignForm } from "../campaign/CampaignForm";
-import { Close } from "@mui/icons-material";
 
 interface IProps extends Omit<DialogProps, "open"> {
   afterSubmit?: (data: ICampaignDataUpload) => void;
   closeAfterSubmit?: boolean;
 }
+
 export interface INewCampaignDialogRef {
   open: () => void;
 }
@@ -28,26 +29,21 @@ export const NewCampaignDialog = forwardRef<INewCampaignDialogRef, IProps>(
     const [open, setOpen] = useState<boolean>(false);
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
 
-    const close = () => {
-      setOpen(false);
-    };
+    const close = () => setOpen(false);
 
     useImperativeHandle(ref, () => ({
-      open: () => {
-        setOpen(true);
-      },
+      open: () => setOpen(true),
     }));
 
     const handleSubmitNewCampaign = async (data: ICampaignDataUpload) => {
       try {
-        const res = await CAMPAIGN_API.createCampaign(data);
+        const payload = { ...data }; // location đã nằm trong data từ CampaignForm
+        const res = await CAMPAIGN_API.createCampaign(payload);
         if (typeof res === "object" && (res as any).error != null) {
           setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
         } else {
-          afterSubmit && afterSubmit(data);
-          if (closeAfterSubmit !== false) {
-            close();
-          }
+          afterSubmit && afterSubmit(payload);
+          if (closeAfterSubmit !== false) close();
         }
       } catch (error) {
         setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
@@ -72,7 +68,6 @@ export const NewCampaignDialog = forwardRef<INewCampaignDialogRef, IProps>(
             justifyContent="center"
           >
             <Typography variant="h6">Tạo chiến dịch tình nguyện</Typography>
-
             <IconButton
               onClick={close}
               sx={{ position: "absolute", right: 0 }}
@@ -82,6 +77,7 @@ export const NewCampaignDialog = forwardRef<INewCampaignDialogRef, IProps>(
             </IconButton>
           </Box>
         </DialogTitle>
+
         <DialogContent
           dividers
           sx={{
@@ -91,37 +87,18 @@ export const NewCampaignDialog = forwardRef<INewCampaignDialogRef, IProps>(
               height: "100%",
               display: "flex",
               flexDirection: "column",
-              ".form-title": {
-                display: "none",
-              },
-              ".form-body": {
-                flex: 1,
-                p: 1,
-                overflowY: "auto",
-                "&::-webkit-scrollbar": {
-                  width: "6px",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  backgroundColor: "#ccc",
-                  borderRadius: "3px",
-                },
-                "&::-webkit-scrollbar-track": {
-                  backgroundColor: "transparent",
-                },
-              },
+              ".form-title": { display: "none" },
+              ".form-body": { flex: 1, p: 1, overflowY: "auto" },
             },
           }}
         >
           <CampaignForm
             onSubmitForm={handleSubmitNewCampaign}
             type="create"
-            sx={{
-              height: "100%",
-            }}
+            sx={{ height: "100%" }}
           />
         </DialogContent>
 
-        {/* Error message */}
         <Snackbar
           open={Boolean(snackbarMessage)}
           autoHideDuration={6000}
