@@ -759,8 +759,8 @@ const ManagerCampaign: React.FC = () => {
   return (
     <Box
       sx={{
-        justifyContent: "center",
-        minHeight: "100vh",
+        width: "100%",
+        padding: { xs: 1, sm: 2 },
         backgroundColor: "#f5f5f5",
       }}
     >
@@ -773,12 +773,14 @@ const ManagerCampaign: React.FC = () => {
           {alertMessage}
         </Alert>
       )}
-      <ManagerTabs
-        activeTab={activeLink === "ongoing" ? "campaigns" : "storms"}
-        onTabChange={(value) => {
-          setActiveLink(value === "campaigns" ? "ongoing" : "finished");
-        }}
-      />
+      <Box sx={{ mb: 3 }}>
+        <ManagerTabs
+          activeTab={activeLink === "ongoing" ? "campaigns" : "storms"}
+          onTabChange={(value) => {
+            setActiveLink(value === "campaigns" ? "ongoing" : "finished");
+          }}
+        />
+      </Box>
       <Paper
         sx={{
           mb: 3,
@@ -1031,8 +1033,20 @@ const ManagerCampaign: React.FC = () => {
                       sx={{ width: "100%" }}
                     />
                   </Box>
-                  <Typography variant="h6" gutterBottom noWrap>
-                    {campaign.name}
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "100%",
+                      display: "block",
+                    }}
+                  >
+                    {campaign.name.length > 25
+                      ? `${campaign.name.slice(0, 25)}...`
+                      : campaign.name}
                   </Typography>
                   <Stack spacing={1} sx={{ mb: 2 }}>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -1086,6 +1100,9 @@ const ManagerCampaign: React.FC = () => {
                               sx={{
                                 backgroundColor: "#35c04cff",
                                 color: "#fff",
+                                "& .MuiChip-label": {
+                                  fontSize: "0.7rem",
+                                },
                                 fontWeight: "bold",
                                 maxWidth: "100%",
                                 overflow: "hidden",

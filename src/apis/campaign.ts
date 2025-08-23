@@ -17,7 +17,7 @@ export interface Campaign {
   currentAmount: number;
   thumbnail: string;
   images: string[];
-  tags?: { name: string }[];
+  tags?: Category[];
   createdBy: {
     _id: string;
     fullName: string;
@@ -58,6 +58,7 @@ export interface CampaignVolunteer {
   image?: string;
   startDate?: string;
   endDate?: string;
+  categories?: Category[];
   location?: {
     type: "Point";
     coordinates: [number, number];

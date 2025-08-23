@@ -9,10 +9,15 @@ import {
   Box,
   LinearProgress,
   Chip,
+  Avatar,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { Campaign } from "../../apis/campaign";
-import { LocationOnOutlined, EventOutlined } from "@mui/icons-material";
+import {
+  LocationOnOutlined,
+  EventOutlined,
+  CategoryOutlined,
+} from "@mui/icons-material";
 
 interface Props {
   campaign: Campaign;
@@ -26,12 +31,24 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
     return null;
   }
 
-  const raised = campaign.currentAmount ?? 0;
+  const cardStatus =
+    campaign.status === "draft" ? "in-progress" : campaign.status;
+
+  // Calculate progress based on status
+  const raised =
+    cardStatus === "in-progress"
+      ? campaign.currentAmount ?? 0
+      : campaign.totalEnd ?? 0;
   const target = campaign.goalAmount ?? 1;
   const progress = Math.min((raised / target) * 100, 100);
 
-  const cardStatus =
-    campaign.status === "draft" ? "in-progress" : campaign.status;
+  // Assign letters to categories (simulating the image's A-Z pattern)
+  const categoryLetters = "ABCDEFGHIMNYT".split("");
+  const categoriesWithLetters =
+    campaign.tags?.map((cat, index) => ({
+      ...cat,
+      letter: categoryLetters[index] || "",
+    })) || [];
 
   return (
     <Card
@@ -100,50 +117,84 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
               {new Date(campaign.createdAt).toLocaleDateString()}
             </Typography>
           </Box>
-          <Box display="flex" alignItems="center">
-            <LocationOnOutlined fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body2" noWrap>
-              Nhiều địa điểm
-            </Typography>
+          <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
+            <CategoryOutlined fontSize="small" sx={{ mr: 1 }} />
+            {categoriesWithLetters.map((cat, index) => (
+              <Button
+                key={cat._id}
+                variant="contained"
+                size="small"
+                sx={{
+                  backgroundColor: "#4CAF50",
+                  color: "#ffffffff",
+                  borderRadius: "20px",
+                  padding: "2px 10px", // Reduced padding for smaller size
+                  minWidth: "80px", // Adjusted width to make it smaller
+                  textTransform: "none",
+                  "& .MuiButton-label": {
+                    fontSize: "0.4rem", // Smaller font size
+                    fontWeight: "normal",
+                  },
+                  "&:hover": {
+                    backgroundColor: "#45a049",
+                  },
+                }}
+                startIcon={
+                  <Avatar
+                    sx={{
+                      width: 18,
+                      height: 18,
+                      backgroundColor: "#D3D3D3",
+                      color: "#808080",
+                      fontSize: "0.25rem", // Even smaller font size
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center", // Center the text
+                    }}
+                  >
+                    {cat.name.charAt(0)}
+                  </Avatar>
+                }
+              >
+                {cat.name}
+              </Button>
+            ))}
           </Box>
         </Stack>
 
-        {cardStatus === "in-progress" ? (
-          <Box sx={{ mt: "auto" }}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={0.5}
-            >
-              <Typography variant="caption" color="text.secondary">
-                Đã quyên góp
-              </Typography>
-              <Typography variant="caption" fontWeight="600">
-                {raised.toLocaleString()}đ / {target.toLocaleString()}đ
-              </Typography>
-            </Box>
+        <Box sx={{ mt: "auto" }}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={0.5}
+          >
+            <Typography variant="caption" color="text.secondary">
+              Đã quyên góp
+            </Typography>
+            <Typography variant="caption" fontWeight="600">
+              {raised.toLocaleString()}đ / {target.toLocaleString()}đ
+            </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" gap={1}>
             <LinearProgress
               variant="determinate"
               value={progress}
               sx={{
                 height: 6,
                 borderRadius: 3,
+                flexGrow: 1,
                 "& .MuiLinearProgress-bar": {
                   backgroundColor: "primary.main",
                 },
               }}
             />
+            <Typography variant="caption" color="text.secondary">
+              {progress.toFixed(0)}%
+            </Typography>
           </Box>
-        ) : (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: "auto", fontStyle: "italic" }}
-          >
-            Tổng số tiền: {campaign?.totalEnd?.toLocaleString() || "0"}đ
-          </Typography>
-        )}
+        </Box>
       </CardContent>
 
       <Box sx={{ px: 2, pb: 2 }}>

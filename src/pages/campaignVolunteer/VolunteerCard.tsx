@@ -6,77 +6,104 @@ import {
   Typography,
   Button,
   Stack,
-  Box, // Dùng Box để layout linh hoạt hơn
-  LinearProgress, // Thêm thanh tiến độ
-  Chip, // Dùng Chip để hiển thị tag
+  Box,
+  LinearProgress,
+  Chip,
+  Avatar,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { CampaignVolunteer } from "../../apis/campaign";
-import { LocationOnOutlined, EventOutlined, PersonOutline } from "@mui/icons-material"; // Thêm icons
+import {
+  LocationOnOutlined,
+  EventOutlined,
+  PersonOutline,
+  CategoryOutlined,
+} from "@mui/icons-material";
 
 interface Props {
   campaign: CampaignVolunteer;
-  style?: React.CSSProperties; // Chấp nhận style từ component cha
+  style?: React.CSSProperties;
 }
 
 const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
   const navigate = useNavigate();
 
-  // Tính toán giả lập cho thanh tiến độ (bạn có thể thay bằng dữ liệu thật)
+  // Tính toán giả lập cho thanh tiến độ
   const volunteersJoined = campaign.volunteers?.length || 0;
+  const progress = Math.min(volunteersJoined * 100, 100);
 
-  const progress = Math.min((volunteersJoined ) * 100, 100);
+  // Assign letters to categories (simulating the DonationCard's A-Z pattern)
+  const categoryLetters = "ABCDEFGHIMNYT".split("");
+  const categoriesWithLetters =
+    campaign.categories?.map((cat, index) => ({
+      ...cat,
+      letter: categoryLetters[index] || "",
+    })) || [];
 
   return (
     <Card
       elevation={3}
-      style={style} // Áp dụng style từ cha
+      style={style}
       sx={{
-        borderRadius: 4, // Bo góc mềm mại hơn
+        borderRadius: 4,
         transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
         "&:hover": {
-          transform: "translateY(-8px)", // Hiệu ứng nổi bật hơn
-          boxShadow: "0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22)",
+          transform: "translateY(-8px)",
+          boxShadow:
+            "0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22)",
         },
-        // Layout flex để các phần tử bên trong co dãn tốt
         display: "flex",
         flexDirection: "column",
-        height: '100%', // Quan trọng: đảm bảo thẻ chiếm hết chiều cao của Grid item
+        height: "100%",
       }}
     >
-      <Box sx={{ position: 'relative' }}>
+      <Box sx={{ position: "relative" }}>
         <CardMedia
           component="img"
-          height="180" // Giảm chiều cao ảnh một chút
+          height="180"
           image={campaign.image || "https://via.placeholder.com/600x350"}
           alt={campaign.name}
           onClick={() => navigate(`/campaigns/${campaign._id}`)}
-          sx={{ cursor: 'pointer' }}
+          sx={{ cursor: "pointer" }}
         />
-        {/* Thêm Chip trạng thái */}
         <Chip
-          label={campaign.status === 'in-progress' ? 'Đang diễn ra' : 'Đã kết thúc'}
-          color={campaign.status === 'in-progress' ? 'success' : 'default'}
+          label={
+            campaign.status === "in-progress" ? "Đang diễn ra" : "Đã kết thúc"
+          }
+          color={campaign.status === "in-progress" ? "success" : "default"}
           size="small"
-          sx={{ position: 'absolute', top: 12, right: 12, color: '#fff', backgroundColor: campaign.status === 'in-progress' ? 'rgba(25, 118, 210, 0.8)' : 'rgba(0, 0, 0, 0.5)' }}
+          sx={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            color: "#fff",
+            backgroundColor:
+              campaign.status === "in-progress"
+                ? "rgba(25, 118, 210, 0.8)"
+                : "rgba(0, 0, 0, 0.5)",
+          }}
         />
       </Box>
 
-      {/* CardContent sẽ chiếm hết không gian còn lại */}
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-        <Typography variant="h6" component="h3" fontWeight="bold" gutterBottom
+      <CardContent
+        sx={{ flexGrow: 1, display: "flex", flexDirection: "column", p: 2 }}
+      >
+        <Typography
+          variant="h6"
+          component="h3"
+          fontWeight="bold"
+          gutterBottom
           sx={{
-            display: '-webkit-box',
-            overflow: 'hidden',
-            WebkitBoxOrient: 'vertical',
-            WebkitLineClamp: 2, // Giới hạn tên dự án trong 2 dòng
+            display: "-webkit-box",
+            overflow: "hidden",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 2,
           }}
         >
           {campaign.name}
         </Typography>
 
-        {/* Thông tin địa điểm và ngày tháng với icon */}
-        <Stack spacing={1} sx={{ my: 1.5, color: 'text.secondary' }}>
+        <Stack spacing={1} sx={{ my: 1.5, color: "text.secondary" }}>
           <Box display="flex" alignItems="center">
             <EventOutlined fontSize="small" sx={{ mr: 1 }} />
             <Typography variant="body2">
@@ -86,24 +113,68 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           <Box display="flex" alignItems="center">
             <LocationOnOutlined fontSize="small" sx={{ mr: 1 }} />
             <Typography variant="body2" noWrap>
-              {campaign.location?.address || 'Nhiều địa điểm'}
+              {campaign.location?.address || "Nhiều địa điểm"}
             </Typography>
+          </Box>
+          <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
+            <CategoryOutlined fontSize="small" sx={{ mr: 1 }} />
+            {categoriesWithLetters.map((cat, index) => (
+              <Button
+                key={cat._id}
+                variant="contained"
+                size="small"
+                sx={{
+                  backgroundColor: "#4CAF50",
+                  color: "#ffffffff",
+                  borderRadius: "20px",
+                  padding: "2px 10px",
+                  minWidth: "80px",
+                  textTransform: "none",
+                  "& .MuiButton-label": {
+                    fontSize: "0.4rem",
+                    fontWeight: "normal",
+                  },
+                  "&:hover": {
+                    backgroundColor: "#45a049",
+                  },
+                }}
+                startIcon={
+                  <Avatar
+                    sx={{
+                      width: 18,
+                      height: 18,
+                      backgroundColor: "#D3D3D3",
+                      color: "#808080",
+                      fontSize: "0.25rem",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {cat.name.charAt(0)}
+                  </Avatar>
+                }
+              >
+                {cat.name}
+              </Button>
+            ))}
           </Box>
         </Stack>
 
-        {/* Thanh tiến độ và số lượng */}
-        <Box sx={{ mt: 'auto' }}>
-          {/* Đẩy phần này xuống dưới cùng */}
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-            {/* Icon + text nằm cạnh nhau */}
+        <Box sx={{ mt: "auto" }}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={0.5}
+          >
             <Box display="flex" alignItems="center">
               <PersonOutline fontSize="small" sx={{ mr: 1 }} />
               <Typography variant="caption" color="text.secondary">
                 Tình nguyện viên
               </Typography>
             </Box>
-
-            {/* Số TNV sang bên phải */}
             <Typography variant="caption" fontWeight="bold">
               {volunteersJoined} TNV
             </Typography>
@@ -115,10 +186,8 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
             sx={{ height: 8, borderRadius: 4 }}
           />
         </Box>
-
       </CardContent>
 
-      {/* Nút bấm để ở ngoài cùng cho rõ ràng */}
       <Box sx={{ p: 2, pt: 0 }}>
         <Button
           fullWidth
@@ -127,23 +196,22 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           sx={{
             borderRadius: 2,
             textTransform: "none",
-            fontWeight: 'bold',
-            ...(campaign.status === 'completed' && {
+            fontWeight: "bold",
+            ...(campaign.status === "completed" && {
               backgroundColor: (theme) => theme.palette.primary.main,
               color: (theme) => theme.palette.primary.contrastText,
-              '&:disabled': {
+              "&:disabled": {
                 backgroundColor: (theme) => theme.palette.primary.main,
                 color: (theme) => theme.palette.primary.contrastText,
               },
             }),
           }}
           onClick={() => navigate(`/campaigns/${campaign._id}`)}
-          disabled={campaign.status === 'completed'}
+          disabled={campaign.status === "completed"}
         >
-          {campaign.status === 'completed' ? 'Xem lại dự án' : 'Xem chi tiết'}
+          {campaign.status === "completed" ? "Xem lại dự án" : "Xem chi tiết"}
         </Button>
       </Box>
-
     </Card>
   );
 };
