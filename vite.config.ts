@@ -12,6 +12,7 @@ export default defineConfig({
     svgrPlugin(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto", // 👈 auto inject SW
       devOptions: {
         enabled: process.env.NODE_ENV === "development",
       },
