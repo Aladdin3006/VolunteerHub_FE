@@ -25,6 +25,7 @@ export interface Campaign {
   };
   createdAt: string;
   updatedAt: string;
+  totalEnd: Number;
 }
 
 export interface DonationTransaction {

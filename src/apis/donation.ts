@@ -26,6 +26,7 @@ export interface IDonationDataUpload {
    * categories ids
    */
   tags: string[];
+  totalEnd: Number
 }
 
 export interface IDonationDataItem {
@@ -36,6 +37,7 @@ export interface IDonationDataItem {
   thumbnail: string;
   images: string[];
   tags: ICategory[];
+  totalEnd: Number;
 }
 
 export const DONATION_API = {
