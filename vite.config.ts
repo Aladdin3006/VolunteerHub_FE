@@ -16,6 +16,9 @@ export default defineConfig({
       devOptions: {
         enabled: process.env.NODE_ENV === "development",
       },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6MB
+      },
       manifest: {
         name: "VolunteerHub",
         short_name: "VH",
