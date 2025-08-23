@@ -286,7 +286,7 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                         )}
                       </Stack>
                     }
-                  />
+                  /> 
                 </ListItemButton>
               </ListItem>
 
@@ -371,14 +371,14 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                 />
               )}
             </Stack>
-              <Button
-                size="small"
-                variant="outlined"
-                color="info"
-                onClick={() => openRescueHistory(selectedPoint._id)}
-              >
-                {(selectedPoint.rescueList?.length ?? 0)} lượt cứu trợ
-              </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="info"
+              onClick={() => openRescueHistory(selectedPoint._id)}
+            >
+              {(selectedPoint.rescueList?.length ?? 0)} lượt cứu trợ
+            </Button>
             {/* Danh sách nhu cầu/cung cấp */}
             <Stack spacing={1} mb={2} pt={1}>
               {(selectedPoint.type === "need" ? selectedPoint.needs : selectedPoint.surplus)?.map((it, i) => (
@@ -414,7 +414,7 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
             )}
 
             {/* Nút thêm cứu trợ */}
-            <Button
+            {selectedPoint.type == "need" ? <Button
               fullWidth
               size="medium"
               variant="contained"
@@ -422,8 +422,8 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
               onClick={() => setOpenAddRescue(true)}
               sx={{ borderRadius: 2 }}
             >
-               Thêm cứu trợ
-            </Button>
+              Thêm cứu trợ
+            </Button> : null}
           </Box>
         )}
 
