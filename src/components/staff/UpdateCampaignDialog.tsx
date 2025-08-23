@@ -11,9 +11,9 @@ import {
   Typography,
   Skeleton,
 } from "@mui/material";
+import { Close } from "@mui/icons-material";
 import { CAMPAIGN_API, ICampaignDataUpload } from "../../apis/campaign";
 import { CampaignForm, ICampaignFormData } from "../campaign/CampaignForm";
-import { Close } from "@mui/icons-material";
 import useLoaderState from "../../pages/forum/useLoaderState";
 import ErrorMessage from "../utils/ErrorMessage";
 
@@ -21,180 +21,186 @@ interface IProps extends Omit<DialogProps, "open"> {
   afterSubmit?: (data: ICampaignDataUpload) => void;
   closeAfterSubmit?: boolean;
 }
+
 export interface IUpdateCampaignDialogRef {
   open: (campaignId: string) => void;
 }
 
-export const UpdateCampaignDialog = forwardRef<
-  IUpdateCampaignDialogRef,
-  IProps
->((props, ref) => {
-  const { afterSubmit, closeAfterSubmit, ...rest } = props;
-  const [open, setOpen] = useState<boolean>(false);
-  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-  const campaignIdRef = useRef<string | null>(null);
-  const [campaign, setCampaign] = useState<ICampaignFormData | null>(null);
-  const { state, setState } = useLoaderState();
-
-  const fetchData = async (campaignId: string) => {
-    try {
-      setState("fetching");
-      const res = await CAMPAIGN_API.getById(campaignId);
-      if (res?.data == null || res.error != null) {
-        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-        return;
-      }
-      const data = res.data;
-      setCampaign({
-        description: data.description,
-        gallery: data.gallery.map((img) => ({
-          url: img,
-          type: "image",
-        })),
-        categories: data.categories,
-        campaignImg: {
-          url: data.image,
-          type: "image",
-        },
-        name: data.name,
-        endDate: new Date(data.endDate),
-        location: data.location,
-        startDate: new Date(data.startDate),
-      });
-      setState("success");
-    } catch (error) {
-      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      setState("error");
-      return;
-    }
+// Helpers chuyển đổi toạ độ
+const toFormLocation = (apiLocation: any): ICampaignFormData["location"] => {
+  // Backend: { type: 'Point', coordinates: [lng, lat], address? }
+  // Form cần: { coordinates: [lat, lng], address }
+  const lng = apiLocation?.coordinates?.[0] ?? 0;
+  const lat = apiLocation?.coordinates?.[1] ?? 0;
+  return {
+    address: apiLocation?.address ?? "",
+    coordinates: [lat, lng],
   };
+};
 
-  const close = () => {
-    setOpen(false);
+const toApiLocation = (formLocation: ICampaignFormData["location"]) => {
+  // Form: [lat, lng] -> API: GeoJSON Point [lng, lat]
+  const lat = formLocation?.coordinates?.[0];
+  const lng = formLocation?.coordinates?.[1];
+  return {
+    type: "Point",
+    coordinates: [lng, lat],
+    address: formLocation?.address ?? "",
   };
+};
 
-  useImperativeHandle(ref, () => ({
-    open: async (campaignId: string) => {
-      campaignIdRef.current = campaignId;
-      setOpen(true);
-      //   Fetch the data
-      fetchData(campaignId);
-    },
-  }));
+export const UpdateCampaignDialog = forwardRef<IUpdateCampaignDialogRef, IProps>(
+  (props, ref) => {
+    const { afterSubmit, closeAfterSubmit, ...rest } = props;
+    const [open, setOpen] = useState<boolean>(false);
+    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+    const campaignIdRef = useRef<string | null>(null);
+    const [campaign, setCampaign] = useState<ICampaignFormData | null>(null);
+    const { state, setState } = useLoaderState();
 
-  const handleSubmitUpdateCampaign = async (data: ICampaignDataUpload) => {
-    try {
-      const res = await CAMPAIGN_API.updateCampaign(
-        campaignIdRef.current!,
-        data
-      );
-      if (res.error != null) {
-        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      } else {
-        afterSubmit && afterSubmit(data);
-        if (closeAfterSubmit !== false) {
-          close();
+    const fetchData = async (campaignId: string) => {
+      try {
+        setState("fetching");
+        const res = await CAMPAIGN_API.getById(campaignId);
+        if (res?.data == null || (res as any).error != null) {
+          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+          setState("error");
+          return;
         }
+        const data = res.data;
+
+        setCampaign({
+          name: data.name,
+          description: data.description,
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
+          // 👇 chuyển [lng, lat] -> [lat, lng] cho Form/Leaflet
+          location: toFormLocation(data.location),
+          campaignImg: { url: data.image, type: "image" },
+          gallery: (data.gallery ?? []).map((url: string) => ({ url, type: "image" })),
+          categories: data.categories ?? [],
+        });
+
+        setState("success");
+      } catch (error) {
+        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+        setState("error");
       }
-    } catch (error) {
-      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-      console.log(error);
-    }
-  };
+    };
 
-  return (
-    <Dialog
-      open={open}
-      onClose={() => {}}
-      fullWidth
-      maxWidth="sm"
-      keepMounted={false}
-      {...rest}
-    >
-      <DialogTitle>
-        <Box
-          position="relative"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Typography variant="h6">Cập nhật chiến dịch tình nguyện</Typography>
+    const close = () => setOpen(false);
 
-          <IconButton
-            onClick={close}
-            sx={{ position: "absolute", right: 0 }}
-            aria-label="close"
+    useImperativeHandle(ref, () => ({
+      open: async (campaignId: string) => {
+        campaignIdRef.current = campaignId;
+        setOpen(true);
+        fetchData(campaignId);
+      },
+    }));
+
+    const handleSubmitUpdateCampaign = async (data: ICampaignDataUpload) => {
+      try {
+        // data.location hiện là { coordinates: [lat, lng], address }
+        const payload: ICampaignDataUpload = {
+          ...data,
+          // 👇 chuyển sang GeoJSON trước khi gọi API
+          location: toApiLocation(data.location as any) as any,
+        };
+
+        const res = await CAMPAIGN_API.updateCampaign(campaignIdRef.current!, payload);
+        if ((res as any).error != null) {
+          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+        } else {
+          afterSubmit && afterSubmit(payload);
+          if (closeAfterSubmit !== false) close();
+        }
+      } catch (error) {
+        setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+        console.log(error);
+      }
+    };
+
+    return (
+      <Dialog
+        open={open}
+        onClose={() => {}}
+        fullWidth
+        maxWidth="sm"
+        keepMounted={false}
+        {...rest}
+      >
+        <DialogTitle>
+          <Box
+            position="relative"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
           >
-            <Close />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent
-        dividers
-        sx={{
-          height: "80vh",
-          overflowY: "hidden",
-          ".form": {
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            ".form-title": {
-              display: "none",
-            },
-            ".form-body": {
-              flex: 1,
-              p: 1,
-              overflowY: "auto",
-              "&::-webkit-scrollbar": {
-                width: "6px",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "#ccc",
-                borderRadius: "3px",
-              },
-              "&::-webkit-scrollbar-track": {
-                backgroundColor: "transparent",
-              },
-            },
-          },
-        }}
-      >
-        {state === "error" && (
-          <ErrorMessage onRetry={() => fetchData(campaignIdRef.current!)} />
-        )}
-        {state === "fetching" && (
-          <Skeleton
-            variant="rectangular"
-            sx={{ width: "100%", height: "100%" }}
-          />
-        )}
-        {state === "success" && campaign != null && (
-          <CampaignForm
-            onSubmitForm={handleSubmitUpdateCampaign}
-            type="update"
-            sx={{
-              height: "100%",
-            }}
-            defaultData={campaign}
-          />
-        )}
-      </DialogContent>
+            <Typography variant="h6">Cập nhật chiến dịch tình nguyện</Typography>
+            <IconButton
+              onClick={close}
+              sx={{ position: "absolute", right: 0 }}
+              aria-label="close"
+            >
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
 
-      {/* Error message */}
-      <Snackbar
-        open={Boolean(snackbarMessage)}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarMessage(null)}
-      >
-        <Alert
-          onClose={() => setSnackbarMessage(null)}
-          severity="error"
-          variant="filled"
-          sx={{ width: "100%" }}
+        <DialogContent
+          dividers
+          sx={{
+            height: "80vh",
+            overflowY: "hidden",
+            ".form": {
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              ".form-title": { display: "none" },
+              ".form-body": {
+                flex: 1,
+                p: 1,
+                overflowY: "auto",
+                "&::-webkit-scrollbar": { width: "6px" },
+                "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: "3px" },
+                "&::-webkit-scrollbar-track": { backgroundColor: "transparent" },
+              },
+            },
+          }}
         >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Dialog>
-  );
-});
+          {state === "error" && (
+            <ErrorMessage onRetry={() => fetchData(campaignIdRef.current!)} />
+          )}
+
+          {state === "fetching" && (
+            <Skeleton variant="rectangular" sx={{ width: "100%", height: "100%" }} />
+          )}
+
+          {state === "success" && campaign != null && (
+            <CampaignForm
+              onSubmitForm={handleSubmitUpdateCampaign}
+              type="update"
+              defaultData={campaign}
+              sx={{ height: "100%" }}
+            />
+          )}
+        </DialogContent>
+
+        <Snackbar
+          open={Boolean(snackbarMessage)}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarMessage(null)}
+        >
+          <Alert
+            onClose={() => setSnackbarMessage(null)}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </Dialog>
+    );
+  }
+);

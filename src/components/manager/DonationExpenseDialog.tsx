@@ -122,49 +122,102 @@ export const CampaignExpenseListDialog = forwardRef<ICampaignExpenseListDialogRe
                         Không có chi tiêu nào được tìm thấy.
                     </Typography>
                 ) : (
-                    <TableContainer component={Paper} className="max-h-[600px] bg-gray-50 rounded-lg shadow-sm">
-                        <Table stickyHeader size="small">
+                    <TableContainer
+                        component={Paper}
+                        className="max-h-[600px] bg-gray-50 rounded-lg shadow-sm"
+                    >
+                        <Table stickyHeader size="small" sx={{ tableLayout: "fixed" }}>
                             <TableHead>
                                 <TableRow className="bg-blue-50">
-                                    <TableCell className="font-semibold text-gray-700">STT</TableCell>
-                                    <TableCell className="font-semibold text-gray-700">Ảnh</TableCell>
-                                    <TableCell className="font-semibold text-gray-700">Mô tả</TableCell>
-                                    <TableCell className="font-semibold text-gray-700">Số tiền</TableCell>
-                                    <TableCell className="font-semibold text-gray-700">Người tạo</TableCell>
-                                    <TableCell className="font-semibold text-gray-700">Trạng thái</TableCell>
-                                    <TableCell align="center" className="font-semibold text-gray-700">Hành động</TableCell>
+                                    <TableCell className="font-semibold text-gray-700 w-[50px]">
+                                        STT
+                                    </TableCell>
+                                    <TableCell className="font-semibold text-gray-700 w-[100px]">
+                                        Ảnh
+                                    </TableCell>
+                                    <TableCell className="font-semibold text-gray-700">
+                                        Mô tả
+                                    </TableCell>
+                                    <TableCell className="font-semibold text-gray-700 w-[120px]">
+                                        Số tiền
+                                    </TableCell>
+                                    <TableCell className="font-semibold text-gray-700 w-[180px]">
+                                        Người tạo
+                                    </TableCell>
+                                    <TableCell className="font-semibold text-gray-700 w-[120px]">
+                                        Trạng thái
+                                    </TableCell>
+                                    <TableCell
+                                        align="center"
+                                        className="font-semibold text-gray-700 w-[150px]"
+                                    >
+                                        Hành động
+                                    </TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {expenses.map((item, index) => (
                                     <TableRow key={item._id} className="hover:bg-gray-100">
+                                        {/* STT */}
                                         <TableCell className="text-gray-600">{index + 1}</TableCell>
-                                        <TableCell>
+
+                                        {/* Ảnh minh chứng */}
+                                        <TableCell sx={{ width: 80 }}>
                                             {item.evidences?.length > 0 && (
-                                                <img
-                                                    src={item.evidences[0]}
-                                                    alt="evidence"
-                                                    className="w-16 h-16 object-cover rounded-md"
-                                                />
+                                                <Box
+                                                    sx={{
+                                                        width: 64,
+                                                        height: 64,
+                                                        display: "flex",
+                                                        justifyContent: "center",
+                                                        alignItems: "center",
+                                                        overflow: "hidden",
+                                                        borderRadius: 2,
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={item.evidences[0]}
+                                                        alt="evidence"
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            objectFit: "cover",
+                                                        }}
+                                                    />
+                                                </Box>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-gray-600">{item.description}</TableCell>
-                                        <TableCell className="text-gray-600">{item.amount.toLocaleString()} VNĐ</TableCell>
+
+                                        {/* Mô tả */}
+                                        <TableCell className="text-gray-600 truncate max-w-[200px]">
+                                            {item.description}
+                                        </TableCell>
+
+                                        {/* Số tiền */}
+                                        <TableCell className="text-gray-600 whitespace-nowrap">
+                                            {item.amount.toLocaleString()} VNĐ
+                                        </TableCell>
+
+                                        {/* Người tạo */}
                                         <TableCell className="text-gray-600">
                                             {item.createdBy?.fullName || "Không xác định"}
                                         </TableCell>
+
+                                        {/* Trạng thái */}
                                         <TableCell>
                                             <Chip
                                                 label={item.approvalStatus}
                                                 className={`
-                                                    capitalize font-medium
-                                                    ${item.approvalStatus === "approved" ? "bg-green-100 text-green-800" : ""}
-                                                    ${item.approvalStatus === "rejected" ? "bg-red-100 text-red-800" : ""}
-                                                    ${item.approvalStatus === "pending" ? "bg-yellow-100 text-yellow-800" : ""}
-                                                `}
+                capitalize font-medium
+                ${item.approvalStatus === "approved" ? "bg-green-100 text-green-800" : ""}
+                ${item.approvalStatus === "rejected" ? "bg-red-100 text-red-800" : ""}
+                ${item.approvalStatus === "pending" ? "bg-yellow-100 text-yellow-800" : ""}
+              `}
                                                 size="small"
                                             />
                                         </TableCell>
+
+                                        {/* Hành động */}
                                         <TableCell align="center">
                                             {item.approvalStatus === "pending" ? (
                                                 <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
@@ -188,15 +241,17 @@ export const CampaignExpenseListDialog = forwardRef<ICampaignExpenseListDialogRe
                                                     </Button>
                                                 </Box>
                                             ) : (
-                                                <Typography className="text-gray-400 italic">Không khả dụng</Typography>
+                                                <Typography className="text-gray-400 italic">
+                                                    Không khả dụng
+                                                </Typography>
                                             )}
                                         </TableCell>
-
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </TableContainer>
+
                 )}
             </DialogContent>
             <DialogActions className="border-t border-gray-200 pt-4">

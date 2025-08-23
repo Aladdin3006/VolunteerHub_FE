@@ -141,7 +141,7 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
             color="text.secondary"
             sx={{ mt: "auto", fontStyle: "italic" }}
           >
-            Tổng số tiền: {campaign?.totalEnd?.toLocaleString() || "0"}đ
+            Tổng số tiền khuyên góp được: {campaign?.totalEnd?.toLocaleString() || "0"}đ
           </Typography>
         )}
       </CardContent>
