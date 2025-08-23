@@ -40,6 +40,7 @@ import UserLayout from "@/layouts/UserLayout";
 import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
 import ThankYou from "@/pages/campaignVolunteer/Thanhyou";
 import VerifyCertificate from "@/pages/profile/VerifyCertificate";
+import StormInfoModal from "@/components/storm/StormInfoModal";
 
 const AppRoutes = () => (
   <Routes>
@@ -64,6 +65,7 @@ const AppRoutes = () => (
         return (
           <LayoutWrapper>
             <Home />
+            <StormInfoModal />
           </LayoutWrapper>
         );
       })()}

@@ -33,7 +33,6 @@ import { keyframes } from "@emotion/react";
 import authService from "../../services/Authentication.service";
 import EmergencyButton from "./EmergencyButton";
 import NotificationBell from "../Notification/NotificationBell";
-import StormInfoModal from "../storm/StormInfoModal";
 
 interface User {
   fullName: string;
@@ -173,7 +172,9 @@ const Header: React.FC = () => {
                 onClose={() => setDrawerOpen(false)}
                 ModalProps={{ keepMounted: true }}
                 container={
-                  typeof window !== "undefined" ? () => window.document.body : undefined
+                  typeof window !== "undefined"
+                    ? () => window.document.body
+                    : undefined
                 }
               >
                 <List onClick={() => setDrawerOpen(false)}>
@@ -191,7 +192,6 @@ const Header: React.FC = () => {
                   </ListItem>
                 </List>
               </Drawer>
-              <StormInfoModal />
             </>
           ) : (
             <Box display="flex" alignItems="center" gap={3}>
@@ -253,9 +253,7 @@ const Header: React.FC = () => {
                   Đăng Nhập
                 </Button>
               )}
-              <StormInfoModal />
             </Box>
-            
           )}
         </Toolbar>
       </AppBar>
