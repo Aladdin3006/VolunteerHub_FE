@@ -13,7 +13,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: {
-        enabled: true,
+        enabled: process.env.NODE_ENV === "development",
       },
       manifest: {
         name: "VolunteerHub",
@@ -35,7 +35,7 @@ export default defineConfig({
             type: "image/png",
           },
           {
-            src: "logo-remove-bg.png",
+            src: "/logo-remove-bg.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",

@@ -639,7 +639,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                           }}
                         >
                           <Typography variant="subtitle2" gutterBottom>
-                            Chứng chỉ #{index + 1}
+                            Chứng chỉ {cert.campaignId?.name}
                           </Typography>
                           <Box
                             component="iframe"

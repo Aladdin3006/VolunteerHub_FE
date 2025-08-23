@@ -6,16 +6,15 @@ import '../styles/globals.css';
 import '../index.css';
 import { registerSW } from 'virtual:pwa-register';
 
+// Gọi 1 lần duy nhất
 const updateSW = registerSW({
-  immediate: true,
+  immediate: true, // SW active ngay
   onNeedRefresh() {
-    // Khi có bản mới
     if (confirm("🚀 Ứng dụng có phiên bản mới, tải lại nhé?")) {
       updateSW(true);
     }
   },
   onOfflineReady() {
-    // Khi app đã cache xong => có thể chạy offline
     console.log("✅ App đã sẵn sàng chạy offline");
   },
 });
