@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    Typography,
-    Box,
-    Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  Divider,
 } from "@mui/material";
 import { keyframes } from "@emotion/react";
 import { StormAPI, Storm } from "../../apis/storm.api";
@@ -36,115 +36,140 @@ const shakeSlight = keyframes`
   100% { transform: translate(0px, 0px); }
 `;
 
-const StormInfoModal: React.FC = () => {
-    const [storm, setStorm] = useState<Storm | null>(null);
-    const [open, setOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [countdown, setCountdown] = useState<string>("");
-    const [isEmergency, setIsEmergency] = useState(false);
+interface StormInfoModalProps {
+  open?: boolean;
+  onClose?: () => void;
+}
 
-    const fetchStorm = async () => {
-        setLoading(true);
-        try {
-            const data = await StormAPI.getActiveStorm();
-            if (data) {
-                setStorm(data);
-                setOpen(true);
-                setIsEmergency(true);
-                setTimeout(() => setIsEmergency(false), 5000);
-            }
-        } catch (err) {
-            console.error("Không thể tải storm", err);
-        } finally {
-            setLoading(false);
+const StormInfoModal: React.FC<StormInfoModalProps> = ({
+  open: propOpen,
+  onClose,
+}) => {
+  const [storm, setStorm] = useState<Storm | null>(null);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState<string>("");
+  const [isEmergency, setIsEmergency] = useState(false);
+
+  // Determine if component is controlled or uncontrolled
+  const isControlled = propOpen !== undefined;
+  const open = isControlled ? propOpen : internalOpen;
+
+  const fetchStorm = async () => {
+    setLoading(true);
+    try {
+      const data = await StormAPI.getActiveStorm();
+      if (data) {
+        setStorm(data);
+        if (!isControlled) {
+          setInternalOpen(true);
         }
+        setIsEmergency(true);
+        setTimeout(() => setIsEmergency(false), 5000);
+      }
+    } catch (err) {
+      console.error("Không thể tải storm", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!storm?.startDate) return;
+    const interval = setInterval(() => {
+      const now = dayjs();
+      const start = dayjs(storm.startDate);
+      const diff = start.diff(now);
+      if (diff <= 0) {
+        setCountdown("⛈️ Bão đã đến!");
+        clearInterval(interval);
+      } else {
+        const d = dayjs.duration(diff);
+        setCountdown(`${d.hours()}h ${d.minutes()}m ${d.seconds()}s`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [storm?.startDate]);
+
+  useEffect(() => {
+    fetchStorm();
+    socket.on("storm-activated", (data: Storm) => {
+      setStorm(data);
+      if (!isControlled) {
+        setInternalOpen(true);
+      }
+      setIsEmergency(true);
+      setTimeout(() => setIsEmergency(false), 5000);
+    });
+    socket.on("storm-deactivated", () => {
+      setStorm(null);
+      if (!isControlled) {
+        setInternalOpen(false);
+      }
+    });
+    return () => {
+      socket.off("storm-activated");
+      socket.off("storm-deactivated");
     };
+  }, []);
 
-    useEffect(() => {
-        if (!storm?.startDate) return;
-        const interval = setInterval(() => {
-            const now = dayjs();
-            const start = dayjs(storm.startDate);
-            const diff = start.diff(now);
-            if (diff <= 0) {
-                setCountdown("⛈️ Bão đã đến!");
-                clearInterval(interval);
-            } else {
-                const d = dayjs.duration(diff);
-                setCountdown(`${d.hours()}h ${d.minutes()}m ${d.seconds()}s`);
-            }
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [storm?.startDate]);
+  const handleClose = () => {
+    if (isControlled && onClose) {
+      onClose();
+    } else {
+      setInternalOpen(false);
+    }
+  };
 
-    useEffect(() => {
-        fetchStorm();
-        socket.on("storm-activated", (data: Storm) => {
-            setStorm(data);
-            setOpen(true);
-            setIsEmergency(true);
-            setTimeout(() => setIsEmergency(false), 5000);
-        });
-        socket.on("storm-deactivated", () => {
-            setStorm(null);
-            setOpen(false);
-        });
-        return () => {
-            socket.off("storm-activated");
-            socket.off("storm-deactivated");
-        };
-    }, []);
+  if (loading || !storm) return null;
 
-    if (loading || !storm) return null;
+  return (
+    <>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            ...(isEmergency && {
+              animation: `${pulseEmergency} 2s infinite, ${shakeSlight} 1.5s infinite`,
+              border: "2px solid #f44336",
+              bgcolor: "#fff3f3",
+            }),
+          },
+        }}
+      >
+        <DialogTitle>🔥 {storm.name} — Thông tin khẩn cấp</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 1 }}>
+            <Typography color="text.secondary">
+              {storm.description || "Không có mô tả"}
+            </Typography>
+          </Box>
+          <Box sx={{ mb: 2 }}>
+            <Typography fontWeight="bold" color="error">
+              🕒 Dự kiến bão đến trong: {countdown}
+            </Typography>
+          </Box>
+          <Divider sx={{ my: 1 }} />
+          <ReliefPointMapLeaflet
+            stormId={storm._id}
+            centerLocation={storm.centerLocation}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
 
-    return (
-        <>
-            <Dialog
-                open={open}
-                onClose={() => setOpen(false)}
-                maxWidth="md"
-                fullWidth
-                PaperProps={{
-                    sx: {
-                        ...(isEmergency && {
-                            animation: `${pulseEmergency} 2s infinite, ${shakeSlight} 1.5s infinite`,
-                            border: "2px solid #f44336",
-                            bgcolor: "#fff3f3",
-                        }),
-                    },
-                }}
-            >
-                <DialogTitle>🔥 {storm.name} — Thông tin khẩn cấp</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mb: 1 }}>
-                        <Typography color="text.secondary">
-                            {storm.description || "Không có mô tả"}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ mb: 2 }}>
-                        <Typography fontWeight="bold" color="error">
-                            🕒 Dự kiến bão đến trong: {countdown}
-                        </Typography>
-                    </Box>
-                    <Divider sx={{ my: 1 }} />
-                    <ReliefPointMapLeaflet
-                        stormId={storm._id}
-                        centerLocation={storm.centerLocation}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpen(false)}>Đóng</Button>
-                </DialogActions>
-            </Dialog>
-
-            {storm && !open && (
-                <Box sx={{  zIndex: 1300 }}>
-                    <EmergencyButton onClick={() => setOpen(true)} />
-                </Box>
-            )}
-
-        </>
-    );
+      {storm && !open && !isControlled && (
+        <Box sx={{ zIndex: 1300 }}>
+          <EmergencyButton onClick={() => setInternalOpen(true)} />
+        </Box>
+      )}
+    </>
+  );
 };
 
 export default StormInfoModal;

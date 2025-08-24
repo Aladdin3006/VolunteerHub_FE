@@ -52,6 +52,7 @@ import { CreateIssueData, ISSUE_API } from "../../apis/issue";
 import { addSkillsToUser } from "../../apis/profile";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
+import RegisterFaceModal from "@/components/image/uploadFaceRecognize/FaceRegisterForm";
 
 interface UserProfile {
   id: string;
@@ -91,6 +92,7 @@ const CampaignVolunteerDetail: React.FC = () => {
   const currentUserId = user._id || user.id;
   const isLoggedIn = !!currentUserId;
   const token = user.token || null;
+  const hasRegistered = user?.faceDescriptor !== null;
 
   // Flatten suggested skills
   const allSuggestedSkills: string[] = Array.from(
@@ -468,7 +470,7 @@ const CampaignVolunteerDetail: React.FC = () => {
   const { name, description, startDate, endDate, image, location } = campaign;
 
   let joinLabel = "Gửi yêu cầu tham gia";
-  let joinDisabled = joinLoading;
+  let joinDisabled = joinLoading || !hasRegistered;
   let isWithdrawalButton = false;
   let isCertificateButton = false;
 
@@ -721,6 +723,7 @@ const CampaignVolunteerDetail: React.FC = () => {
                 </Typography>
               </Box>
             </Stack>
+            {!myVolunteer && <RegisterFaceModal />}
             <Button
               disabled={joinDisabled}
               onClick={

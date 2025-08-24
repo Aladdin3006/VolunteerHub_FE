@@ -30,18 +30,26 @@ export interface IUpdateCampaignDialogRef {
 const toFormLocation = (apiLocation: any): ICampaignFormData["location"] => {
   // Backend: { type: 'Point', coordinates: [lng, lat], address? }
   // Form cần: { coordinates: [lat, lng], address }
-  const lng = apiLocation?.coordinates?.[0] ?? 0;
-  const lat = apiLocation?.coordinates?.[1] ?? 0;
+  if (!apiLocation?.coordinates || apiLocation.coordinates.length !== 2) {
+    return { address: apiLocation?.address ?? "", coordinates: [0, 0] };
+  }
+  const [lng, lat] = apiLocation.coordinates;
   return {
     address: apiLocation?.address ?? "",
-    coordinates: [lat, lng],
+    coordinates: [lng, lat],
   };
 };
 
 const toApiLocation = (formLocation: ICampaignFormData["location"]) => {
   // Form: [lat, lng] -> API: GeoJSON Point [lng, lat]
-  const lat = formLocation?.coordinates?.[0];
-  const lng = formLocation?.coordinates?.[1];
+  if (!formLocation?.coordinates || formLocation.coordinates.length !== 2) {
+    return {
+      type: "Point",
+      coordinates: [0, 0],
+      address: formLocation?.address ?? "",
+    };
+  }
+  const [lng, lat] = formLocation.coordinates;
   return {
     type: "Point",
     coordinates: [lng, lat],
@@ -49,158 +57,169 @@ const toApiLocation = (formLocation: ICampaignFormData["location"]) => {
   };
 };
 
-export const UpdateCampaignDialog = forwardRef<IUpdateCampaignDialogRef, IProps>(
-  (props, ref) => {
-    const { afterSubmit, closeAfterSubmit, ...rest } = props;
-    const [open, setOpen] = useState<boolean>(false);
-    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-    const campaignIdRef = useRef<string | null>(null);
-    const [campaign, setCampaign] = useState<ICampaignFormData | null>(null);
-    const { state, setState } = useLoaderState();
+export const UpdateCampaignDialog = forwardRef<
+  IUpdateCampaignDialogRef,
+  IProps
+>((props, ref) => {
+  const { afterSubmit, closeAfterSubmit, ...rest } = props;
+  const [open, setOpen] = useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+  const campaignIdRef = useRef<string | null>(null);
+  const [campaign, setCampaign] = useState<ICampaignFormData | null>(null);
+  const { state, setState } = useLoaderState();
 
-    const fetchData = async (campaignId: string) => {
-      try {
-        setState("fetching");
-        const res = await CAMPAIGN_API.getById(campaignId);
-        if (res?.data == null || (res as any).error != null) {
-          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-          setState("error");
-          return;
-        }
-        const data = res.data;
-
-        setCampaign({
-          name: data.name,
-          description: data.description,
-          startDate: new Date(data.startDate),
-          endDate: new Date(data.endDate),
-          // 👇 chuyển [lng, lat] -> [lat, lng] cho Form/Leaflet
-          location: toFormLocation(data.location),
-          campaignImg: { url: data.image, type: "image" },
-          gallery: (data.gallery ?? []).map((url: string) => ({ url, type: "image" })),
-          categories: data.categories ?? [],
-        });
-
-        setState("success");
-      } catch (error) {
+  const fetchData = async (campaignId: string) => {
+    try {
+      setState("fetching");
+      const res = await CAMPAIGN_API.getById(campaignId);
+      if (res?.data == null || (res as any).error != null) {
         setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
         setState("error");
+        return;
       }
-    };
+      const data = res.data;
 
-    const close = () => setOpen(false);
+      setCampaign({
+        name: data.name,
+        description: data.description,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        location: toFormLocation(data.location),
+        campaignImg: { url: data.image, type: "image" },
+        gallery: (data.gallery ?? []).map((url: string) => ({
+          url,
+          type: "image",
+        })),
+        categories: data.categories ?? [],
+      });
 
-    useImperativeHandle(ref, () => ({
-      open: async (campaignId: string) => {
-        campaignIdRef.current = campaignId;
-        setOpen(true);
-        fetchData(campaignId);
-      },
-    }));
+      setState("success");
+    } catch (error) {
+      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+      setState("error");
+    }
+  };
 
-    const handleSubmitUpdateCampaign = async (data: ICampaignDataUpload) => {
-      try {
-        // data.location hiện là { coordinates: [lat, lng], address }
-        const payload: ICampaignDataUpload = {
-          ...data,
-          // 👇 chuyển sang GeoJSON trước khi gọi API
-          location: toApiLocation(data.location as any) as any,
-        };
+  const close = () => setOpen(false);
 
-        const res = await CAMPAIGN_API.updateCampaign(campaignIdRef.current!, payload);
-        if ((res as any).error != null) {
-          setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-        } else {
-          afterSubmit && afterSubmit(payload);
-          if (closeAfterSubmit !== false) close();
-        }
-      } catch (error) {
+  useImperativeHandle(ref, () => ({
+    open: async (campaignId: string) => {
+      campaignIdRef.current = campaignId;
+      setOpen(true);
+      fetchData(campaignId);
+    },
+  }));
+
+  const handleSubmitUpdateCampaign = async (data: ICampaignDataUpload) => {
+    try {
+      // data.location hiện là { coordinates: [lat, lng], address }
+      const payload: ICampaignDataUpload = {
+        ...data,
+        location: toApiLocation(data.location), // Ensure proper conversion without type assertion
+      };
+
+      const res = await CAMPAIGN_API.updateCampaign(
+        campaignIdRef.current!,
+        payload
+      );
+      if ((res as any).error != null) {
         setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
-        console.log(error);
+      } else {
+        afterSubmit && afterSubmit(payload);
+        if (closeAfterSubmit !== false) close();
       }
-    };
+    } catch (error) {
+      setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
+      console.log(error);
+    }
+  };
 
-    return (
-      <Dialog
-        open={open}
-        onClose={() => {}}
-        fullWidth
-        maxWidth="sm"
-        keepMounted={false}
-        {...rest}
-      >
-        <DialogTitle>
-          <Box
-            position="relative"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
+  return (
+    <Dialog
+      open={open}
+      onClose={() => {}}
+      fullWidth
+      maxWidth="sm"
+      keepMounted={false}
+      {...rest}
+    >
+      <DialogTitle>
+        <Box
+          position="relative"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Typography variant="h6">Cập nhật chiến dịch tình nguyện</Typography>
+          <IconButton
+            onClick={close}
+            sx={{ position: "absolute", right: 0 }}
+            aria-label="close"
           >
-            <Typography variant="h6">Cập nhật chiến dịch tình nguyện</Typography>
-            <IconButton
-              onClick={close}
-              sx={{ position: "absolute", right: 0 }}
-              aria-label="close"
-            >
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
+            <Close />
+          </IconButton>
+        </Box>
+      </DialogTitle>
 
-        <DialogContent
-          dividers
-          sx={{
-            height: "80vh",
-            overflowY: "hidden",
-            ".form": {
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              ".form-title": { display: "none" },
-              ".form-body": {
-                flex: 1,
-                p: 1,
-                overflowY: "auto",
-                "&::-webkit-scrollbar": { width: "6px" },
-                "&::-webkit-scrollbar-thumb": { backgroundColor: "#ccc", borderRadius: "3px" },
-                "&::-webkit-scrollbar-track": { backgroundColor: "transparent" },
+      <DialogContent
+        dividers
+        sx={{
+          height: "80vh",
+          overflowY: "hidden",
+          ".form": {
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            ".form-title": { display: "none" },
+            ".form-body": {
+              flex: 1,
+              p: 1,
+              overflowY: "auto",
+              "&::-webkit-scrollbar": { width: "6px" },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "#ccc",
+                borderRadius: "3px",
               },
+              "&::-webkit-scrollbar-track": { backgroundColor: "transparent" },
             },
-          }}
-        >
-          {state === "error" && (
-            <ErrorMessage onRetry={() => fetchData(campaignIdRef.current!)} />
-          )}
+          },
+        }}
+      >
+        {state === "error" && (
+          <ErrorMessage onRetry={() => fetchData(campaignIdRef.current!)} />
+        )}
 
-          {state === "fetching" && (
-            <Skeleton variant="rectangular" sx={{ width: "100%", height: "100%" }} />
-          )}
+        {state === "fetching" && (
+          <Skeleton
+            variant="rectangular"
+            sx={{ width: "100%", height: "100%" }}
+          />
+        )}
 
-          {state === "success" && campaign != null && (
-            <CampaignForm
-              onSubmitForm={handleSubmitUpdateCampaign}
-              type="update"
-              defaultData={campaign}
-              sx={{ height: "100%" }}
-            />
-          )}
-        </DialogContent>
+        {state === "success" && campaign != null && (
+          <CampaignForm
+            onSubmitForm={handleSubmitUpdateCampaign}
+            type="update"
+            defaultData={campaign}
+            sx={{ height: "100%" }}
+          />
+        )}
+      </DialogContent>
 
-        <Snackbar
-          open={Boolean(snackbarMessage)}
-          autoHideDuration={6000}
+      <Snackbar
+        open={Boolean(snackbarMessage)}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarMessage(null)}
+      >
+        <Alert
           onClose={() => setSnackbarMessage(null)}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
         >
-          <Alert
-            onClose={() => setSnackbarMessage(null)}
-            severity="error"
-            variant="filled"
-            sx={{ width: "100%" }}
-          >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
-      </Dialog>
-    );
-  }
-);
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </Dialog>
+  );
+});

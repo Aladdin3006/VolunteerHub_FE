@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -74,6 +74,16 @@ const RenderEndDialog: React.FC<RenderEndDialogProps> = ({
     }
   };
 
+  // Debounced handler for slider changes
+  const handleSliderChange = useCallback(
+    (index: number) => {
+      if (templates[index]) {
+        setSelectedTemplateId(templates[index]._id);
+      }
+    },
+    [templates]
+  );
+
   // Updated slider settings
   const sliderSettings = {
     dots: templates.length > 1,
@@ -86,6 +96,8 @@ const RenderEndDialog: React.FC<RenderEndDialogProps> = ({
     draggable: true,
     swipeToSlide: true,
     touchThreshold: 10,
+    adaptiveHeight: false, // Prevent height recalculations
+    afterChange: handleSliderChange,
     responsive: [
       {
         breakpoint: 1024,
@@ -104,17 +116,24 @@ const RenderEndDialog: React.FC<RenderEndDialogProps> = ({
         },
       },
     ],
-    afterChange: (index: number) => {
-      if (templates[index]) {
-        setSelectedTemplateId(templates[index]._id);
-      }
-    },
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      sx={{
+        "& .MuiDialog-paper": {
+          minHeight: "600px", // Ensure stable dialog height
+          maxHeight: "80vh",
+          overflow: "hidden", // Prevent scrollbars from causing reflows
+        },
+      }}
+    >
       <DialogTitle fontWeight="bold">Xác nhận kết thúc chiến dịch</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ overflowY: "auto" }}>
         <Typography>
           Bạn có chắc chắn muốn tạo chứng chỉ tham gia chiến dịch cho các tình
           nguyện viên không?
@@ -146,7 +165,14 @@ const RenderEndDialog: React.FC<RenderEndDialogProps> = ({
               </Select>
             </FormControl>
             {templates.length > 0 && (
-              <Box sx={{ mt: 3 }}>
+              <Box
+                sx={{
+                  mt: 3,
+                  width: "100%",
+                  maxWidth: "800px", // Limit slider width to prevent stretching
+                  mx: "auto",
+                }}
+              >
                 <Slider {...sliderSettings}>
                   {templates.map((template, index) => (
                     <Box key={template._id} sx={{ px: 1, textAlign: "center" }}>
@@ -155,31 +181,40 @@ const RenderEndDialog: React.FC<RenderEndDialogProps> = ({
                         sx={{
                           p: 2,
                           height: "400px",
+                          width: "100%",
+                          maxWidth: "400px", // Fixed width for consistency
+                          margin: "0 auto",
+                          backgroundColor: "background.paper",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
                           justifyContent: "center",
-                          width: "100%",
-                          maxWidth: "500px",
-                          margin: "0 auto",
-                          backgroundColor: "background.paper",
                         }}
                       >
                         <Typography variant="subtitle2" gutterBottom>
                           Mẫu #{index + 1}: {template.name}
                         </Typography>
                         <Box
-                          component="iframe"
-                          src={template.url}
                           sx={{
                             width: "100%",
                             height: "300px",
-                            border: "none",
+                            position: "relative",
+                            overflow: "hidden",
                             borderRadius: "4px",
                             boxShadow: 1,
                           }}
-                          title={`Certificate Template ${template.name}`}
-                        />
+                        >
+                          <iframe
+                            src={template.url}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              border: "none",
+                            }}
+                            title={`Certificate Template ${template.name}`}
+                            loading="lazy" // Lazy load iframes
+                          />
+                        </Box>
                       </Paper>
                     </Box>
                   ))}
