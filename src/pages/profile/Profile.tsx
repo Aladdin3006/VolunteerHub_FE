@@ -18,6 +18,7 @@ import {
   updateUserAvatar,
   addSkillsToUser,
   updateSkillsOfUser,
+  getUserProfile
 } from "../../apis/profile";
 import { certificateService, Certificate } from "../../apis/certificate";
 import ImageGallery from "../../components/image/ImageGallery";
@@ -36,6 +37,9 @@ interface UserProfile {
   avatar: string;
   skills: string[];
   certificates: Certificate[];
+  campaignCount?: number; // Thêm trường này
+  certificateCount?: number; // Thêm trường này
+  year?: number; // Thêm trường này
 }
 
 interface ProfileProps {
@@ -73,6 +77,9 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       avatar: apiData.avatar || "user-default.png",
       skills: apiData.skills || [],
       certificates: [],
+      campaignCount: apiData.joinedCampaigns?.length || 0, // Đếm số campaign
+      certificateCount: apiData.certificates?.length || 0, // Đếm số certificate
+      year: new Date().getFullYear(), // Lấy năm hiện tại
     };
   };
 
@@ -131,6 +138,31 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
 
     fetchCertificates();
   }, [token]);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (token && profileData.id) {
+        try {
+          setLoading(true);
+          const cleanToken = token.trim();
+          if (!cleanToken.startsWith("Bearer ")) {
+            throw new Error("Invalid token format");
+          }
+          const response = await getUserProfile(profileData.id, token);
+          const userData = createProfileFromLoginData(response.user);
+          setProfileData(userData);
+          setTempData(userData);
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          // alert("Failed to load user profile.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [token, profileData.id]);
 
   const handleAvatarChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -198,8 +230,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }
     } catch (error) {
       alert(
-        `Avatar upload failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Avatar upload failed: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
       setTempData((prev) => ({ ...prev, avatar: profileData.avatar }));
@@ -241,8 +272,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
         setNewSkill("");
       } catch (error) {
         alert(
-          `Failed to add skill: ${
-            error instanceof Error ? error.message : "Unknown error"
+          `Failed to add skill: ${error instanceof Error ? error.message : "Unknown error"
           }`
         );
       } finally {
@@ -272,8 +302,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       }));
     } catch (error) {
       alert(
-        `Failed to remove skill: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to remove skill: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     } finally {
@@ -328,8 +357,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     } catch (error) {
       console.error("Error updating profile:", error);
       alert(
-        `Failed to save profile: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to save profile: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     } finally {
@@ -430,7 +458,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
         <div className="profile-content">
           <div className="main-content">
             <div className="card">
-              <h2 className="card-title">Personal Information</h2>
+              <h2 className="card-title">Thông tin của bạn</h2>
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Full Name</label>
@@ -510,8 +538,8 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                       <span>
                         {currentData.dateOfBirth
                           ? new Date(
-                              currentData.dateOfBirth
-                            ).toLocaleDateString()
+                            currentData.dateOfBirth
+                          ).toLocaleDateString()
                           : "Not provided"}
                       </span>
                     </div>
@@ -669,7 +697,7 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
           </Box>
           <div className="card-half-row reduced-spacing">
             <div className="card card-half">
-              <h3 className="card-subtitle">Skills</h3>
+              <h3 className="card-subtitle">Kỹ Năng</h3>
               <div className="tags-container">
                 {currentData.skills.length > 0 ? (
                   currentData.skills.map((skill, index) => (
@@ -737,24 +765,20 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
                 )}
               </div>
             </div>
-
             <div className="card card-half">
-              <h3 className="card-subtitle">Volunteer Stats</h3>
+              <h3 className="card-subtitle">Thành Tựu</h3>
               <div className="stats-container">
                 <div className="stat-item">
-                  <span className="stat-label">Hours Volunteered</span>
-                  <span className="stat-value stat-blue">245</span>
+                  <span className="stat-label">Số Chiến Dịch đã tham gia</span>
+                  <span className="stat-value stat-blue">{currentData.campaignCount || 0}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Projects Completed</span>
-                  <span className="stat-value stat-green">12</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Member Since</span>
-                  <span className="stat-value stat-purple">2023</span>
+                  <span className="stat-label">Năm Tham Gia</span>
+                  <span className="stat-value stat-purple">{currentData.year || new Date().getFullYear()}</span>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

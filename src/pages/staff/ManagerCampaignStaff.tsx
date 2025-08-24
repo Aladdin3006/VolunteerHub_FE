@@ -15,11 +15,16 @@ import {
   DialogActions,
   Button,
   LinearProgress,
+  Stack,
+  Chip,
+
 } from "@mui/material";
 import {
   FiberManualRecord as FiberManualRecordIcon,
   Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
+  EmojiEvents as EmojiEventsIcon,
+  RocketLaunch as RocketLaunchIcon,
 } from "@mui/icons-material";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -62,6 +67,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
     {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
   </div>
 );
+
 
 const ManagerCampaignStaff: React.FC = () => {
   const location = useLocation();
@@ -261,113 +267,130 @@ const ManagerCampaignStaff: React.FC = () => {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3} justifyContent="flex-start">
-          {filteredCampaigns.map((campaign) => (
-            <Grid key={campaign._id}>
-              <Link
-                to={`/staff/campaigns/${campaign._id}`}
-                style={{ textDecoration: "none" }}
-              >
-                <Card
-                  className="campaign-card"
-                  sx={{
-                    transition: "box-shadow 0.3s ease",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    width: 300,
-                    mx: "auto",
-                    "&:hover": {
-                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
-                    },
-                  }}
+       <Grid container spacing={3} justifyContent="flex-start" alignItems="stretch">
+          {filteredCampaigns.map((campaign) => {
+            const completedPhases = getCompletedPhasesCount(campaign);
+            const totalPhases = getTotalPhasesCount(campaign);
+            const progressValue = totalPhases > 0 ? (completedPhases / totalPhases) * 100 : 0;
+            const progressColor = campaign.status === "completed" ? "success" : "primary";
+
+            return (
+              <Grid key={campaign._id} item xs={12} sm={6} md={4} lg={3} sx={{ display: "flex" }}>
+                <Link
+                  to={`/staff/campaigns/${campaign._id}`}
+                  style={{ textDecoration: "none" }}
                 >
-                  <CardContent
+                  <Card
+                    className="campaign-card"
                     sx={{
-                      p: 0,
-                      flex: 1,
+                      height: "100%",
                       display: "flex",
                       flexDirection: "column",
+                      mx: "auto",
+                      maxWidth: 330,
+                  
+                      transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                      "&:hover": {
+                        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.2)",
+                        transform: "translateY(-5px)",
+                      },
                     }}
                   >
-                    {/* Image section */}
-                    <Box
-                      component="img"
-                      src={
-                        campaign.image ||
-                        "https://via.placeholder.com/300x150?text=No+Image"
-                      }
-                      alt={campaign.name}
+                    <CardContent
                       sx={{
-                        width: "100%",
-                        height: 150,
-                        objectFit: "cover",
-                        backgroundColor: campaign.image
-                          ? "transparent"
-                          : "#f5f5f5",
+                        p: 0,
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
                       }}
-                    />
-                    {/* Content section */}
-                    <Box sx={{ p: 2, flex: 1 }}>
-                      <Typography
-                        variant="body1"
-                        gutterBottom
+                    >
+                      <Box
+                        component="img"
+                        src={
+                          campaign.image ||
+                          "https://via.placeholder.com/300x150?text=No+Image"
+                        }
+                        alt={campaign.name}
                         sx={{
-                          fontWeight: "bold",
-                          fontSize: "1rem",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          maxWidth: "100%",
+                          width: "100%",
+                          height: 150,
+                          objectFit: "cover",
+                          backgroundColor: campaign.image ? "transparent" : "#f5f5f5",
                         }}
-                      >
-                        {campaign.name}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {new Date(campaign.startDate).toLocaleDateString()} -{" "}
-                        {new Date(campaign.endDate).toLocaleDateString()}
-                      </Typography>
-                      {campaign.status !== "completed" && (
-                        <>
-                          <Typography
-                            variant="body2"
-                            color="textSecondary"
-                            mt={1}
-                          >
-                            Tiến độ tổng thể
-                          </Typography>
-                          <LinearProgress
-                            variant="determinate"
-                            value={100}
-                            sx={{ mb: 1 }}
-                          />
-                          <Typography variant="caption" color="textSecondary">
-                            {getCompletedPhasesCount(campaign)}/
-                            {getTotalPhasesCount(campaign)} Phases completed
-                          </Typography>
-                          <Box
-                            sx={{
-                              border: "1px solid #1976d2",
-                              borderRadius: "4px",
-                              p: 1,
-                              mt: 1,
-                            }}
-                          >
-                            <Typography variant="body2" color="textSecondary">
-                              Giai đoạn hiện tại
+                      />
+                      <Box sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column",minWidth: "300px" }}>
+                        <Typography
+                          variant="h6"
+                          gutterBottom
+                          sx={{
+                            fontWeight: "bold",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: "100%",
+                            minHeight: "28px",
+                          }}
+                        >
+                          {campaign.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <span role="img" aria-label="calendar">🗓️</span>{" "}
+                          {new Date(campaign.startDate).toLocaleDateString()} -{" "}
+                          {new Date(campaign.endDate).toLocaleDateString()}
+                        </Typography>
+                        {campaign.status !== "completed" ? (
+                          <>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              mt={2}
+                            >
+                              Tiến độ tổng thể
                             </Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {getInProgressPhases(campaign)}
+                            <LinearProgress
+                              variant="determinate"
+                              value={progressValue}
+                              color={progressColor}
+                              sx={{ my: 1 }}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              {completedPhases}/{totalPhases} Giai đoạn đã hoàn thành
                             </Typography>
+                            <Box
+                              sx={{
+                                border: "1px solid",
+                                borderColor: "primary.main",
+                                borderRadius: "4px",
+                                p: 1,
+                                mt: 1,
+                                bgcolor: "action.hover",
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary">
+                                <RocketLaunchIcon sx={{ fontSize: "1rem", mr: 1 }} />
+                                Giai đoạn hiện tại
+                              </Typography>
+                              <Typography variant="caption" color="text.primary">
+                                {getInProgressPhases(campaign)}
+                              </Typography>
+                            </Box>
+                          </>
+                        ) : (
+                          <Box sx={{ mt: 2 }}>
+                            <Chip
+                              label="Đã Hoàn Thành"
+                              color="success"
+                              icon={<EmojiEventsIcon />}
+                            />
                           </Box>
-                        </>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Link>
-            </Grid>
-          ))}
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
 
