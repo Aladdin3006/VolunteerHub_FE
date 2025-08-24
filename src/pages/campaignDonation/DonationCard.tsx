@@ -61,6 +61,7 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
         display: "flex",
         flexDirection: "column",
         transition: "all 0.3s ease",
+        minHeight: 460,
         "&:hover": {
           transform: "translateY(-6px)",
           boxShadow: "0 10px 20px rgba(0,0,0,0.15)",
@@ -128,15 +129,15 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
                   backgroundColor: "#4CAF50",
                   color: "#ffffffff",
                   borderRadius: "20px",
-                  padding: "2px 10px", // Reduced padding for smaller size
-                  minWidth: "80px", // Adjusted width to make it smaller
+                  padding: "0px 5px", // Reduced padding for smaller size
+                  minWidth: "50px", // Adjusted width to make it smaller
                   textTransform: "none",
                   "& .MuiButton-label": {
                     fontSize: "0.4rem", // Smaller font size
                     fontWeight: "normal",
                   },
                   "&:hover": {
-                    backgroundColor: "#45a049",
+                    backgroundColor: "#388E3C",
                   },
                 }}
                 startIcon={

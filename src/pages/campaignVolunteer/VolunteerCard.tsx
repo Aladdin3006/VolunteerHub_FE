@@ -52,6 +52,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           boxShadow:
             "0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22)",
         },
+        minHeight: 460,
         display: "flex",
         flexDirection: "column",
         height: "100%",
@@ -127,8 +128,8 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
                   backgroundColor: "#4CAF50",
                   color: "#ffffffff",
                   borderRadius: "20px",
-                  padding: "2px 10px",
-                  minWidth: "80px",
+                  padding: "0px 5px",
+                  minWidth: "50px",
                   textTransform: "none",
                   "& .MuiButton-label": {
                     fontSize: "0.4rem",
