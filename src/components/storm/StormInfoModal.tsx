@@ -43,6 +43,9 @@ const StormInfoModal: React.FC = () => {
     const [countdown, setCountdown] = useState<string>("");
     const [isEmergency, setIsEmergency] = useState(false);
 
+    // dialog cho Windy
+    const [openWindy, setOpenWindy] = useState(false);
+
     const fetchStorm = async () => {
         setLoading(true);
         try {
@@ -99,6 +102,7 @@ const StormInfoModal: React.FC = () => {
 
     return (
         <>
+            {/* Modal chính hiển thị thông tin bão */}
             <Dialog
                 open={open}
                 onClose={() => setOpen(false)}
@@ -121,28 +125,71 @@ const StormInfoModal: React.FC = () => {
                             {storm.description || "Không có mô tả"}
                         </Typography>
                     </Box>
-                    <Box sx={{ mb: 2 }}>
+
+                    {/* Countdown + Button Windy trên cùng một dòng */}
+                    <Box
+                        sx={{
+                            mb: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
                         <Typography fontWeight="bold" color="error">
                             🕒 Dự kiến bão đến trong: {countdown}
                         </Typography>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                            onClick={() => setOpenWindy(true)}
+                        >
+                            Xem trực tiếp bão
+                        </Button>
                     </Box>
+
                     <Divider sx={{ my: 1 }} />
+
                     <ReliefPointMapLeaflet
                         stormId={storm._id}
                         centerLocation={storm.centerLocation}
                     />
+
+                    <Divider sx={{ my: 2 }} />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpen(false)}>Đóng</Button>
                 </DialogActions>
             </Dialog>
 
+            {/* Dialog riêng cho Windy */}
+            <Dialog
+                open={openWindy}
+                onClose={() => setOpenWindy(false)}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>Thông tin cơn bão {storm.name}</DialogTitle>
+                <DialogContent>
+                    <iframe
+                        width="100%"
+                        height="500"
+                        src="https://embed.windy.com/embed2.html?lat=16.0471&lon=108.2068&detailLat=16.0471&detailLon=108.2068&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+                        frameBorder="0"
+                        title="Windy Live Map"
+                    ></iframe>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenWindy(false)}>Đóng</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Emergency button nổi khi modal đóng */}
             {storm && !open && (
-                <Box sx={{  zIndex: 1300 }}>
+                <Box sx={{ zIndex: 1300 }}>
                     <EmergencyButton onClick={() => setOpen(true)} />
                 </Box>
             )}
-
         </>
     );
 };
