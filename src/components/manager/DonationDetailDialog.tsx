@@ -59,7 +59,10 @@ const DonationDetailDialog: React.FC<Props> = ({ open, campaign, onClose }) => {
 
     if (!campaign) return null;
 
-    const mapStatus = (approvalStatus?: string): string => {
+    const mapStatus = (approvalStatus?: string,status?: string): string => {
+         if (status === "completed") {
+            return "Đã hoàn thành";
+        }
         return approvalStatus === "approved" ? "Đang diễn ra" : "Chưa diễn ra";
     };
 
@@ -124,8 +127,8 @@ const DonationDetailDialog: React.FC<Props> = ({ open, campaign, onClose }) => {
                         </Typography>
                     </Box>
                     <Chip
-                        label={mapStatus(campaign.approvalStatus).toUpperCase()}
-                        color={getStatusColor(campaign.approvalStatus || "")}
+                        label={mapStatus(campaign.approvalStatus,campaign.status).toUpperCase()}
+                        color={getStatusColor(campaign.approvalStatus || "",campaign.status)}
                         sx={{
                             height: 36,
                             fontWeight: 600,

@@ -13,6 +13,7 @@ import {
   Chip,
   Button,
   LinearProgress,
+  Avatar
 } from "@mui/material";
 
 import { useNavigate } from "react-router-dom";
@@ -260,7 +261,7 @@ const ManagerDonationStaff: React.FC = () => {
                   badgeContent={getStatusCount("completed")}
                   color="primary"
                 >
-                  <Typography>Đã kết thúc</Typography>
+                  <Typography>Đã hoàn thành</Typography>
                 </Badge>
               }
             />
@@ -384,37 +385,41 @@ const ManagerDonationStaff: React.FC = () => {
                 </Box>
 
                 {/* Status Bar */}
-                {campaign.approvalStatus !== "rejected" && (
-                  <Box
-                    sx={{
-                      backgroundColor:
-                        campaign.status === "draft"
+
+                <Box
+                  sx={{
+                    backgroundColor:
+                      campaign.approvalStatus === "rejected"
+                        ? "#c03e3eff" // Màu đỏ cho trạng thái rejected
+                        : campaign.status === "draft"
                           ? "#f57c00"
                           : campaign.status === "active"
-                          ? "#2e7d32"
-                          : campaign.status === "completed"
-                          ? "#0288d1"
-                          : "#2e7d32",
-                      py: 0.5,
-                      textAlign: "center",
-                      flexShrink: 0,
-                    }}
+                            ? "#2e7d32"
+                            : campaign.status === "completed"
+                              ? "#0288d1"
+                              : "#2e7d32",
+                    py: 0.5,
+                    textAlign: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="white"
+                    fontWeight="bold"
                   >
-                    <Typography
-                      variant="caption"
-                      color="white"
-                      fontWeight="bold"
-                    >
-                      {campaign.status === "draft"
+                    {campaign.approvalStatus === "rejected"
+                      ? "REJECTED"
+                      : campaign.status === "draft"
                         ? "WAITING"
                         : campaign.status === "active"
-                        ? "IN-PROGRESS"
-                        : campaign.status === "completed"
-                        ? "COMPLETED"
-                        : "IN-PROGRESS"}
-                    </Typography>
-                  </Box>
-                )}
+                          ? "IN-PROGRESS"
+                          : campaign.status === "completed"
+                            ? "COMPLETED"
+                            : "IN-PROGRESS"}
+                  </Typography>
+                </Box>
+
 
                 {/* Nội dung thẻ */}
                 <CardContent
@@ -498,23 +503,34 @@ const ManagerDonationStaff: React.FC = () => {
                     {/* Tags */}
                     <Box
                       sx={{
-                        display: "flex",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, 1fr)",
                         gap: 1,
-                        flexWrap: "wrap",
-                        mb: 1,
-                        minHeight: 24,
                       }}
                     >
-                      {campaign.tags?.slice(0, 3).map((tag) => (
+                      {campaign.tags.map((tag) => (
                         <Chip
                           key={tag._id}
                           label={tag.name}
                           size="small"
                           sx={{
-                            backgroundColor: "#5bdb70ff", //tag.color || "#e0e0e0"//
+                            backgroundColor: "#35c04cff",
                             color: "#fff",
+                            "& .MuiChip-label": {
+                              fontSize: "0.7rem",
+                            },
                             fontWeight: "bold",
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
+                          avatar={
+                            <Avatar
+                              src={tag.icon}
+                              alt={tag.name}
+                              sx={{ width: 20, height: 20 }}
+                            />
+                          }
                         />
                       ))}
                     </Box>
