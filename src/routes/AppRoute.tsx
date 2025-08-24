@@ -41,6 +41,8 @@ import ManagerCampaignDonation from "@/pages/manager/ManagerCampaignDonation";
 import ThankYou from "@/pages/campaignVolunteer/Thanhyou";
 import VerifyCertificate from "@/pages/profile/VerifyCertificate";
 import StormInfoModal from "@/components/storm/StormInfoModal";
+import PaymentSuccess from "@/pages/campaignVolunteer/ThankyouPayOs";
+import PaymentCancel from "@/pages/campaignVolunteer/CancelPayOs";
 
 const AppRoutes = () => (
   <Routes>
@@ -132,6 +134,22 @@ const AppRoutes = () => (
       element={
         <LayoutWrapper>
           <ThankYou />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/thankyouPayOs"
+      element={
+        <LayoutWrapper>
+          <PaymentSuccess />
+        </LayoutWrapper>
+      }
+    />
+    <Route
+      path="/cancelpayOs"
+      element={
+        <LayoutWrapper>
+          <PaymentCancel />
         </LayoutWrapper>
       }
     />

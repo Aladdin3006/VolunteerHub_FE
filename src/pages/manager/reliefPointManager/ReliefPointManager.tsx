@@ -11,43 +11,31 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  TextField,
-  FormControl,
-  InputLabel,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
   Chip,
 } from "@mui/material";
 import AddLocationAltIcon from "@mui/icons-material/AddLocationAlt";
 import WarningIcon from "@mui/icons-material/Warning";
-import DeleteIcon from "@mui/icons-material/Delete";
 import {
   MapContainer,
   TileLayer,
   Marker,
   Popup,
   useMap,
-  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css"; // Import CSS cho Leaflet
+import "leaflet/dist/leaflet.css";
 import { StormAPI } from "@/apis/storm.api";
-import { ReliefPointAPI } from "@/apis/reliefpoint.api"; // Import API
+import { ReliefPointAPI } from "@/apis/reliefpoint.api";
 import { useNavigate } from "react-router-dom";
 import ManagerTabs from "../ManagerTabs";
-// Interface Storm giữ nguyên
+import CreateReliefPointDialog from "../ReliefPointCreateDialog";
+
 interface Storm {
   _id: string;
   name: string;
   description?: string;
   imageUrl?: string;
-  centerLocation?: {
-    lat: number;
-    lng: number;
-  };
+  centerLocation?: { lat: number; lng: number };
   isActive: boolean;
   status: "active" | "ended";
   startDate?: string;
@@ -55,16 +43,12 @@ interface Storm {
   createdAt: string;
 }
 
-// Interface ReliefPoint thống nhất (dựa trên schema backend, _id optional cho items)
 interface ReliefPoint {
   _id: string;
   name: string;
   type: "need" | "supply";
   createdAt: string;
-  location: {
-    type: "Point";
-    coordinates: [number, number]; // [lng, lat]
-  };
+  location: { type: "Point"; coordinates: [number, number] };
   description?: string;
   surplus?: Array<{
     type:
@@ -77,7 +61,7 @@ interface ReliefPoint {
       | "khác";
     quantity: number;
     note: string;
-    _id?: string; // Optional, backend generate cho response
+    _id?: string;
   }>;
   needs?: Array<{
     type:
@@ -89,7 +73,7 @@ interface ReliefPoint {
       | "khác";
     quantity: number;
     note: string;
-    _id?: string; // Optional
+    _id?: string;
   }>;
   status?: "pending" | "in-progress" | "resolved" | "rejected";
   verified?: boolean;
@@ -97,43 +81,12 @@ interface ReliefPoint {
   stormId?: string;
   updatedAt?: string;
   __v?: number;
-  contact?: string; // Thêm theo schema
+  contact?: string;
 }
 
-// Interface cho formData
-interface FormDataType extends Partial<ReliefPoint> {
-  surplus: Array<{
-    type:
-      | "thực phẩm"
-      | "nước uống"
-      | "quần áo"
-      | "thuốc men"
-      | "chăn màn"
-      | "dụng cụ y tế"
-      | "khác";
-    quantity: number;
-    note: string;
-  }>;
-  needs: Array<{
-    type:
-      | "người mắc kẹt"
-      | "bị thương"
-      | "thiếu đồ ăn"
-      | "thiếu nước"
-      | "thiếu thuốc"
-      | "khác";
-    quantity: number;
-    note: string;
-  }>;
-  contact?: string; // Thêm field contact
-}
-
-// Icon tùy chỉnh cho marker
 const supplyIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -141,10 +94,8 @@ const supplyIcon = new L.Icon({
 });
 
 const needIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -152,8 +103,8 @@ const needIcon = new L.Icon({
 });
 
 const stormCenterIcon = new L.Icon({
-  iconUrl: "/icons/storm-center.png", // URL online để đảm bảo hiển thị (có thể thay bằng icon khác)
-  iconSize: [40, 40], // Điều chỉnh size tùy theo icon
+  iconUrl: "/icons/storm-center.png",
+  iconSize: [40, 40],
   iconAnchor: [20, 20],
   popupAnchor: [0, -20],
 });
@@ -165,368 +116,140 @@ const rippleIcon = L.divIcon({
   className: "",
 });
 
-// Component để zoom bản đồ fit tất cả marker
-const FitBounds: React.FC<{
-  points: ReliefPoint[];
-  stormCenter: { lat: number; lng: number } | null;
-}> = ({ points, stormCenter }) => {
+function FitBounds({ points, stormCenter }: { points: ReliefPoint[]; stormCenter: { lat: number; lng: number } | null }) {
   const map = useMap();
   useEffect(() => {
     let bounds: L.LatLngBounds | undefined;
-    const validPoints = points
+    const valid = points
       .filter((p) => p.location?.coordinates?.length === 2)
-      .map(
-        (p) =>
-          [p.location.coordinates[1], p.location.coordinates[0]] as [
-            number,
-            number
-          ]
-      );
-    if (validPoints.length > 0) {
-      bounds = L.latLngBounds(validPoints);
-    }
+      .map((p) => [p.location.coordinates[1], p.location.coordinates[0]] as [number, number]);
+    if (valid.length > 0) bounds = L.latLngBounds(valid);
     if (stormCenter) {
-      const centerPos = [stormCenter.lat, stormCenter.lng] as [number, number];
-      if (bounds) {
-        bounds.extend(centerPos);
-      } else {
-        bounds = L.latLngBounds([centerPos]);
-      }
+      const c = [stormCenter.lat, stormCenter.lng] as [number, number];
+      bounds ? bounds.extend(c) : (bounds = L.latLngBounds([c]));
     }
-    if (bounds) {
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
+    if (bounds) map.fitBounds(bounds, { padding: [50, 50] });
   }, [points, stormCenter, map]);
   return null;
-};
+}
 
-// Component để chọn vị trí trên bản đồ trong modal
-const LocationPicker: React.FC<{
-  onLocationSelect: (lat: number, lng: number) => void;
-}> = ({ onLocationSelect }) => {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-      onLocationSelect(e.latlng.lat, e.latlng.lng);
-    },
-  });
-
-  return position ? <Marker position={position} /> : null;
-};
-
-const ReliefPointManager: React.FC = () => {
+export default function ReliefPointManager() {
   const [storms, setStorms] = useState<Storm[]>([]);
   const [selectedStorm, setSelectedStorm] = useState<string>("");
   const [points, setPoints] = useState<ReliefPoint[]>([]);
-  const [filterType, setFilterType] = useState<"all" | "need" | "supply">(
-    "all"
-  );
+  const [filterType, setFilterType] = useState<"all" | "need" | "supply">("all");
   const [openModal, setOpenModal] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-
   const [modalType, setModalType] = useState<"supply" | "need" | null>(null);
-  const [formData, setFormData] = useState<FormDataType>({
-    name: "",
-    description: "",
-    location: { type: "Point", coordinates: [0, 0] },
-    surplus: [],
-    needs: [],
-    stormId: "",
-    contact: "",
-  });
   const [selectedPoint, setSelectedPoint] = useState<ReliefPoint | null>(null);
-  const [stormCenter, setStormCenter] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-
-  const [activeLink, setActiveLink] = useState<"storms" | "campaigns">(
-    "storms"
-  );
+  const [stormCenter, setStormCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [activeLink, setActiveLink] = useState<"storms" | "campaigns">("storms");
   const navigate = useNavigate();
 
   useEffect(() => {
     const styleEl = document.createElement("style");
-    styleEl.innerHTML = `
-          @keyframes ripple {
-            0% { transform: scale(0.6); opacity: 1; }
-            100% { transform: scale(2.5); opacity: 0; }
-          }
-        `;
+    styleEl.innerHTML = `@keyframes ripple{0%{transform:scale(0.6);opacity:1}100%{transform:scale(2.5);opacity:0}}`;
     document.head.appendChild(styleEl);
-    return () => {
-      document.head.removeChild(styleEl);
-    };
+    return () => document.head.removeChild(styleEl);
   }, []);
 
   useEffect(() => {
-    const fetchStorms = async () => {
+    (async () => {
       try {
         const data = await StormAPI.getAllStorms();
         setStorms(data);
-      } catch (err) {
-        console.error("Lỗi khi tải danh sách bão", err);
-      }
-    };
-    fetchStorms();
+      } catch {}
+    })();
   }, []);
 
   useEffect(() => {
     if (!selectedStorm) return;
-    const fetchPoints = async () => {
+    (async () => {
       try {
-        const data = await ReliefPointAPI.getAllReliefPoints({
-          stormId: selectedStorm,
-        });
+        const data = await ReliefPointAPI.getAllReliefPoints({ stormId: selectedStorm });
         setPoints(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Lỗi khi tải danh sách điểm cứu trợ", err);
+      } catch {
         setPoints([]);
       }
-    };
-    fetchPoints();
-
-    // Lấy centerLocation từ storm được chọn
-    const currentStorm = storms.find((s) => s._id === selectedStorm);
-    if (currentStorm && currentStorm.centerLocation) {
-      setStormCenter(currentStorm.centerLocation);
-    } else {
-      console.log("No centerLocation for this storm"); // Debug
-      setStormCenter(null);
-    }
+    })();
+    const cur = storms.find((s) => s._id === selectedStorm);
+    setStormCenter(cur?.centerLocation || null);
   }, [selectedStorm, storms]);
 
-  const filteredPoints = points.filter(
-    (p) => filterType === "all" || p.type === filterType
-  );
+  const filteredPoints = points.filter((p) => filterType === "all" || p.type === filterType);
 
   const handleOpenModal = (type: "supply" | "need") => {
     setModalType(type);
-    setFormData({
-      name: "",
-      description: "",
-      location: { type: "Point", coordinates: [0, 0] },
-      surplus:
-        type === "supply" ? [{ type: "thực phẩm", quantity: 0, note: "" }] : [],
-      needs:
-        type === "need"
-          ? [{ type: "người mắc kẹt", quantity: 0, note: "" }]
-          : [],
-      stormId: selectedStorm,
-      contact: "",
-    });
     setOpenModal(true);
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    setModalType(null);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleLocationSelect = (lat: number, lng: number) => {
-    setFormData({
-      ...formData,
-      location: { type: "Point", coordinates: [lng, lat] },
-    }); // Lưu [lng, lat]
-  };
-
-  const handleItemChange = <T extends "surplus" | "needs">(
-    field: T,
-    index: number,
-    key: keyof FormDataType[T][number],
-    value: FormDataType[T][number][typeof key]
-  ) => {
-    const items = [...formData[field]];
-    items[index] = { ...items[index], [key]: value };
-    setFormData({ ...formData, [field]: items });
-  };
-
-  const addItem = (field: "surplus" | "needs") => {
-    const newItem =
-      field === "surplus"
-        ? { type: "thực phẩm", quantity: 0, note: "" }
-        : { type: "người mắc kẹt", quantity: 0, note: "" };
-    setFormData({ ...formData, [field]: [...formData[field], newItem] });
-  };
-
-  const removeItem = (field: "surplus" | "needs", index: number) => {
-    const items = [...formData[field]];
-    items.splice(index, 1);
-    setFormData({ ...formData, [field]: items });
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const dataToSend = {
-        ...formData,
-        type: modalType,
-      };
-      const newPoint = await ReliefPointAPI.createReliefPoint(dataToSend);
-      setPoints([...points, newPoint]);
-      handleCloseModal();
-    } catch (err) {
-      console.error("Lỗi khi tạo điểm cứu trợ", err);
-    }
-  };
-
-  const handleSelectPoint = (point: ReliefPoint) => {
-    setSelectedPoint(point);
-  };
-
-  const handleCloseDetail = () => {
-    setSelectedPoint(null);
-  };
-
-  const handleDeletePoint = async () => {
-    if (!selectedPoint) return;
-    if (window.confirm("Bạn có chắc chắn muốn xóa điểm cứu trợ này không?")) {
-      try {
-        await ReliefPointAPI.deleteReliefPoint(selectedPoint._id);
-        setPoints(points.filter((p) => p._id !== selectedPoint._id));
-        handleCloseDetail();
-      } catch (err) {
-        console.error("Lỗi khi xóa điểm cứu trợ", err);
-      }
-    }
-  };
   const handleVerifyPoint = async () => {
     if (!selectedPoint) return;
     setVerifying(true);
     try {
-      const verifiedPoint = await ReliefPointAPI.verifyReliefPoint(
-        selectedPoint._id
-      );
-
-      // Cập nhật điểm đang hiển thị
-      setSelectedPoint(verifiedPoint);
-
-      // Cập nhật danh sách điểm
-      setPoints((prev) =>
-        prev.map((p) => (p._id === verifiedPoint._id ? verifiedPoint : p))
-      );
-
-      // Có thể thêm thông báo thành công
-      // enqueueSnackbar("Xác minh thành công", { variant: "success" });
-    } catch (error) {
-      console.error("Lỗi khi xác minh điểm:", error);
+      const verified = await ReliefPointAPI.verifyReliefPoint(selectedPoint._id);
+      setSelectedPoint(verified);
+      setPoints((prev) => prev.map((p) => (p._id === verified._id ? verified : p)));
     } finally {
       setVerifying(false);
     }
   };
+
+  const handleDeletePoint = async () => {
+    if (!selectedPoint) return;
+    if (!window.confirm("Bạn có chắc chắn muốn xóa điểm cứu trợ này không?")) return;
+    await ReliefPointAPI.deleteReliefPoint(selectedPoint._id);
+    setPoints((prev) => prev.filter((p) => p._id !== selectedPoint._id));
+    setSelectedPoint(null);
+  };
+
   return (
     <Box>
-      <ManagerTabs
-        activeTab={activeLink}
-        onTabChange={(value) => setActiveLink(value)}
-      />
+      <ManagerTabs activeTab={activeLink} onTabChange={(v) => setActiveLink(v)} />
+      <Typography variant="h5" fontWeight="bold" p={3}>📍 Quản lý điểm cứu trợ</Typography>
 
-      <Typography variant="h5" fontWeight="bold" p={3}>
-        📍 Quản lý điểm cứu trợ
-      </Typography>
-
-      {/* Chọn bão */}
       <Stack direction="row" spacing={2} alignItems="center" mb={3} pl={3}>
         <Typography>🌪️ Cơn bão:</Typography>
-        <Select
-          value={selectedStorm}
-          onChange={(e) => setSelectedStorm(e.target.value)}
-          size="small"
-          sx={{ minWidth: 220 }}
-          displayEmpty
-        >
-          <MenuItem value="" disabled>
-            Chọn cơn bão
-          </MenuItem>
-          {storms.map((storm) => (
-            <MenuItem key={storm._id} value={storm._id}>
+        <Select value={selectedStorm} onChange={(e) => setSelectedStorm(e.target.value)} size="small" sx={{ minWidth: 220 }} displayEmpty>
+          <MenuItem value="" disabled>Chọn cơn bão</MenuItem>
+          {storms.map((s) => (
+            <MenuItem key={s._id} value={s._id}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {storm.name}
-                <Chip
-                  label={storm.isActive ? "🟢" : "⚪"}
-                  color={storm.isActive ? "success" : "default"}
-                />
+                {s.name}
+                <Chip label={s.isActive ? "🟢" : "⚪"} color={s.isActive ? "success" : "default"} />
               </Box>
             </MenuItem>
           ))}
         </Select>
-
-        {/* Hiển thị trạng thái */}
-        {selectedStorm &&
-          (() => {
-            const storm = storms.find((s) => s._id === selectedStorm);
-            if (!storm) return null;
-            return (
-              <>
-                <Chip
-                  label={
-                    storm.isActive ? "🟢 Đang hoạt động" : "⚪ Đã kết thúc"
-                  }
-                  color={storm.isActive ? "success" : "default"}
-                />
-                {storm.isActive ? (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={async () => {
-                      if (
-                        window.confirm(
-                          "Bạn có chắc chắn muốn kết thúc bão này không?, hãy chắc chắn các điểm cứu hộ đã được hỗ trợ"
-                        )
-                      ) {
-                        try {
-                          await StormAPI.deactivateStorm(storm._id);
-                          const updated = await StormAPI.getAllStorms();
-                          setStorms(updated);
-                        } catch (err) {
-                          console.error("Lỗi khi kết thúc bão:", err);
-                          alert("Có lỗi xảy ra khi kết thúc bão.");
-                        }
-                      }
-                    }}
-                  >
-                    🛑 Kết thúc cảnh báo bão
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={async () => {
-                      try {
-                        await StormAPI.activateStorm(storm._id);
-                        const updated = await StormAPI.getAllStorms();
-                        setStorms(updated);
-                      } catch (err) {
-                        console.error("Lỗi khi kích hoạt bão:", err);
-                        alert("Có lỗi xảy ra khi kích hoạt bão.");
-                      }
-                    }}
-                  >
-                    Kích hoạt cảnh báo bão
-                  </Button>
-                )}
-              </>
-            );
-          })()}
+        {selectedStorm && (() => {
+          const storm = storms.find((x) => x._id === selectedStorm);
+          if (!storm) return null;
+          return (
+            <>
+              <Chip label={storm.isActive ? "🟢 Đang hoạt động" : "⚪ Đã kết thúc"} color={storm.isActive ? "success" : "default"} />
+              {storm.isActive ? (
+                <Button variant="outlined" color="error" onClick={async () => {
+                  if (!window.confirm("Bạn có chắc chắn muốn kết thúc bão này không?, hãy chắc chắn các điểm cứu hộ đã được hỗ trợ")) return;
+                  await StormAPI.deactivateStorm(storm._id);
+                  const updated = await StormAPI.getAllStorms();
+                  setStorms(updated);
+                }}>🛑 Kết thúc cảnh báo bão</Button>
+              ) : (
+                <Button variant="contained" color="primary" onClick={async () => {
+                  await StormAPI.activateStorm(storm._id);
+                  const updated = await StormAPI.getAllStorms();
+                  setStorms(updated);
+                }}>Kích hoạt cảnh báo bão</Button>
+              )}
+            </>
+          );
+        })()}
       </Stack>
 
-      {/* Filter loại điểm */}
       {selectedStorm && (
         <Stack direction="row" spacing={2} alignItems="center" mb={3}>
           <Typography>Lọc điểm:</Typography>
-          <Select
-            value={filterType}
-            onChange={(e) =>
-              setFilterType(e.target.value as "all" | "need" | "supply")
-            }
-            size="small"
-            sx={{ minWidth: 150 }}
-          >
+          <Select value={filterType} onChange={(e) => setFilterType(e.target.value as any)} size="small" sx={{ minWidth: 150 }}>
             <MenuItem value="all">Tất cả</MenuItem>
             <MenuItem value="supply">Cung cấp</MenuItem>
             <MenuItem value="need">Cần giúp</MenuItem>
@@ -534,103 +257,44 @@ const ReliefPointManager: React.FC = () => {
         </Stack>
       )}
 
-      {/* Nút tạo điểm */}
       {selectedStorm && (
         <Stack direction="row" spacing={2} mb={3}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<AddLocationAltIcon />}
-            onClick={() => handleOpenModal("supply")}
-          >
-            Tạo điểm cung cấp
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<WarningIcon />}
-            onClick={() => handleOpenModal("need")}
-          >
-            Tạo điểm cần giúp đỡ
-          </Button>
+          <Button variant="contained" color="success" startIcon={<AddLocationAltIcon />} onClick={() => handleOpenModal("supply")}>Tạo điểm cung cấp</Button>
+          <Button variant="contained" color="error" startIcon={<WarningIcon />} onClick={() => handleOpenModal("need")}>Tạo điểm cần giúp đỡ</Button>
         </Stack>
       )}
 
-      {/* Bản đồ hiển thị điểm */}
       {selectedStorm && (
         <Box mb={3} sx={{ height: "400px", width: "100%" }}>
-          <MapContainer
-            center={[16.0, 106.0]}
-            zoom={6}
-            style={{ height: "100%", width: "100%" }}
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
+          <MapContainer center={[16.0, 106.0]} zoom={6} style={{ height: "100%", width: "100%" }}>
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
             <FitBounds points={filteredPoints} stormCenter={stormCenter} />
-            {filteredPoints
-              .filter((p) => p.location?.coordinates?.length === 2)
-              .map((p) => (
-                <Marker
-                  key={p._id}
-                  position={[
-                    p.location.coordinates[1],
-                    p.location.coordinates[0],
-                  ]}
-                  icon={p.type === "supply" ? supplyIcon : needIcon}
-                  eventHandlers={{
-                    click: () => handleSelectPoint(p),
-                  }}
-                >
-                  <Popup>
-                    <Typography fontWeight={600}>
-                      {p.name} –{" "}
-                      {p.type === "supply" ? "🟢 Cung cấp" : "🔴 Cần giúp"}
-                    </Typography>
-                    <Typography variant="caption" color="gray">
-                      {new Date(p.createdAt).toLocaleString()}
-                    </Typography>
-                  </Popup>
-                </Marker>
-              ))}
+            {filteredPoints.filter((p) => p.location?.coordinates?.length === 2).map((p) => (
+              <Marker key={p._id} position={[p.location.coordinates[1], p.location.coordinates[0]]} icon={p.type === "supply" ? supplyIcon : needIcon} eventHandlers={{ click: () => setSelectedPoint(p) }}>
+                <Popup>
+                  <Typography fontWeight={600}>{p.name} – {p.type === "supply" ? "🟢 Cung cấp" : "🔴 Cần giúp"}</Typography>
+                  <Typography variant="caption" color="gray">{new Date(p.createdAt).toLocaleString()}</Typography>
+                </Popup>
+              </Marker>
+            ))}
             {stormCenter && (
               <>
-                <Marker
-                  position={[stormCenter.lat, stormCenter.lng]}
-                  icon={stormCenterIcon}
-                >
-                  <Popup>
-                    <Typography fontWeight={600}>Tâm bão</Typography>
-                  </Popup>
+                <Marker position={[stormCenter.lat, stormCenter.lng]} icon={stormCenterIcon}>
+                  <Popup><Typography fontWeight={600}>Tâm bão</Typography></Popup>
                 </Marker>
-                <Marker
-                  position={[stormCenter.lat, stormCenter.lng]}
-                  icon={rippleIcon}
-                />
+                <Marker position={[stormCenter.lat, stormCenter.lng]} icon={rippleIcon} />
               </>
             )}
           </MapContainer>
         </Box>
       )}
 
-      {/* Danh sách điểm */}
       {filteredPoints.length > 0 && (
         <Paper variant="outlined">
           {filteredPoints.map((p) => (
-            <Box
-              key={p._id}
-              p={2}
-              borderBottom="1px solid #eee"
-              sx={{ cursor: "pointer" }}
-              onClick={() => handleSelectPoint(p)}
-            >
-              <Typography fontWeight={600}>
-                {p.name} – {p.type === "supply" ? "🟢 Cung cấp" : "🔴 Cần giúp"}
-              </Typography>
-              <Typography variant="caption" color="gray">
-                {new Date(p.createdAt).toLocaleString()}
-              </Typography>
+            <Box key={p._id} p={2} borderBottom="1px solid #eee" sx={{ cursor: "pointer" }} onClick={() => setSelectedPoint(p)}>
+              <Typography fontWeight={600}>{p.name} – {p.type === "supply" ? "🟢 Cung cấp" : "🔴 Cần giúp"}</Typography>
+              <Typography variant="caption" color="gray">{new Date(p.createdAt).toLocaleString()}</Typography>
             </Box>
           ))}
         </Paper>
@@ -640,367 +304,60 @@ const ReliefPointManager: React.FC = () => {
         <Typography color="gray">Chưa có điểm nào cho bão này.</Typography>
       )}
 
-      {/* Modal form tạo điểm */}
-      <Dialog
+      <CreateReliefPointDialog
         open={openModal}
-        onClose={handleCloseModal}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {modalType === "supply"
-            ? "Tạo điểm cung cấp"
-            : "Tạo điểm cần giúp đỡ"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Tên điểm"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Mô tả"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
+        type={modalType}
+        stormId={selectedStorm}
+        onClose={() => setOpenModal(false)}
+        onCreated={(pt) => setPoints((prev) => [...prev, pt])}
+      />
 
-          {/* Bản đồ chọn vị trí */}
-          <Typography variant="body1" mb={1}>
-            Chọn vị trí trên bản đồ (click để chọn):
-          </Typography>
-          <Box sx={{ height: "300px", width: "100%", mb: 2 }}>
-            <MapContainer
-              center={[18.333, 105.9]}
-              zoom={8}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              <LocationPicker onLocationSelect={handleLocationSelect} />
-            </MapContainer>
-          </Box>
-
-          {/* Hiển thị vị trí đã chọn */}
-          <Typography variant="body2" color="textSecondary" mb={2}>
-            Chọn vị trí trên bản đồ (click để chọn) (kinh độ - vĩ độ):{" "}
-            {formData.location?.coordinates[0] ?? 0} -{" "}
-            {formData.location?.coordinates[1] ?? 0}
-          </Typography>
-
-          {/* Field contact */}
-          <TextField
-            label="Liên hệ"
-            name="contact"
-            value={formData.contact || ""}
-            onChange={handleInputChange}
-            fullWidth
-            margin="normal"
-          />
-
-          {modalType === "supply" && (
-            <>
-              <Typography variant="subtitle1" mt={2}>
-                Dư thừa:
-              </Typography>
-              {formData.surplus.map((item, index) => (
-                <Stack
-                  key={index}
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  mb={1}
-                >
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Loại</InputLabel>
-                    <Select
-                      value={item.type || ""}
-                      onChange={(e) =>
-                        handleItemChange(
-                          "surplus",
-                          index,
-                          "type",
-                          e.target.value as any
-                        )
-                      }
-                    >
-                      <MenuItem value="thực phẩm">Thực phẩm</MenuItem>
-                      <MenuItem value="nước uống">Nước uống</MenuItem>
-                      <MenuItem value="quần áo">Quần áo</MenuItem>
-                      <MenuItem value="thuốc men">Thuốc men</MenuItem>
-                      <MenuItem value="chăn màn">Chăn màn</MenuItem>
-                      <MenuItem value="dụng cụ y tế">Dụng cụ y tế</MenuItem>
-                      <MenuItem value="khác">Khác</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    label="Số lượng"
-                    type="number"
-                    value={item.quantity || 0}
-                    onChange={(e) =>
-                      handleItemChange(
-                        "surplus",
-                        index,
-                        "quantity",
-                        parseInt(e.target.value) || 0
-                      )
-                    }
-                    sx={{ width: "150px" }}
-                  />
-                  <TextField
-                    label="Ghi chú"
-                    value={item.note || ""}
-                    onChange={(e) =>
-                      handleItemChange("surplus", index, "note", e.target.value)
-                    }
-                    fullWidth
-                  />
-                  <IconButton onClick={() => removeItem("surplus", index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
-              ))}
-              <Button onClick={() => addItem("surplus")}>
-                Thêm loại cung cấp
-              </Button>
-            </>
-          )}
-
-          {modalType === "need" && (
-            <>
-              <Typography variant="subtitle1" mt={2}>
-                Nhu cầu:
-              </Typography>
-              {formData.needs.map((item, index) => (
-                <Stack
-                  key={index}
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  mb={1}
-                >
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Loại nhu cầu</InputLabel>
-                    <Select
-                      value={item.type || ""}
-                      onChange={(e) =>
-                        handleItemChange(
-                          "needs",
-                          index,
-                          "type",
-                          e.target.value as any
-                        )
-                      }
-                    >
-                      <MenuItem value="người mắc kẹt">Người mắc kẹt</MenuItem>
-                      <MenuItem value="bị thương">Bị thương</MenuItem>
-                      <MenuItem value="thiếu đồ ăn">Thiếu đồ ăn</MenuItem>
-                      <MenuItem value="thiếu nước">Thiếu nước</MenuItem>
-                      <MenuItem value="thiếu thuốc">Thiếu thuốc</MenuItem>
-                      <MenuItem value="khác">Khác</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    label="Số lượng"
-                    type="number"
-                    value={item.quantity || 0}
-                    onChange={(e) =>
-                      handleItemChange(
-                        "needs",
-                        index,
-                        "quantity",
-                        parseInt(e.target.value) || 0
-                      )
-                    }
-                    sx={{ width: "150px" }}
-                  />
-                  <TextField
-                    label="Ghi chú"
-                    value={item.note || ""}
-                    onChange={(e) =>
-                      handleItemChange("needs", index, "note", e.target.value)
-                    }
-                    fullWidth
-                  />
-                  <IconButton onClick={() => removeItem("needs", index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Stack>
-              ))}
-              <Button onClick={() => addItem("needs")}>
-                Thêm loại nhu cầu
-              </Button>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal}>Hủy</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            Tạo
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog hiển thị chi tiết point */}
-      <Dialog
-        open={!!selectedPoint}
-        onClose={handleCloseDetail}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Typography variant="h6" fontWeight="bold">
-            Chi tiết điểm cứu trợ
-          </Typography>
-        </DialogTitle>
-
+      <Dialog open={!!selectedPoint} onClose={() => setSelectedPoint(null)} maxWidth="sm" fullWidth>
+        <DialogTitle><Typography variant="h6" fontWeight="bold">Chi tiết điểm cứu trợ</Typography></DialogTitle>
         <DialogContent dividers>
           {selectedPoint && (
-            <Paper elevation={0} sx={{ p: 2 }}>
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="space-between"
-                mb={2}
-              >
+            <Box>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                 <Box>
-                  <Typography variant="h5" color="primary" fontWeight={600}>
-                    {selectedPoint.name}
-                  </Typography>
+                  <Typography variant="h5" color="primary" fontWeight={600}>{selectedPoint.name}</Typography>
                   <Box display="flex" alignItems="center" gap={1} mt={1}>
-                    <Chip
-                      label={
-                        selectedPoint.type === "supply"
-                          ? "Cung cấp"
-                          : "Cần giúp"
-                      }
-                      color={
-                        selectedPoint.type === "supply" ? "success" : "error"
-                      }
-                      size="small"
-                    />
-                    <Chip
-                      label={
-                        selectedPoint.verified ? "Đã xác minh" : "Chưa xác minh"
-                      }
-                      color={selectedPoint.verified ? "info" : "default"}
-                      variant={selectedPoint.verified ? "filled" : "outlined"}
-                      size="small"
-                    />
+                    <Chip label={selectedPoint.type === "supply" ? "Cung cấp" : "Cần giúp"} color={selectedPoint.type === "supply" ? "success" : "error"} size="small" />
+                    <Chip label={selectedPoint.verified ? "Đã xác minh" : "Chưa xác minh"} color={selectedPoint.verified ? "info" : "default"} variant={selectedPoint.verified ? "filled" : "outlined"} size="small" />
                   </Box>
                 </Box>
               </Box>
-
-              <List dense>
-                <ListItem disablePadding sx={{ mb: 1 }}>
-                  <ListItemText
-                    primary={<Typography fontWeight={500}>Mô tả</Typography>}
-                    secondary={selectedPoint.description || "Không có"}
-                  />
-                </ListItem>
-                <ListItem disablePadding sx={{ mb: 1 }}>
-                  <ListItemText
-                    primary={<Typography fontWeight={500}>Liên hệ</Typography>}
-                    secondary={selectedPoint.contact || "Không có"}
-                  />
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemText
-                    primary={<Typography fontWeight={500}>Tạo lúc</Typography>}
-                    secondary={new Date(
-                      selectedPoint.createdAt
-                    ).toLocaleString()}
-                  />
-                </ListItem>
-              </List>
-
-              {selectedPoint.type === "supply" &&
-                selectedPoint.surplus &&
-                selectedPoint.surplus.length > 0 && (
-                  <>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight={600}
-                      gutterBottom
-                    >
-                      Cung Cấp
-                    </Typography>
-                    <List dense>
-                      {selectedPoint.surplus.map((s, i) => (
-                        <ListItem key={i} disablePadding sx={{ mb: 1 }}>
-                          <ListItemText
-                            primary={
-                              <Typography fontWeight={500}>{s.type}</Typography>
-                            }
-                            secondary={`${s.quantity} - ${
-                              s.note || "Không có ghi chú"
-                            }`}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </>
-                )}
-
-              {selectedPoint.type === "need" &&
-                selectedPoint.needs &&
-                selectedPoint.needs.length > 0 && (
-                  <>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight={600}
-                      gutterBottom
-                    >
-                      Nhu cầu
-                    </Typography>
-                    <List dense>
-                      {selectedPoint.needs.map((n, i) => (
-                        <ListItem key={i} disablePadding sx={{ mb: 1 }}>
-                          <ListItemText
-                            primary={
-                              <Typography fontWeight={500}>{n.type}</Typography>
-                            }
-                            secondary={`${n.quantity} - ${
-                              n.note || "Không có ghi chú"
-                            }`}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </>
-                )}
-            </Paper>
+              {selectedPoint.description && (
+                <Typography sx={{ mb: 1 }}><b>Mô tả:</b> {selectedPoint.description}</Typography>
+              )}
+              <Typography sx={{ mb: 1 }}><b>Liên hệ:</b> {selectedPoint.contact || "Không có"}</Typography>
+              <Typography sx={{ mb: 1 }}><b>Tạo lúc:</b> {new Date(selectedPoint.createdAt).toLocaleString()}</Typography>
+              {selectedPoint.type === "supply" && selectedPoint.surplus?.length ? (
+                <Box sx={{ mt: 2 }}>
+                  <Typography fontWeight={600}>Cung Cấp</Typography>
+                  {selectedPoint.surplus.map((s, i) => (
+                    <Typography key={i}>{s.type}: {s.quantity} – {s.note || "Không có ghi chú"}</Typography>
+                  ))}
+                </Box>
+              ) : null}
+              {selectedPoint.type === "need" && selectedPoint.needs?.length ? (
+                <Box sx={{ mt: 2 }}>
+                  <Typography fontWeight={600}>Nhu cầu</Typography>
+                  {selectedPoint.needs.map((n, i) => (
+                    <Typography key={i}>{n.type}: {n.quantity} – {n.note || "Không có ghi chú"}</Typography>
+                  ))}
+                </Box>
+              ) : null}
+            </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseDetail}>Đóng</Button>
-
+          <Button onClick={() => setSelectedPoint(null)}>Đóng</Button>
           {selectedPoint && !selectedPoint.verified && (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleVerifyPoint}
-            >
-              Xác minh
-            </Button>
+            <Button variant="contained" color="primary" onClick={handleVerifyPoint} disabled={verifying}>Xác minh</Button>
           )}
-
-          <Button variant="contained" color="error" onClick={handleDeletePoint}>
-            Xóa
-          </Button>
+          <Button variant="contained" color="error" onClick={handleDeletePoint}>Xóa</Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
-};
-
-export default ReliefPointManager;
+}

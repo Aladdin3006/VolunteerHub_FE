@@ -5,6 +5,7 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import React, { useEffect, useState } from 'react'
+import MapLocationPicker from '../utils/MapLocationPicker'
 
 interface SupplyNeedItem {
   type: string
@@ -118,10 +119,28 @@ export default function ReportNeedDialog({
       <DialogContent>
         <TextField label="Tên điểm" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} fullWidth margin="dense" required />
         <TextField label="Mô tả" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} fullWidth margin="dense" multiline rows={3} />
-        <TextField label="Địa chỉ" value={formData.address} onChange={(e) => handleChange('address', e.target.value)} fullWidth margin="dense" />
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField label="Vĩ độ (lat)" value={formData.lat} onChange={(e) => handleChange('lat', e.target.value)} fullWidth margin="dense" required type="number" />
-          <TextField label="Kinh độ (lng)" value={formData.lng} onChange={(e) => handleChange('lng', e.target.value)} fullWidth margin="dense" required type="number" />
+
+        {/* 👇 Thay vì nhập lat/lng thủ công, dùng MapLocationPicker */}
+        <Box sx={{ mt: 2 }}>
+          <MapLocationPicker
+            defaultLocation={{
+              lat: presetLat || 20.98, // fallback 1 tọa độ default
+              lng: presetLng || 105.85
+            }}
+            onPick={({ lat, lng, address }) => {
+              setFormData((p) => ({
+                ...p,
+                lat: lat.toString(),
+                lng: lng.toString(),
+                address: address ?? p.address
+              }))
+            }}
+            center={
+              formData.lat && formData.lng
+                ? { lat: parseFloat(formData.lat), lng: parseFloat(formData.lng) }
+                : null
+            }
+          />
         </Box>
 
         <Typography variant="subtitle1" sx={{ mt: 2 }}>Nhu cầu cứu trợ</Typography>

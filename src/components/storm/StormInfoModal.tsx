@@ -50,6 +50,7 @@ const StormInfoModal: React.FC<StormInfoModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState<string>("");
   const [isEmergency, setIsEmergency] = useState(false);
+  const [openWindy, setOpenWindy] = useState(false);
 
   // Determine if component is controlled or uncontrolled
   const isControlled = propOpen !== undefined;
@@ -163,7 +164,30 @@ const StormInfoModal: React.FC<StormInfoModalProps> = ({
         </DialogActions>
       </Dialog>
 
-      {storm && !open && !isControlled && (
+      {/* Dialog riêng cho Windy */}
+      <Dialog
+        open={openWindy}
+        onClose={() => setOpenWindy(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Thông tin cơn bão {storm.name}</DialogTitle>
+        <DialogContent>
+          <iframe
+            width="100%"
+            height="500"
+            src="https://embed.windy.com/embed2.html?lat=16.0471&lon=108.2068&detailLat=16.0471&detailLon=108.2068&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+            frameBorder="0"
+            title="Windy Live Map"
+          ></iframe>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenWindy(false)}>Đóng</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Emergency button nổi khi modal đóng */}
+      {storm && !open && (
         <Box sx={{ zIndex: 1300 }}>
           <EmergencyButton onClick={() => setInternalOpen(true)} />
         </Box>
