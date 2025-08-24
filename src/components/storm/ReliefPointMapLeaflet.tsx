@@ -24,8 +24,9 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import ReportNeedDialog from "./ReportNeedDialog";
 import RescueHistoryDialog from "./RescueHistoryDialog";
-
 import AddRescueDialog from "./AddRescueDialog";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -62,6 +63,7 @@ interface ReliefPoint {
   lat: number;
   lng: number;
   type: "need" | "supply";
+  description: String;
   needs?: SupplyNeedItem[];
   surplus?: SupplyNeedItem[];
   verified?: boolean;
@@ -69,6 +71,7 @@ interface ReliefPoint {
   distance?: number | null;
   rescueStatus?: boolean;
   rescueList?: RescueEntry[];
+  createdAt?: Date
 }
 
 const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
@@ -157,6 +160,7 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
         _id: p._id,
         name: p.name,
         type: p.type,
+        description: p.description,
         lat: p.location?.coordinates?.[1],
         lng: p.location?.coordinates?.[0],
         needs: (p.needs || []).map((n: any) => ({ type: n.type, quantity: n.quantity, note: n.note })),
@@ -164,7 +168,8 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
         verified: p.verified,
         contact: p.contact,
         rescueStatus: p.rescueStatus,
-        rescueList: p.rescueList
+        rescueList: p.rescueList,
+        createdAt: p.createdAt
       }));
       setPoints(formatted.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng)));
     } catch (e) {
@@ -259,13 +264,25 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                         <Typography variant="subtitle1" fontWeight={600}>
                           {p.name}
                         </Typography>
-                        {p.rescueStatus !== undefined && (
-                          <Chip
-                            size="small"
-                            label={p.rescueStatus ? "Đã nhận được trợ giúp" : "Vẫn cần sự trợ giúp"}
-                            color={p.rescueStatus ? "success" : "warning"}
-                            sx={{ fontSize: "0.75rem" }}
-                          />
+
+                        {p.type === "supply" ? (
+                          <Typography variant="body2">
+                            {p.description}
+                          </Typography>
+                        ) : (
+                          p.rescueStatus !== undefined && (
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="caption">
+                                Nhận được {p.rescueList?.length || 0} lần cứu trợ
+                              </Typography>
+                              <Chip
+                                size="small"
+                                label={p.rescueStatus ? "Đã nhận được trợ giúp" : "Vẫn cần sự trợ giúp"}
+                                color={p.rescueStatus ? "success" : "warning"}
+                                sx={{ fontSize: "0.75rem" }}
+                              />
+                            </Stack>
+                          )
                         )}
                       </Stack>
                     }
@@ -279,14 +296,22 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                         <Typography variant="body2" color="text.secondary">
                           {p.type === "supply" ? "🟢 Điểm cung cấp" : "🔴 Điểm cần cứu trợ"}
                         </Typography>
-                        {p.distance != null && (
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDistance(p.distance)}
-                          </Typography>
-                        )}
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          {p.distance != null && (
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDistance(p.distance)}
+                            </Typography>
+                          )}
+                          {p.createdAt && (
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi })}
+                            </Typography>
+                          )}
+                        </Stack>
                       </Stack>
+
                     }
-                  /> 
+                  />
                 </ListItemButton>
               </ListItem>
 
@@ -410,6 +435,12 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
             {selectedPoint.contact && (
               <Typography variant="body2" mb={2}>
                 📞 Liên hệ: <strong>{selectedPoint.contact}</strong>
+              </Typography>
+            )}
+
+            {selectedPoint.description && (
+              <Typography variant="body2" mb={2}>
+                <strong>{selectedPoint.description}</strong>
               </Typography>
             )}
 
