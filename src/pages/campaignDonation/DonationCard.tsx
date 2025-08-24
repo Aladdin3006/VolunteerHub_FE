@@ -106,6 +106,7 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
             overflow: "hidden",
             WebkitBoxOrient: "vertical",
             WebkitLineClamp: 2,
+            fontSize: "1.2rem"
           }}
         >
           {campaign.title}
