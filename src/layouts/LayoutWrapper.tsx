@@ -29,13 +29,6 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({
       const isAuth = authService.isAuthenticated();
       const role = authService.getUserRole();
 
-      console.log(
-        "Auth change detected - isAuthenticated:",
-        isAuth,
-        "Role:",
-        role
-      );
-
       setAuthState({
         isAuthenticated: isAuth,
         userRole: role,
@@ -49,16 +42,6 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({
       authService.removeListener(handleAuthChange);
     };
   }, []);
-
-  // Debug logging
-  console.log(
-    "LayoutWrapper - Auth:",
-    authState.isAuthenticated,
-    "Role:",
-    authState.userRole,
-    "Required Role:",
-    requiredRole
-  );
 
   // If authentication is required but user is not authenticated
   if (requireAuth && !authState.isAuthenticated) {
@@ -80,7 +63,6 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({
     }
 
     const role = authState.userRole?.toLowerCase();
-    console.log("Selecting layout for role:", role);
 
     switch (role) {
       case "admin":

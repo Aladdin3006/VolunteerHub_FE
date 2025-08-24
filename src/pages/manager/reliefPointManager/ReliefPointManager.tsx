@@ -68,25 +68,25 @@ interface ReliefPoint {
   description?: string;
   surplus?: Array<{
     type:
-    | "thực phẩm"
-    | "nước uống"
-    | "quần áo"
-    | "thuốc men"
-    | "chăn màn"
-    | "dụng cụ y tế"
-    | "khác";
+      | "thực phẩm"
+      | "nước uống"
+      | "quần áo"
+      | "thuốc men"
+      | "chăn màn"
+      | "dụng cụ y tế"
+      | "khác";
     quantity: number;
     note: string;
     _id?: string; // Optional, backend generate cho response
   }>;
   needs?: Array<{
     type:
-    | "người mắc kẹt"
-    | "bị thương"
-    | "thiếu đồ ăn"
-    | "thiếu nước"
-    | "thiếu thuốc"
-    | "khác";
+      | "người mắc kẹt"
+      | "bị thương"
+      | "thiếu đồ ăn"
+      | "thiếu nước"
+      | "thiếu thuốc"
+      | "khác";
     quantity: number;
     note: string;
     _id?: string; // Optional
@@ -104,24 +104,24 @@ interface ReliefPoint {
 interface FormDataType extends Partial<ReliefPoint> {
   surplus: Array<{
     type:
-    | "thực phẩm"
-    | "nước uống"
-    | "quần áo"
-    | "thuốc men"
-    | "chăn màn"
-    | "dụng cụ y tế"
-    | "khác";
+      | "thực phẩm"
+      | "nước uống"
+      | "quần áo"
+      | "thuốc men"
+      | "chăn màn"
+      | "dụng cụ y tế"
+      | "khác";
     quantity: number;
     note: string;
   }>;
   needs: Array<{
     type:
-    | "người mắc kẹt"
-    | "bị thương"
-    | "thiếu đồ ăn"
-    | "thiếu nước"
-    | "thiếu thuốc"
-    | "khác";
+      | "người mắc kẹt"
+      | "bị thương"
+      | "thiếu đồ ăn"
+      | "thiếu nước"
+      | "thiếu thuốc"
+      | "khác";
     quantity: number;
     note: string;
   }>;
@@ -291,7 +291,6 @@ const ReliefPointManager: React.FC = () => {
     // Lấy centerLocation từ storm được chọn
     const currentStorm = storms.find((s) => s._id === selectedStorm);
     if (currentStorm && currentStorm.centerLocation) {
-      console.log("Center Location:", currentStorm.centerLocation); // Debug để kiểm tra data
       setStormCenter(currentStorm.centerLocation);
     } else {
       console.log("No centerLocation for this storm"); // Debug
@@ -400,7 +399,9 @@ const ReliefPointManager: React.FC = () => {
     if (!selectedPoint) return;
     setVerifying(true);
     try {
-      const verifiedPoint = await ReliefPointAPI.verifyReliefPoint(selectedPoint._id);
+      const verifiedPoint = await ReliefPointAPI.verifyReliefPoint(
+        selectedPoint._id
+      );
 
       // Cập nhật điểm đang hiển thị
       setSelectedPoint(verifiedPoint);
@@ -453,7 +454,6 @@ const ReliefPointManager: React.FC = () => {
               </Box>
             </MenuItem>
           ))}
-
         </Select>
 
         {/* Hiển thị trạng thái */}
@@ -864,19 +864,32 @@ const ReliefPointManager: React.FC = () => {
         <DialogContent dividers>
           {selectedPoint && (
             <Paper elevation={0} sx={{ p: 2 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                mb={2}
+              >
                 <Box>
                   <Typography variant="h5" color="primary" fontWeight={600}>
                     {selectedPoint.name}
                   </Typography>
                   <Box display="flex" alignItems="center" gap={1} mt={1}>
                     <Chip
-                      label={selectedPoint.type === "supply" ? "Cung cấp" : "Cần giúp"}
-                      color={selectedPoint.type === "supply" ? "success" : "error"}
+                      label={
+                        selectedPoint.type === "supply"
+                          ? "Cung cấp"
+                          : "Cần giúp"
+                      }
+                      color={
+                        selectedPoint.type === "supply" ? "success" : "error"
+                      }
                       size="small"
                     />
                     <Chip
-                      label={selectedPoint.verified ? "Đã xác minh" : "Chưa xác minh"}
+                      label={
+                        selectedPoint.verified ? "Đã xác minh" : "Chưa xác minh"
+                      }
                       color={selectedPoint.verified ? "info" : "default"}
                       variant={selectedPoint.verified ? "filled" : "outlined"}
                       size="small"
@@ -901,7 +914,9 @@ const ReliefPointManager: React.FC = () => {
                 <ListItem disablePadding>
                   <ListItemText
                     primary={<Typography fontWeight={500}>Tạo lúc</Typography>}
-                    secondary={new Date(selectedPoint.createdAt).toLocaleString()}
+                    secondary={new Date(
+                      selectedPoint.createdAt
+                    ).toLocaleString()}
                   />
                 </ListItem>
               </List>
@@ -911,16 +926,23 @@ const ReliefPointManager: React.FC = () => {
                 selectedPoint.surplus.length > 0 && (
                   <>
                     <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={600}
+                      gutterBottom
+                    >
                       Cung Cấp
                     </Typography>
                     <List dense>
                       {selectedPoint.surplus.map((s, i) => (
                         <ListItem key={i} disablePadding sx={{ mb: 1 }}>
                           <ListItemText
-                            primary={<Typography fontWeight={500}>{s.type}</Typography>}
-                            secondary={`${s.quantity} - ${s.note || "Không có ghi chú"}`}
-
+                            primary={
+                              <Typography fontWeight={500}>{s.type}</Typography>
+                            }
+                            secondary={`${s.quantity} - ${
+                              s.note || "Không có ghi chú"
+                            }`}
                           />
                         </ListItem>
                       ))}
@@ -933,16 +955,23 @@ const ReliefPointManager: React.FC = () => {
                 selectedPoint.needs.length > 0 && (
                   <>
                     <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={600}
+                      gutterBottom
+                    >
                       Nhu cầu
                     </Typography>
                     <List dense>
                       {selectedPoint.needs.map((n, i) => (
                         <ListItem key={i} disablePadding sx={{ mb: 1 }}>
                           <ListItemText
-                            primary={<Typography fontWeight={500}>{n.type}</Typography>}
-                            secondary={`${n.quantity} - ${n.note || "Không có ghi chú"}`}
-
+                            primary={
+                              <Typography fontWeight={500}>{n.type}</Typography>
+                            }
+                            secondary={`${n.quantity} - ${
+                              n.note || "Không có ghi chú"
+                            }`}
                           />
                         </ListItem>
                       ))}
@@ -956,7 +985,11 @@ const ReliefPointManager: React.FC = () => {
           <Button onClick={handleCloseDetail}>Đóng</Button>
 
           {selectedPoint && !selectedPoint.verified && (
-            <Button variant="contained" color="primary" onClick={handleVerifyPoint}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleVerifyPoint}
+            >
               Xác minh
             </Button>
           )}

@@ -15,10 +15,7 @@ import { Close } from "@mui/icons-material";
 import useLoaderState from "../../pages/forum/useLoaderState";
 import ErrorMessage from "../utils/ErrorMessage";
 import { DONATION_API, IDonationDataUpload } from "../../apis/donation";
-import {
-  DonationForm,
-  IDonationFormData,
-} from "../donation/DonationForm";
+import { DonationForm, IDonationFormData } from "../donation/DonationForm";
 
 interface IProps extends Omit<DialogProps, "open"> {
   afterSubmit?: (data: IDonationDataUpload) => void;
@@ -49,15 +46,14 @@ export const UpdateDonationDialog = forwardRef<
       }
       const data = res.data?.campaign;
 
-
       setDonation({
         description: data.description,
         goalAmount: data.goalAmount,
         images: Array.isArray(data.images)
           ? data.images.map((img) => ({
-            url: img,
-            type: "image",
-          }))
+              url: img,
+              type: "image",
+            }))
           : [],
         tags: Array.isArray(data.tags) ? data.tags : [],
         thumbnail: {
@@ -66,7 +62,6 @@ export const UpdateDonationDialog = forwardRef<
         },
         title: data.title,
       });
-
 
       setState("success");
     } catch (error: any) {
@@ -98,10 +93,12 @@ export const UpdateDonationDialog = forwardRef<
 
   const handleSubmitUpdateDonation = async (data: IDonationDataUpload) => {
     try {
-      const res = await DONATION_API.updateDonation(donationIdRef.current!, data);
+      const res = await DONATION_API.updateDonation(
+        donationIdRef.current!,
+        data
+      );
       if (!res || !res.data) {
         console.error("❌ Không có dữ liệu từ API:", res);
-        console.log("✅ Response từ update API:", res);
         setSnackbarMessage("Có lỗi xảy ra, vui lòng thử lại sau");
         return;
       } else {
@@ -116,9 +113,14 @@ export const UpdateDonationDialog = forwardRef<
 
       if (axiosError.response) {
         console.error("❌ Backend trả về lỗi:", axiosError.response.data);
-        setSnackbarMessage(axiosError.response.data.message || "Có lỗi xảy ra (backend)");
+        setSnackbarMessage(
+          axiosError.response.data.message || "Có lỗi xảy ra (backend)"
+        );
       } else if (axiosError.request) {
-        console.error("❌ Không nhận được phản hồi từ backend:", axiosError.request);
+        console.error(
+          "❌ Không nhận được phản hồi từ backend:",
+          axiosError.request
+        );
         setSnackbarMessage("Không nhận được phản hồi từ server");
       } else {
         console.error("❌ Lỗi khác:", axiosError.message);
@@ -127,11 +129,10 @@ export const UpdateDonationDialog = forwardRef<
     }
   };
 
-
   return (
     <Dialog
       open={open}
-      onClose={() => { }}
+      onClose={() => {}}
       fullWidth
       maxWidth="sm"
       keepMounted={false}

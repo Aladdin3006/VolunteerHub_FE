@@ -275,7 +275,6 @@ const TaskListPage: React.FC = () => {
         return prev;
       }
       const updated = [...prev, idStr];
-      console.log("📝 Updated checkedInPhaseDays:", updated);
       return updated;
     });
 

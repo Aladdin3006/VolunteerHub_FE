@@ -43,7 +43,9 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
     const { afterSubmit, closeAfterSubmit, ...rest } = props;
     const [open, setOpen] = useState<boolean>(false);
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
-    const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("error");
+    const [snackbarSeverity, setSnackbarSeverity] = useState<
+      "success" | "error"
+    >("error");
 
     const close = () => {
       setOpen(false);
@@ -57,8 +59,7 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
 
     const handleSubmitNewDonation = async (data: IDonationDataUpload) => {
       try {
-        const res = await DONATION_API.createDonation(data); // res là res.data rồi do interceptor
-        console.log("Response from createDonation:", res);
+        const res = await DONATION_API.createDonation(data);
 
         // ✅ KHÔNG kiểm tra res.status vì interceptor đã trả res.data
         setSnackbarSeverity("success");
@@ -70,16 +71,17 @@ export const NewDonationDialog = forwardRef<INewDonationDialogRef, IProps>(
         }
       } catch (error: any) {
         setSnackbarSeverity("error");
-        setSnackbarMessage(error.message || "Có lỗi xảy ra, vui lòng thử lại sau");
+        setSnackbarMessage(
+          error.message || "Có lỗi xảy ra, vui lòng thử lại sau"
+        );
         console.error(error);
       }
     };
 
-
     return (
       <Dialog
         open={open}
-        onClose={() => { }}
+        onClose={() => {}}
         fullWidth
         maxWidth="sm"
         keepMounted={false}

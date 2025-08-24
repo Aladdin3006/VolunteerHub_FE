@@ -206,8 +206,6 @@ export const getPhasesByCampaignId = async (
       throw new Error(`Invalid campaign ID format: ${campaignId}`);
     }
 
-    console.log("API: Fetching phases for campaign:", campaignId);
-
     const response = await axios.get(`${API_BASE}/phase/${campaignId}/phases`, {
       headers: getAuthHeaders(),
     });
@@ -377,12 +375,6 @@ export const createPhaseDay = async (
       },
     };
 
-    console.log(
-      "API: Creating phase day with formatted payload:",
-      formattedPayload
-    );
-    console.log("API: Phase ID:", phaseId);
-
     const response = await axios.post(
       `${API_BASE}/phase/${phaseId}/days`,
       formattedPayload,
@@ -390,8 +382,6 @@ export const createPhaseDay = async (
         headers: getAuthHeaders(),
       }
     );
-
-    console.log("API: Phase day creation response:", response.data);
 
     // Handle both response.data and response.data.data cases
     const responseData = response.data.data || response.data;
@@ -631,7 +621,6 @@ export const getDepartmentsByVolunteerId = async (
 
     // Handle both response.data and response.data.data cases
     const departmentsData = response.data.data || response.data || [];
-    console.log("API: Fetched departments by volunteer:", departmentsData);
 
     return departmentsData.map((dept: any) => ({
       _id: dept._id,

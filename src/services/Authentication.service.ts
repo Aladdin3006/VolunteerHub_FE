@@ -50,13 +50,13 @@ class AuthenticationService {
   getToken(): string | null {
     // First check the separate token storage
     let token = localStorage.getItem(this.tokenKey);
-    
+
     // If not found, check if it's in the user object
     if (!token) {
       const user = this.getUser();
       token = user?.token || null;
     }
-    
+
     return token;
   }
 
@@ -79,9 +79,7 @@ class AuthenticationService {
   isAuthenticated(): boolean {
     const token = this.getToken();
     const user = this.getUser();
-    
-    console.log("isAuthenticated check - token:", !!token, "user:", !!user);
-    
+
     // Must have both token and user data
     if (!token || !user) {
       return false;
@@ -89,11 +87,10 @@ class AuthenticationService {
 
     // Optional: Add token expiration check
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split(".")[1]));
       if (payload.exp) {
         const currentTime = Date.now() / 1000;
         const isValid = payload.exp > currentTime;
-        console.log("Token expiration check:", isValid, "exp:", payload.exp, "now:", currentTime);
         return isValid;
       }
     } catch (error) {
@@ -106,7 +103,6 @@ class AuthenticationService {
   // Role handling
   getUserRole(): string | null {
     const user = this.getUser();
-    console.log("User role:", user?.role);
     return user?.role || null;
   }
 
@@ -114,8 +110,6 @@ class AuthenticationService {
   hasRole(requiredRole: string): boolean {
     const userRole = this.getUserRole()?.toLowerCase();
     const required = requiredRole.toLowerCase();
-
-    console.log("Role check - User role:", userRole, "Required:", required);
 
     // Admin can access everything
     if (userRole === "admin") return true;

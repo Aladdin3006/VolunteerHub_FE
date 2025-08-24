@@ -128,9 +128,7 @@ const DonationDetail: React.FC = () => {
       return;
     }
 
-    console.log("Campaign ID:", campaignId); // Log để kiểm tra campaignId
-
-    const SOCKET_URL = import.meta.env.VITE_API_BASE_URL
+    const SOCKET_URL = import.meta.env.VITE_API_BASE_URL;
 
     const socketInstance = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
@@ -138,10 +136,7 @@ const DonationDetail: React.FC = () => {
       query: { userId: "guest", campaignId },
     });
 
-    socketInstance.on("connect", () => {
-      console.log("socket connected", socketInstance.id);
-      console.log("socket url", (socketInstance.io as any).uri);
-    });
+    socketInstance.on("connect", () => {});
     socketInstance.on("connect_error", (e) => console.error("socket error", e));
 
     const fetchCampaignData = async () => {
@@ -152,7 +147,6 @@ const DonationDetail: React.FC = () => {
         if (campaignData?.campaign) {
           setCampaign(campaignData.campaign);
           setDonations2(campaignData.transactions || []);
-          console.log("Campaign status:", campaignData.campaign.status); // Log trạng thái
         } else {
           setError("Không tìm thấy chiến dịch");
         }
@@ -160,7 +154,6 @@ const DonationDetail: React.FC = () => {
         // Fetch donation expenses
         try {
           const expenseData = await fetchExpensesByCampaignId1(campaignId);
-          console.log("Expenses set:", expenseData); // Log để kiểm tra expenses
           setExpenses(
             expenseData.filter(
               (exp: DonationExpense) => exp.approvalStatus === "approved"
@@ -183,14 +176,13 @@ const DonationDetail: React.FC = () => {
     };
 
     const handleNewDonate = (d: { transaction: DonationTransaction }) => {
-      console.log("📥 Nhận new_donation:", d);
       setDonations2((prev) => [d.transaction, ...prev]);
       setCampaign((prev) =>
         prev
           ? {
-            ...prev,
-            currentAmount: prev.currentAmount + d.transaction.amount,
-          }
+              ...prev,
+              currentAmount: prev.currentAmount + d.transaction.amount,
+            }
           : prev
       );
     };
@@ -274,8 +266,9 @@ const DonationDetail: React.FC = () => {
                 <CardHeader
                   avatar={<Avatar src={campaign?.createdBy?.avatar} />}
                   title={campaign?.title}
-                  subheader={`Bởi ${campaign?.createdBy?.fullName || "Tổ chức"
-                    }`}
+                  subheader={`Bởi ${
+                    campaign?.createdBy?.fullName || "Tổ chức"
+                  }`}
                   sx={{
                     "& .MuiCardHeader-title": {
                       fontSize: "1.30rem", // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này
@@ -300,13 +293,18 @@ const DonationDetail: React.FC = () => {
                       {pagedExpenses.length > 0 ? (
                         <>
                           {/* Bảng chi tiêu */}
-                          <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                          <TableContainer
+                            component={Paper}
+                            sx={{ borderRadius: 2 }}
+                          >
                             <Table>
                               <TableHead>
                                 <TableRow>
                                   <TableCell>Thời gian</TableCell>
                                   <TableCell>Mô tả</TableCell>
-                                  <TableCell align="right">Số tiền (VNĐ)</TableCell>
+                                  <TableCell align="right">
+                                    Số tiền (VNĐ)
+                                  </TableCell>
                                   <TableCell>Người tạo</TableCell>
                                   <TableCell>Minh chứng</TableCell>
                                 </TableRow>
@@ -316,21 +314,28 @@ const DonationDetail: React.FC = () => {
                                   <TableRow
                                     key={expense._id}
                                     sx={{
-                                      backgroundColor: idx % 2 === 0 ? "#fafafa" : "white",
+                                      backgroundColor:
+                                        idx % 2 === 0 ? "#fafafa" : "white",
                                     }}
                                   >
                                     <TableCell>
-                                      {new Date(expense.createdAt).toLocaleString("vi-VN")}
+                                      {new Date(
+                                        expense.createdAt
+                                      ).toLocaleString("vi-VN")}
                                     </TableCell>
                                     <TableCell>{expense.description}</TableCell>
                                     <TableCell
                                       align="right"
-                                      sx={{ color: "error.main", fontWeight: 600 }}
+                                      sx={{
+                                        color: "error.main",
+                                        fontWeight: 600,
+                                      }}
                                     >
                                       -{expense.amount.toLocaleString("vi-VN")}
                                     </TableCell>
                                     <TableCell>
-                                      {expense.createdBy?.fullName || "Không xác định"}
+                                      {expense.createdBy?.fullName ||
+                                        "Không xác định"}
                                     </TableCell>
                                     <TableCell>
                                       {expense.evidences.length > 0 ? (
@@ -338,13 +343,18 @@ const DonationDetail: React.FC = () => {
                                           size="small"
                                           variant="outlined"
                                           onClick={() =>
-                                            handleOpenImageModal(expense.evidences[0])
+                                            handleOpenImageModal(
+                                              expense.evidences[0]
+                                            )
                                           }
                                         >
                                           Xem
                                         </Button>
                                       ) : (
-                                        <Typography variant="body2" color="text.disabled">
+                                        <Typography
+                                          variant="body2"
+                                          color="text.disabled"
+                                        >
                                           Không có
                                         </Typography>
                                       )}
@@ -359,7 +369,9 @@ const DonationDetail: React.FC = () => {
                               page={expensePage}
                               onPageChange={handleChangeExpensePage}
                               rowsPerPage={expenseRowsPerPage}
-                              onRowsPerPageChange={handleChangeExpenseRowsPerPage}
+                              onRowsPerPageChange={
+                                handleChangeExpenseRowsPerPage
+                              }
                               rowsPerPageOptions={[3]}
                               labelRowsPerPage="Số hàng mỗi trang:"
                             />
@@ -368,24 +380,53 @@ const DonationDetail: React.FC = () => {
                           {/* Phần tổng kết */}
                           <Card
                             elevation={0}
-                            sx={{ mt: 3, p: 2, borderRadius: 2, backgroundColor: "#f9fafb" }}
+                            sx={{
+                              mt: 3,
+                              p: 2,
+                              borderRadius: 2,
+                              backgroundColor: "#f9fafb",
+                            }}
                           >
                             <Stack spacing={1.5}>
-                              <Box display="flex" justifyContent="space-between">
-                                <Typography variant="body2" color="text.secondary">
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   Tổng số tiền quyên góp:
                                 </Typography>
-                                <Typography variant="subtitle1" fontWeight={700} color="primary">
+                                <Typography
+                                  variant="subtitle1"
+                                  fontWeight={700}
+                                  color="primary"
+                                >
                                   {campaign?.totalEnd?.toLocaleString()} đ
                                 </Typography>
                               </Box>
 
-                              <Box display="flex" justifyContent="space-between">
-                                <Typography variant="body2" color="text.secondary">
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   Đã chi tiêu:
                                 </Typography>
-                                <Typography variant="subtitle1" fontWeight={700} color="error">
-                                  {(campaign?.totalEnd - (campaign.currentAmount ?? 0))?.toLocaleString()} đ
+                                <Typography
+                                  variant="subtitle1"
+                                  fontWeight={700}
+                                  color="error"
+                                >
+                                  {(
+                                    campaign?.totalEnd -
+                                    (campaign.currentAmount ?? 0)
+                                  )?.toLocaleString()}{" "}
+                                  đ
                                 </Typography>
                               </Box>
                             </Stack>
@@ -434,7 +475,9 @@ const DonationDetail: React.FC = () => {
                           type="number"
                           label="Số tiền muốn ủng hộ"
                           value={donationAmount}
-                          onChange={(e) => setDonationAmount(Number(e.target.value))}
+                          onChange={(e) =>
+                            setDonationAmount(Number(e.target.value))
+                          }
                           InputProps={{
                             endAdornment: <Typography ml={1}>VNĐ</Typography>,
                           }}
@@ -448,7 +491,12 @@ const DonationDetail: React.FC = () => {
                           Ủng hộ ngay
                         </Button>
 
-                        <Typography variant="body2" fontWeight={600} mt={2} mb={1}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          mt={2}
+                          mb={1}
+                        >
                           Chọn nhanh số tiền
                         </Typography>
                         <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -465,7 +513,6 @@ const DonationDetail: React.FC = () => {
                       </Box>
                     </Box>
                   )}
-
                 </CardContent>
               </Card>
             </Box>

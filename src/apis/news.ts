@@ -27,7 +27,6 @@ export interface UpdateNewsData {
 
 const getAuthHeaders = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  console.log("getAuthHeaders - user:", user);
   return {
     Authorization: `Bearer ${user.token}`,
   };

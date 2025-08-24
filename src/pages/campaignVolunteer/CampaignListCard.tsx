@@ -103,8 +103,6 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
   };
 
   const findNearestPhase = () => {
-    console.log("Danh sách giai đoạn:", campaign.phases);
-
     if (!campaign.phases || campaign.phases.length === 0) {
       console.warn("Không có giai đoạn nào cho chiến dịch:", campaign.name);
       return null;
@@ -122,16 +120,12 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
     });
 
     if (activePhase) {
-      console.log("Giai đoạn đang hoạt động:", activePhase);
       return activePhase;
     }
 
     // Nếu không có giai đoạn đang hoạt động, tìm giai đoạn có startDate gần nhất
     campaign.phases.forEach((phase) => {
       const phaseStartDate = new Date(phase.startDate);
-      console.log(
-        `Giai đoạn: ${phase.name}, Ngày bắt đầu: ${phase.startDate}, Parsed Date: ${phaseStartDate}`
-      );
       if (isNaN(phaseStartDate.getTime())) {
         console.warn(`Ngày bắt đầu không hợp lệ cho giai đoạn: ${phase.name}`);
         return;
@@ -147,7 +141,6 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
   };
 
   const progress = calculateProgress();
-  console.log("Dữ liệu campaign.phases trước khi tìm giai đoạn gần nhất:", campaign.phases);
   const nearestPhase = findNearestPhase();
 
   return (
@@ -209,7 +202,9 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
         </Box>
 
         <Box display="flex" alignItems="center" mb={2}>
-          <CalendarToday sx={{ fontSize: 16, mr: 1, color: "text.secondary" }} />
+          <CalendarToday
+            sx={{ fontSize: 16, mr: 1, color: "text.secondary" }}
+          />
           <Typography variant="body2" color="text.secondary">
             {formatDate(campaign.startDate)} - {formatDate(campaign.endDate)}
           </Typography>
@@ -246,14 +241,12 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
                     variant="outlined"
                     sx={{
                       fontWeight: 500,
-                       fontSize: "1.0rem",
+                      fontSize: "1.0rem",
                       "&:hover": {
-                        backgroundColor: (theme) =>
-                         theme.palette.primary.light,
+                        backgroundColor: (theme) => theme.palette.primary.light,
                       },
                     }}
                   />
-                 
                 </Box>
               ) : (
                 <Typography variant="body2" color="text.secondary">

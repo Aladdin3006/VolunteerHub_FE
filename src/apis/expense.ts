@@ -36,10 +36,6 @@ export const createExpenseApi = async (
   data.images.forEach((image) => {
     formData.append("images", image);
   });
-  //    console.log("📦 FormData gửi đi:");
-  //   for (let [key, value] of formData.entries()) {
-  //     console.log(`${key}:`, value);
-  //   }
 
   const response = await axios.post(`${BASE_URL}/expense`, formData, {
     headers: {
@@ -73,7 +69,6 @@ export const fetchExpensesByCampaignId1 = async (
   const response = await axios.get(
     `${BASE_URL}/expense/campaign/${campaignId}`
   );
-  console.log("API response:", response.data);
   return response.data.data; // ✅ lấy đúng mảng
 };
 

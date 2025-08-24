@@ -112,7 +112,6 @@ export const UpdatePhasesDialog = forwardRef<IUpdatePhasesDialogRef, IProps>(
       },
       validationSchema: formDataSchema,
       onSubmit: async (values, { setSubmitting }) => {
-        console.log(values);
         onSave(values.phases);
         setSubmitting(false);
         close();

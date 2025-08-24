@@ -92,7 +92,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          console.log("Stored user data:", parsedUser);
           const userData = createProfileFromLoginData(parsedUser);
           setProfileData(userData);
           setTempData(userData);
@@ -136,9 +135,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    console.log("File selected:", file);
-    console.log("Profile ID:", profileData.id);
-    console.log("Token:", token);
 
     if (!file) {
       console.log("No file selected");
@@ -190,8 +186,6 @@ const Profile: React.FC<ProfileProps> = ({ loginData }) => {
           user.avatar = newAvatarUrl;
           localStorage.setItem("user", JSON.stringify(user));
         }
-
-        console.log("Avatar updated successfully");
         alert("Avatar updated successfully!");
       } else {
         throw new Error("No avatar URL returned from server");

@@ -121,11 +121,6 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
 
   const hasReviewed = (revieweeId: string) => {
     if (!reviewProps?.peerReviews || !userId) {
-      console.log("Debug: No peer reviews or userId", {
-        peerReviews: reviewProps?.peerReviews,
-        userId,
-        reviewProps: reviewProps,
-      });
       return false;
     }
 

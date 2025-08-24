@@ -1,9 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import getCampaignDetail, { CampaignDetailResponse } from "../../apis/campaign";
-import { UpdateDonationDialog, IUpdateDonationDialogRef } from "../../components/staff/UpdateDonationDialog";
-import { ExpenseDialog, IExpenseDialogRef } from "../../components/staff/ExpenseDialog";
-import { ExpenseListDialog, IExpenseListDialogRef } from "@/components/staff/ExpenseListDialog";
+import {
+  UpdateDonationDialog,
+  IUpdateDonationDialogRef,
+} from "../../components/staff/UpdateDonationDialog";
+import {
+  ExpenseDialog,
+  IExpenseDialogRef,
+} from "../../components/staff/ExpenseDialog";
+import {
+  ExpenseListDialog,
+  IExpenseListDialogRef,
+} from "@/components/staff/ExpenseListDialog";
 import {
   Box,
   Typography,
@@ -27,7 +36,8 @@ import {
 const CampaignDonationView: React.FC = () => {
   const { campaignId } = useParams();
   const navigate = useNavigate();
-  const [campaignDetail, setCampaignDetail] = useState<CampaignDetailResponse | null>(null);
+  const [campaignDetail, setCampaignDetail] =
+    useState<CampaignDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const updateDialogRef = useRef<IUpdateDonationDialogRef | null>(null);
@@ -50,8 +60,7 @@ const CampaignDonationView: React.FC = () => {
   }, [campaignId]);
 
   const handleCreateExpenseClick = () => {
-    console.log("Button clicked, status:", campaignDetail?.campaign?.status);
-    if (campaignDetail?.campaign?.status !== 'completed') {
+    if (campaignDetail?.campaign?.status !== "completed") {
       setSnackbarOpen(true);
       return;
     }
@@ -76,7 +85,12 @@ const CampaignDonationView: React.FC = () => {
         <Typography variant="h6" color="textSecondary">
           Campaign not found
         </Typography>
-        <Button variant="contained" onClick={() => navigate("/staff/donations")}>Back</Button>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/staff/donations")}
+        >
+          Back
+        </Button>
       </Box>
     );
   }
@@ -133,8 +147,14 @@ const CampaignDonationView: React.FC = () => {
         }}
       >
         {/* Left Column */}
-        <Box className="campaign-column left-column" sx={{ flex: 1, minWidth: 280 }}>
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}>
+        <Box
+          className="campaign-column left-column"
+          sx={{ flex: 1, minWidth: 280 }}
+        >
+          <Box
+            className="campaign-card"
+            sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
               <InfoIcon sx={{ mr: 1, color: "primary.main" }} />
               <Typography variant="h6" fontWeight="bold" color="primary">
@@ -146,8 +166,16 @@ const CampaignDonationView: React.FC = () => {
             </Typography>
           </Box>
 
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
+          <Box
+            className="campaign-card"
+            sx={{ background: "#fff", p: 3, borderRadius: 2 }}
+          >
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              color="primary"
+              gutterBottom
+            >
               Thông tin chi tiết
             </Typography>
             <List dense>
@@ -155,7 +183,9 @@ const CampaignDonationView: React.FC = () => {
                 <CalendarTodayIcon sx={{ mr: 2, color: "primary.main" }} />
                 <ListItemText
                   primary="Thời gian"
-                  secondary={`${new Date(campaign.createdAt).toLocaleDateString()} - ${new Date(
+                  secondary={`${new Date(
+                    campaign.createdAt
+                  ).toLocaleDateString()} - ${new Date(
                     campaign.updatedAt
                   ).toLocaleDateString()}`}
                 />
@@ -179,9 +209,20 @@ const CampaignDonationView: React.FC = () => {
         </Box>
 
         {/* Middle Column - Recent Donations */}
-        <Box className="campaign-column middle-column" sx={{ flex: 2, minWidth: 320 }}>
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
+        <Box
+          className="campaign-column middle-column"
+          sx={{ flex: 2, minWidth: 320 }}
+        >
+          <Box
+            className="campaign-card"
+            sx={{ background: "#fff", p: 3, borderRadius: 2 }}
+          >
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              color="primary"
+              gutterBottom
+            >
               Gần đây quyên góp
             </Typography>
             {campaignDetail.transactions.length === 0 ? (
@@ -190,8 +231,8 @@ const CampaignDonationView: React.FC = () => {
               campaignDetail.transactions.map((tx) => (
                 <Box key={tx._id} sx={{ mb: 2 }}>
                   <Typography>
-                    <strong>{tx.anonymous ? "Ẩn danh" : tx.donorName}</strong> quyên góp{" "}
-                    {tx.amount.toLocaleString()} VNĐ
+                    <strong>{tx.anonymous ? "Ẩn danh" : tx.donorName}</strong>{" "}
+                    quyên góp {tx.amount.toLocaleString()} VNĐ
                   </Typography>
                   {tx.message && (
                     <Typography variant="caption">"{tx.message}"</Typography>
@@ -207,10 +248,21 @@ const CampaignDonationView: React.FC = () => {
         </Box>
 
         {/* Right Column */}
-        <Box className="campaign-column right-column" sx={{ flex: 1, minWidth: 280 }}>
+        <Box
+          className="campaign-column right-column"
+          sx={{ flex: 1, minWidth: 280 }}
+        >
           {/* Hành động */}
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}>
-            <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
+          <Box
+            className="campaign-card"
+            sx={{ background: "#fff", p: 3, borderRadius: 2, mb: 3 }}
+          >
+            <Typography
+              variant="h6"
+              fontWeight="bold"
+              color="primary"
+              gutterBottom
+            >
               Hành động
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -220,7 +272,11 @@ const CampaignDonationView: React.FC = () => {
                 onClick={() => {
                   updateDialogRef.current?.open(campaign._id);
                 }}
-                sx={{ textTransform: "none", fontWeight: "bold", borderRadius: 2 }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  borderRadius: 2,
+                }}
               >
                 Cập nhật chiến dịch
               </Button>
@@ -228,14 +284,16 @@ const CampaignDonationView: React.FC = () => {
                 variant="contained"
                 fullWidth
                 onClick={handleCreateExpenseClick}
-                disabled={campaign.status !== 'completed'}
+                disabled={campaign.status !== "completed"}
                 sx={{
                   textTransform: "none",
                   fontWeight: "bold",
                   borderRadius: 2,
-                  backgroundColor: campaign.status === 'completed' ? "#6c63ff" : undefined,
+                  backgroundColor:
+                    campaign.status === "completed" ? "#6c63ff" : undefined,
                   "&:hover": {
-                    backgroundColor: campaign.status === 'completed' ? "#574fd6" : undefined,
+                    backgroundColor:
+                      campaign.status === "completed" ? "#574fd6" : undefined,
                   },
                 }}
               >
@@ -261,7 +319,10 @@ const CampaignDonationView: React.FC = () => {
           </Box>
 
           {/* Thumbnail */}
-          <Box className="campaign-card" sx={{ background: "#fff", p: 3, borderRadius: 2 }}>
+          <Box
+            className="campaign-card"
+            sx={{ background: "#fff", p: 3, borderRadius: 2 }}
+          >
             <img
               src={campaign.thumbnail || "https://via.placeholder.com/600x400"}
               alt="Thumbnail"
@@ -276,7 +337,9 @@ const CampaignDonationView: React.FC = () => {
         afterSubmit={() => {
           if (campaignId) {
             setLoading(true);
-            getCampaignDetail(campaignId).then(setCampaignDetail).finally(() => setLoading(false));
+            getCampaignDetail(campaignId)
+              .then(setCampaignDetail)
+              .finally(() => setLoading(false));
           }
         }}
       />
@@ -286,7 +349,9 @@ const CampaignDonationView: React.FC = () => {
         afterSubmit={() => {
           if (campaignId) {
             setLoading(true);
-            getCampaignDetail(campaignId).then(setCampaignDetail).finally(() => setLoading(false));
+            getCampaignDetail(campaignId)
+              .then(setCampaignDetail)
+              .finally(() => setLoading(false));
           }
         }}
       />

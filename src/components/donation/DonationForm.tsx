@@ -70,36 +70,29 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
   const imageViewerDialogRef = useRef<IImageViewerDialogRef | null>(null);
 
   const submit = async (values: IDonationFormData) => {
-  if (!onSubmitForm) return;
+    if (!onSubmitForm) return;
 
-  const payload: IDonationDataUpload = {
-    thumbnail: values.thumbnail.file ?? values.thumbnail.url,
-    images: values.images.map((g) => g.file ?? g.url),
-    description: values.description,
-    title: values.title,
-    goalAmount: values.goalAmount,
-    tags: values.tags.map((cate) => cate._id),
+    const payload: IDonationDataUpload = {
+      thumbnail: values.thumbnail.file ?? values.thumbnail.url,
+      images: values.images.map((g) => g.file ?? g.url),
+      description: values.description,
+      title: values.title,
+      goalAmount: values.goalAmount,
+      tags: values.tags.map((cate) => cate._id),
+    };
+
+    await onSubmitForm(payload);
   };
 
-  console.log("📤 Payload gửi đi:", payload); // ⚠️ QUAN TRỌNG
-
-  await onSubmitForm(payload);
-};
-
-
-
- const formik = useFormik<IDonationFormData>({
-  
-  initialValues: defaultData || initialValue,
-  enableReinitialize: true, // ← cần thêm
-  validationSchema,
-  onSubmit: async (values, { setSubmitting }) => {
-    await submit(values);
-    setSubmitting(false);
-  },
-});
-
-
+  const formik = useFormik<IDonationFormData>({
+    initialValues: defaultData || initialValue,
+    enableReinitialize: true, // ← cần thêm
+    validationSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      await submit(values);
+      setSubmitting(false);
+    },
+  });
 
   const handleThumbnailImageChange = (
     e: React.ChangeEvent<HTMLInputElement>

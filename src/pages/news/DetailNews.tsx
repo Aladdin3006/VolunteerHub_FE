@@ -81,7 +81,6 @@ const DetailNews: React.FC = () => {
       if (!id) return;
       try {
         const data = await commentsService.getComments("NewsPost", id);
-        console.log("Fetched comments:", data);
         setComments(data);
       } catch (error) {
         console.error("Failed to fetch comments:", error);
@@ -190,10 +189,6 @@ const DetailNews: React.FC = () => {
     parentName: string | null = null
   ) => {
     const isChild = level > 0;
-    console.log(
-      `Rendering comment ${comment.id} at level ${level}, parentName: ${parentName}`,
-      comment
-    );
     return (
       <Box
         key={comment.id}
@@ -454,12 +449,6 @@ const DetailNews: React.FC = () => {
 
   const handleReportSubmit = () => {
     if (currentComment) {
-      console.log(
-        "Reported comment:",
-        currentComment.id,
-        "Reason:",
-        reportReason
-      );
       setOpenSnackbar(true);
       setReportDialogOpen(false);
       setReportReason("");
