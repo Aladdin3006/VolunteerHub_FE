@@ -22,6 +22,7 @@ import {
   MenuItem,
   Rating,
   Paper,
+  CircularProgress,
 } from "@mui/material";
 import { Task } from "../../apis/staff";
 
@@ -56,6 +57,7 @@ interface TaskCRUDModalProps {
   task?: Task | null;
   isReviewMode?: boolean;
   selectedUserId?: string | null;
+  loading?: boolean;
 }
 
 const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
@@ -67,6 +69,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
   task,
   isReviewMode = false,
   selectedUserId,
+  loading,
 }) => {
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
@@ -335,7 +338,8 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                     {volunteers.map((volunteer) => {
                       const deptList = departments[volunteer._id] || [];
                       const deptNames =
-                        deptList.map((dept) => dept.name).join(", ") || "N/A";
+                        deptList.map((dept) => dept.name).join(", ") ||
+                        "Chưa có";
                       return (
                         <TableRow
                           key={volunteer._id}
@@ -506,7 +510,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                             reviews.reduce((sum, pr) => sum + pr.score, 0) /
                             reviews.length
                           ).toFixed(1)
-                        : "N/A";
+                        : "Chưa có";
                     return (
                       <Box key={au.userId._id} sx={{ mb: 2 }}>
                         <Typography variant="subtitle2" fontWeight="bold">
@@ -592,7 +596,7 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
                                           ? new Date(
                                               pr.reviewedAt
                                             ).toLocaleString()
-                                          : "N/A"}
+                                          : "Chưa có"}
                                       </TableCell>
                                     </TableRow>
                                   ))}
@@ -669,20 +673,25 @@ const TaskCRUDModal: React.FC<TaskCRUDModalProps> = ({
         >
           Cancel
         </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          size="large"
-          sx={{
-            borderRadius: 1,
-            px: 3,
-            textTransform: "none",
-            bgcolor: "primary.main",
-            "&:hover": { bgcolor: "primary.dark" },
-          }}
-        >
-          {isReviewMode ? "Submit Review" : task ? "Update" : "Create"}
-        </Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            size="large"
+            disabled={loading} // Disable button during loading
+            sx={{
+              borderRadius: 1,
+              px: 3,
+              textTransform: "none",
+              bgcolor: "primary.main",
+              "&:hover": { bgcolor: "primary.dark" },
+            }}
+          >
+            {isReviewMode ? "Submit Review" : task ? "Update" : "Create"}
+          </Button>
+          {loading && <CircularProgress size={24} />}{" "}
+          {/* Add loading indicator */}
+        </Box>
       </DialogActions>
     </Dialog>
   );

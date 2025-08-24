@@ -209,10 +209,12 @@ const ManageCertificate: React.FC = () => {
               {certificates.map((cert, index) => (
                 <TableRow key={cert.id}>
                   <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                  <TableCell>{cert.campaignId?.name || "N/A"}</TableCell>
-                  <TableCell>{cert.volunteerId?.fullName || "N/A"}</TableCell>
-                  <TableCell>{cert.volunteerId?.email || "N/A"}</TableCell>
-                  <TableCell>{cert.verifyCode || "N/A"}</TableCell>
+                  <TableCell>{cert.campaignId?.name || "Chưa có"}</TableCell>
+                  <TableCell>
+                    {cert.volunteerId?.fullName || "Chưa có"}
+                  </TableCell>
+                  <TableCell>{cert.volunteerId?.email || "Chưa có"}</TableCell>
+                  <TableCell>{cert.verifyCode || "Chưa có"}</TableCell>
                   <TableCell>
                     <IconButton
                       component="a"

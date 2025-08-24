@@ -19,6 +19,10 @@ import {
   TableCell,
   TableContainer,
   TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -70,6 +74,9 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
     "success"
   );
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [taskLoading, setTaskLoading] = useState(false);
   const [departments, setDepartments] = useState<Record<string, Department[]>>(
     {}
   );
@@ -129,16 +136,10 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
           const tasksData = await getTasksByPhaseDayId(selectedPhaseDay._id);
           setTasks(tasksData);
 
-          // Extract unique volunteers from assignedUsers.userId
-          const uniqueVolunteers = Array.from(
-            new Map(
-              tasksData
-                .flatMap((task) => task.assignedUsers.map((au) => au.userId))
-                .map((volunteer) => [volunteer._id, volunteer])
-            ).values()
-          );
-          setVolunteers(uniqueVolunteers);
-          console.log("Unique volunteers:", uniqueVolunteers);
+          // Use campaignVolunteers directly instead of mapping
+          if (campaignVolunteers.length > 0) {
+            setVolunteers(campaignVolunteers.map((v) => v.user));
+          }
         } catch (error) {
           console.error("Error fetching data:", error);
         } finally {
@@ -147,8 +148,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       }
     };
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPhaseDay]);
+  }, [selectedPhaseDay, campaignVolunteers]);
 
   const handleCreateTask = async (taskData: {
     title: string;
@@ -164,6 +164,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
 
     try {
+      setTaskLoading(true);
       const newTask = await createTask(selectedPhaseDay._id, {
         title: taskData.title,
         description: taskData.description,
@@ -172,8 +173,15 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         phaseDayDate: selectedPhaseDay.date,
       });
 
+      // Refresh both tasks and volunteers
       const updatedTasks = await getTasksByPhaseDayId(selectedPhaseDay._id);
       setTasks(updatedTasks);
+
+      // Refresh campaign volunteers to ensure data is up to date
+      const refreshedVolunteers = await getCampaignVolunteers(campaignId);
+      setCampaignVolunteers(refreshedVolunteers);
+      setVolunteers(refreshedVolunteers.map((v) => v.user));
+
       setTaskModalOpen(false);
       setSnackbarMessage("Task created successfully!");
       setSnackbarSeverity("success");
@@ -183,6 +191,8 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       setSnackbarMessage("Failed to create task");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
+    } finally {
+      setTaskLoading(false);
     }
   };
 
@@ -196,6 +206,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
     }
   ) => {
     try {
+      setTaskLoading(true);
       const updatedTask = await updateTask(taskId, {
         title: taskData.title,
         description: taskData.description,
@@ -217,6 +228,8 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
       setSnackbarMessage("Failed to update task");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
+    } finally {
+      setTaskLoading(false); // Set loading to false
     }
   };
 
@@ -433,6 +446,38 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         >
           Create Task
         </Button>
+        <Dialog
+          open={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Xác nhận xóa</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Bạn chắc chắn muốn xóa công việc này chứ? Hành động này không thể
+              hoàn tác.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteConfirmOpen(false)} color="primary">
+              Hủy
+            </Button>
+            <Button
+              onClick={() => {
+                if (taskToDelete) {
+                  handleDeleteTask(taskToDelete);
+                  setDeleteConfirmOpen(false);
+                  setTaskToDelete(null);
+                }
+              }}
+              color="error"
+              variant="contained"
+            >
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
       {loading ? (
         <CircularProgress />
@@ -454,11 +499,14 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
               setSelectedTask(task);
               setTaskModalOpen(true);
             }}
-            onDelete={(taskId) => handleDeleteTask(taskId)}
+            onDelete={(taskId) => {
+              setTaskToDelete(taskId);
+              setDeleteConfirmOpen(true);
+            }}
           />
           {(!tasks || tasks.length === 0) && (
             <Alert severity="info" sx={{ mt: 2 }}>
-              No tasks found for this phase day.
+              Không có nhiệm vụ nào cho ngày giai đoạn này.
             </Alert>
           )}
         </Paper>
@@ -496,6 +544,7 @@ const ManageTask: React.FC<ManageTaskProps> = ({ campaignId }) => {
         }))}
         departments={departments}
         task={selectedTask}
+        loading={taskLoading}
       />
 
       <TaskCRUDModal
@@ -564,7 +613,7 @@ const TaskList: React.FC<TaskListProps> = ({
         variant="body1"
         sx={{ p: 2, textAlign: "center", color: "#666" }}
       >
-        No tasks found
+        Không có nhiệm vụ nào
       </Typography>
     );
   }
@@ -604,8 +653,12 @@ const TaskList: React.FC<TaskListProps> = ({
                         component="img"
                         src={
                           volunteers.find((v) => v._id === task.leaderId)
-                            ?.avatar || undefined
+                            ?.avatar || "/default-avatar.jpg" // Add fallback
                         }
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/default-avatar.jpg";
+                        }}
                         sx={{
                           width: 24,
                           height: 24,
@@ -712,7 +765,11 @@ const TaskList: React.FC<TaskListProps> = ({
                             >
                               <Box
                                 component="img"
-                                src={volunteer?.avatar || undefined}
+                                src={volunteer?.avatar || "/default-avatar.jpg"}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "/default-avatar.jpg";
+                                }}
                                 sx={{
                                   width: 24,
                                   height: 24,

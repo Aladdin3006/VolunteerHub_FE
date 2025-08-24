@@ -35,13 +35,16 @@ interface DepartmentManagerProps {
   campaignId: string;
 }
 
-const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => {
+const DepartmentManager: React.FC<DepartmentManagerProps> = ({
+  campaignId,
+}) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
-  
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,7 +75,9 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
     setEditingDepartment(null);
   };
 
-  const handleCreateDepartment = async (departmentData: CreateDepartmentPayload) => {
+  const handleCreateDepartment = async (
+    departmentData: CreateDepartmentPayload
+  ) => {
     try {
       const newDepartment = await createDepartment(departmentData);
       setDepartments([...departments, newDepartment]);
@@ -82,11 +87,20 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
     }
   };
 
-  const handleUpdateDepartment = async (departmentData: Partial<Department>) => {
+  const handleUpdateDepartment = async (
+    departmentData: Partial<Department>
+  ) => {
     if (!editingDepartment) return;
     try {
-      const updatedDepartment = await updateDepartment(editingDepartment._id, departmentData);
-      setDepartments(departments.map((dept) => (dept._id === updatedDepartment._id ? updatedDepartment : dept)));
+      const updatedDepartment = await updateDepartment(
+        editingDepartment._id,
+        departmentData
+      );
+      setDepartments(
+        departments.map((dept) =>
+          dept._id === updatedDepartment._id ? updatedDepartment : dept
+        )
+      );
       closeDepartmentDialog();
     } catch (error) {
       console.error("Error updating department:", error);
@@ -104,11 +118,19 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
     }
   };
 
-  const handleVolunteerAccept = async (departmentId: string, userId: string) => {
+  const handleVolunteerAccept = async (
+    departmentId: string,
+    userId: string
+  ) => {
     try {
-      const updatedDepartment = await addMemberToDepartment(departmentId, userId);
+      const updatedDepartment = await addMemberToDepartment(
+        departmentId,
+        userId
+      );
       setDepartments((prev) =>
-        prev.map((dept) => (dept._id === updatedDepartment._id ? updatedDepartment : dept))
+        prev.map((dept) =>
+          dept._id === updatedDepartment._id ? updatedDepartment : dept
+        )
       );
       setVolunteers((prev) =>
         prev.map((vol) =>
@@ -120,11 +142,19 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
     }
   };
 
-  const handleVolunteerRemove = async (departmentId: string, userId: string) => {
+  const handleVolunteerRemove = async (
+    departmentId: string,
+    userId: string
+  ) => {
     try {
-      const updatedDepartment = await removeMemberFromDepartment(departmentId, userId);
+      const updatedDepartment = await removeMemberFromDepartment(
+        departmentId,
+        userId
+      );
       setDepartments((prev) =>
-        prev.map((dept) => (dept._id === updatedDepartment._id ? updatedDepartment : dept))
+        prev.map((dept) =>
+          dept._id === updatedDepartment._id ? updatedDepartment : dept
+        )
       );
       setVolunteers((prev) =>
         prev.map((vol) =>
@@ -138,7 +168,14 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
         <Typography variant="h6">Department Management</Typography>
         <Box>
           <Button
@@ -156,19 +193,36 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
         <Paper sx={{ p: 3 }}>
           {departments.map((department) => (
             <Paper key={department._id} sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <Box>
-                  <Typography variant="h6" fontWeight="bold">{department.name}</Typography>
-                  <Typography variant="body2" color="textSecondary">{department.description}</Typography>
+                  <Typography variant="h6" fontWeight="bold">
+                    {department.name}
+                  </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Members: {department.memberIds.length}/{department.maxMembers}
+                    {department.description}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Members: {department.memberIds.length}/
+                    {department.maxMembers}
                   </Typography>
                 </Box>
                 <Box>
-                  <IconButton onClick={() => openDepartmentDialog(department)} sx={{ mr: 1 }}>
+                  <IconButton
+                    onClick={() => openDepartmentDialog(department)}
+                    sx={{ mr: 1 }}
+                  >
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDeleteDepartment(department._id)} color="error">
+                  <IconButton
+                    onClick={() => handleDeleteDepartment(department._id)}
+                    color="error"
+                  >
                     <DeleteIcon />
                   </IconButton>
                 </Box>
@@ -176,7 +230,9 @@ const DepartmentManager: React.FC<DepartmentManagerProps> = ({ campaignId }) => 
             </Paper>
           ))}
           {departments.length === 0 && (
-            <Alert severity="info">No departments created yet. Click "Create Department" to get started.</Alert>
+            <Alert severity="info">
+              Hiện chưa có phòng ban nào. Nhấn "Create Department" để bắt đầu.
+            </Alert>
           )}
         </Paper>
       )}

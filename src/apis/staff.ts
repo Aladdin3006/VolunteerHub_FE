@@ -566,6 +566,7 @@ export const getCampaignVolunteers = async (
         fullName: vol.user.fullName,
         email: vol.user.email,
         phone: vol.user.phone,
+        avatar: vol.user.avatar,
       },
       status: vol.status,
       departmentId: vol.departmentId,
