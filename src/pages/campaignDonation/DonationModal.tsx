@@ -53,23 +53,32 @@ const DonationModal: React.FC<DonationModalProps> = ({
     }
   }, [isOpen, presetAmount]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePayment = async (
+    provider: "zalopay" | "payos",
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
-
     try {
-      const token = authService.getToken(); // 👈 Lấy access token từ authService
-
+      const token = authService.getToken();
       const payload = {
         donationCampaignId: campaignId,
         guestName: formData.fullName,
         amount: Number(formData.amount),
         message: formData.message,
         anonymous: formData.anonymous,
-        userId: user?._id || null, // 👈 vẫn backup nếu không có token
+        userId: user?._id || null,
       };
 
       const API_BASE = import.meta.env.VITE_API_BASE_URL;
-      const res = await fetch(`${API_BASE}/payments/zalopay_payment_url`, {
+
+      let endpoint = "";
+      if (provider === "zalopay") {
+        endpoint = `${API_BASE}/payments/zalopay_payment_url`;
+      } else if (provider === "payos") {
+        endpoint = `${API_BASE}/payments/create`;
+      }
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,14 +89,16 @@ const DonationModal: React.FC<DonationModalProps> = ({
 
       const result = await res.json();
 
-      if (result?.data?.order_url) {
+      if (provider === "zalopay" && result?.data?.order_url) {
         window.location.href = result.data.order_url;
+      } else if (provider === "payos" && result?.data?.checkoutUrl) {
+        window.location.href = result.data.checkoutUrl;
       } else {
-        alert("Không thể khởi tạo thanh toán.");
+        alert(`Không thể khởi tạo thanh toán ${provider}.`);
       }
     } catch (err) {
-      console.error("Lỗi gửi yêu cầu:", err);
-      alert("Có lỗi xảy ra khi gửi yêu cầu.");
+      console.error(`Lỗi gửi yêu cầu ${provider}:`, err);
+      alert(`Có lỗi xảy ra khi gửi yêu cầu ${provider}.`);
     }
   };
 
@@ -99,7 +110,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
       maxWidth="sm"
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
-      <form onSubmit={handleSubmit}>
+      <form>
         <DialogTitle
           sx={{
             fontWeight: 600,
@@ -199,7 +210,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
           }}
         >
           <Button
-            type="submit"
+            onClick={(e) => handlePayment("zalopay", e)}
             fullWidth
             variant="contained"
             sx={{
@@ -213,11 +224,29 @@ const DonationModal: React.FC<DonationModalProps> = ({
               borderRadius: "8px",
             }}
           >
-            Ủng hộ ngay
+            Ủng hộ qua ZaloPay
+          </Button>
+
+          <Button
+            onClick={(e) => handlePayment("payos", e)}
+            fullWidth
+            variant="contained"
+            sx={{
+              backgroundColor: "#0ea5e9",
+              fontWeight: 600,
+              fontSize: "16px",
+              py: 1.2,
+              "&:hover": {
+                backgroundColor: "#0284c7",
+              },
+              borderRadius: "8px",
+            }}
+          >
+            Ủng hộ qua PayOS
           </Button>
 
           <Typography variant="caption" textAlign="center">
-            Bằng việc nhấp "Ủng hộ ngay", bạn đồng ý với{" "}
+            Bằng việc nhấp "Ủng hộ", bạn đồng ý với{" "}
             <Link href="#" underline="hover">
               điều khoản và điều kiện
             </Link>{" "}
