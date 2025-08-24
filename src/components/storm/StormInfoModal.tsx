@@ -148,10 +148,26 @@ const StormInfoModal: React.FC<StormInfoModalProps> = ({
               {storm.description || "Không có mô tả"}
             </Typography>
           </Box>
-          <Box sx={{ mb: 2 }}>
+          {/* Countdown + Button Windy trên cùng một dòng */}
+          <Box
+            sx={{
+              mb: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <Typography fontWeight="bold" color="error">
               🕒 Dự kiến bão đến trong: {countdown}
             </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              onClick={() => setOpenWindy(true)}
+            >
+              Xem trực tiếp bão
+            </Button>
           </Box>
           <Divider sx={{ my: 1 }} />
           <ReliefPointMapLeaflet
@@ -187,7 +203,7 @@ const StormInfoModal: React.FC<StormInfoModalProps> = ({
       </Dialog>
 
       {/* Emergency button nổi khi modal đóng */}
-      {storm && !open && (
+      {storm && !open && !isControlled && (
         <Box sx={{ zIndex: 1300 }}>
           <EmergencyButton onClick={() => setInternalOpen(true)} />
         </Box>
