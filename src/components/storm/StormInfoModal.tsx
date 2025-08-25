@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Box,
-  Divider,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Typography,
+    Box,
+    Divider,
 } from "@mui/material";
 import { keyframes } from "@emotion/react";
 import { StormAPI, Storm } from "../../apis/storm.api";
@@ -37,179 +37,189 @@ const shakeSlight = keyframes`
 `;
 
 interface StormInfoModalProps {
-  open?: boolean;
-  onClose?: () => void;
+    open?: boolean;
+    onClose?: () => void;
 }
 
 const StormInfoModal: React.FC<StormInfoModalProps> = ({
-  open: propOpen,
-  onClose,
+    open: propOpen,
+    onClose,
 }) => {
-  const [storm, setStorm] = useState<Storm | null>(null);
-  const [internalOpen, setInternalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState<string>("");
-  const [isEmergency, setIsEmergency] = useState(false);
-  const [openWindy, setOpenWindy] = useState(false);
+    const [storm, setStorm] = useState<Storm | null>(null);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [countdown, setCountdown] = useState<string>("");
+    const [isEmergency, setIsEmergency] = useState(false);
+    const [openWindy, setOpenWindy] = useState(false);
 
-  // Determine if component is controlled or uncontrolled
-  const isControlled = propOpen !== undefined;
-  const open = isControlled ? propOpen : internalOpen;
+    // Determine if component is controlled or uncontrolled
+    const isControlled = propOpen !== undefined;
+    const open = isControlled ? propOpen : internalOpen;
 
-  const fetchStorm = async () => {
-    setLoading(true);
-    try {
-      const data = await StormAPI.getActiveStorm();
-      if (data) {
-        setStorm(data);
-        if (!isControlled) {
-          setInternalOpen(true);
+    const fetchStorm = async () => {
+        setLoading(true);
+        try {
+            const data = await StormAPI.getActiveStorm();
+            if (data) {
+                setStorm(data);
+                if (!isControlled) {
+                    setInternalOpen(true);
+                }
+                setIsEmergency(true);
+                setTimeout(() => setIsEmergency(false), 5000);
+            }
+        } catch (err) {
+            console.error("Không thể tải storm", err);
+        } finally {
+            setLoading(false);
         }
-        setIsEmergency(true);
-        setTimeout(() => setIsEmergency(false), 5000);
-      }
-    } catch (err) {
-      console.error("Không thể tải storm", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!storm?.startDate) return;
-    const interval = setInterval(() => {
-      const now = dayjs();
-      const start = dayjs(storm.startDate);
-      const diff = start.diff(now);
-      if (diff <= 0) {
-        setCountdown("⛈️ Bão đã đến!");
-        clearInterval(interval);
-      } else {
-        const d = dayjs.duration(diff);
-        setCountdown(`${d.hours()}h ${d.minutes()}m ${d.seconds()}s`);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [storm?.startDate]);
-
-  useEffect(() => {
-    fetchStorm();
-    socket.on("storm-activated", (data: Storm) => {
-      setStorm(data);
-      if (!isControlled) {
-        setInternalOpen(true);
-      }
-      setIsEmergency(true);
-      setTimeout(() => setIsEmergency(false), 5000);
-    });
-    socket.on("storm-deactivated", () => {
-      setStorm(null);
-      if (!isControlled) {
-        setInternalOpen(false);
-      }
-    });
-    return () => {
-      socket.off("storm-activated");
-      socket.off("storm-deactivated");
     };
-  }, []);
 
-  const handleClose = () => {
-    if (isControlled && onClose) {
-      onClose();
-    } else {
-      setInternalOpen(false);
-    }
-  };
+    useEffect(() => {
+        if (!storm?.startDate) return;
+        const interval = setInterval(() => {
+            const now = dayjs();
+            const start = dayjs(storm.startDate);
+            const diff = start.diff(now);
+            if (diff <= 0) {
+                setCountdown("⛈️ Bão đã đến!");
+                clearInterval(interval);
+            } else {
+                const d = dayjs.duration(diff);
+                setCountdown(`${d.hours()}h ${d.minutes()}m ${d.seconds()}s`);
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [storm?.startDate]);
 
-  if (loading || !storm) return null;
+    useEffect(() => {
+        fetchStorm();
+        socket.on("storm-activated", (data: Storm) => {
+            setStorm(data);
+            if (!isControlled) {
+                setInternalOpen(true);
+            }
+            setIsEmergency(true);
+            setTimeout(() => setIsEmergency(false), 5000);
+        });
+        socket.on("storm-deactivated", () => {
+            setStorm(null);
+            if (!isControlled) {
+                setInternalOpen(false);
+            }
+        });
+        return () => {
+            socket.off("storm-activated");
+            socket.off("storm-deactivated");
+        };
+    }, []);
 
-  return (
-    <>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            ...(isEmergency && {
-              animation: `${pulseEmergency} 2s infinite, ${shakeSlight} 1.5s infinite`,
-              border: "2px solid #f44336",
-              bgcolor: "#fff3f3",
-            }),
-          },
-        }}
-      >
-        <DialogTitle>🔥 {storm.name} — Thông tin khẩn cấp</DialogTitle>
-        <DialogContent>
-          <Box sx={{ mb: 1 }}>
-            <Typography color="text.secondary">
-              {storm.description || "Không có mô tả"}
-            </Typography>
-          </Box>
-          {/* Countdown + Button Windy trên cùng một dòng */}
-          <Box
-            sx={{
-              mb: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Typography fontWeight="bold" color="error">
-              🕒 Dự kiến bão đến trong: {countdown}
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={() => setOpenWindy(true)}
+    const handleClose = () => {
+        if (isControlled && onClose) {
+            onClose();
+        } else {
+            setInternalOpen(false);
+        }
+    };
+
+    if (loading || !storm) return null;
+
+    return (
+        <>
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        ...(isEmergency && {
+                            animation: `${pulseEmergency} 2s infinite, ${shakeSlight} 1.5s infinite`,
+                            border: "2px solid #f44336",
+                            bgcolor: "#fff3f3",
+                        }),
+                    },
+                }}
             >
-              Xem trực tiếp bão
-            </Button>
-          </Box>
-          <Divider sx={{ my: 1 }} />
-          <ReliefPointMapLeaflet
-            stormId={storm._id}
-            centerLocation={storm.centerLocation}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Đóng</Button>
-        </DialogActions>
-      </Dialog>
+                <DialogTitle>🔥 {storm.name} — Thông tin khẩn cấp</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mb: 1 }}>
+                        <Typography color="text.secondary">
+                            {storm.description || "Không có mô tả"}
+                        </Typography>
+                    </Box>
+                    {/* Countdown + Button Windy trên cùng một dòng */}
+                    <Box
+                        sx={{
+                            mb: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        {storm.status === "ended" ? (
+                            <Typography fontWeight="bold" color="error">
+                                🌤️ Cơn bão đã qua, nhưng vẫn còn nhiều khu vực cần hỗ trợ.
+                                Hãy kiểm tra các điểm cứu trợ gần bạn, cung cấp nhu yếu phẩm,
+                                và cập nhật tình hình để giúp mọi người nhanh chóng ổn định.
+                            </Typography>
+                        ) : (
+                            <Typography fontWeight="bold" color="error">
+                                🕒 Dự kiến bão đến trong: {countdown}
+                            </Typography>
+                        )}
 
-      {/* Dialog riêng cho Windy */}
-      <Dialog
-        open={openWindy}
-        onClose={() => setOpenWindy(false)}
-        maxWidth="lg"
-        fullWidth
-      >
-        <DialogTitle>Thông tin cơn bão {storm.name}</DialogTitle>
-        <DialogContent>
-          <iframe
-            width="100%"
-            height="500"
-            src="https://embed.windy.com/embed2.html?lat=16.0471&lon=108.2068&detailLat=16.0471&detailLon=108.2068&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
-            frameBorder="0"
-            title="Windy Live Map"
-          ></iframe>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenWindy(false)}>Đóng</Button>
-        </DialogActions>
-      </Dialog>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                            onClick={() => setOpenWindy(true)}
+                        >
+                            Xem trực tiếp bão
+                        </Button>
+                    </Box>
 
-      {/* Emergency button nổi khi modal đóng */}
-      {storm && !open && !isControlled && (
-        <Box sx={{ zIndex: 1300 }}>
-          <EmergencyButton onClick={() => setInternalOpen(true)} />
-        </Box>
-      )}
-    </>
-  );
+                    <Divider sx={{ my: 1 }} />
+                    <ReliefPointMapLeaflet
+                        stormId={storm._id}
+                        centerLocation={storm.centerLocation}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Đóng</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog riêng cho Windy */}
+            <Dialog
+                open={openWindy}
+                onClose={() => setOpenWindy(false)}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogTitle>Thông tin cơn bão {storm.name}</DialogTitle>
+                <DialogContent>
+                    <iframe
+                        width="100%"
+                        height="500"
+                        src="https://embed.windy.com/embed2.html?lat=16.0471&lon=108.2068&detailLat=16.0471&detailLon=108.2068&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+                        frameBorder="0"
+                        title="Windy Live Map"
+                    ></iframe>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenWindy(false)}>Đóng</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Emergency button nổi khi modal đóng */}
+            {storm && !open && !isControlled && (
+                <Box sx={{ zIndex: 1300 }}>
+                    <EmergencyButton onClick={() => setInternalOpen(true)} />
+                </Box>
+            )}
+        </>
+    );
 };
 
 export default StormInfoModal;

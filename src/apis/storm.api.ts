@@ -88,6 +88,19 @@ export const StormAPI = {
     return res.json();
   },
 
+   async deactivateStormRL(id: string): Promise<Storm> {
+    const res = await fetch(`${API_BASE}/storm/${id}/deactivatestorm`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${getAccessToken() || ""}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) throw new Error("Không thể kết thúc bão");
+    return res.json();
+  },
+
   async activateStorm(id: string): Promise<Storm> {
     const res = await fetch(`${API_BASE}/storm/${id}/activate`, {
       method: "PATCH",
