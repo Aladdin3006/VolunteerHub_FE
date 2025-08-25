@@ -331,16 +331,13 @@ export const getCampaignVolunteerDetail = async (
 /* ---------- API JOIN CAMPAIGN ---------- */
 export const joinCampaign = async (campaignId: string): Promise<string> => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const res = await fetch(
-    `http://localhost:4000/campaigns/${campaignId}/register`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const res = await fetch(`${API_BASE}/campaigns/${campaignId}/register`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${user.token}`,
+      "Content-Type": "application/json",
+    },
+  });
 
   if (!res.ok) {
     // backend trả { error: { message } }

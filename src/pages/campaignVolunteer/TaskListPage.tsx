@@ -177,6 +177,14 @@ const TaskListPage: React.FC = () => {
     );
   };
 
+  const isPast = (dateStr: string) => {
+    const today = new Date();
+    const date = new Date(dateStr);
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("vi-VN", {
       weekday: "long",
@@ -760,6 +768,8 @@ const TaskListPage: React.FC = () => {
                                 ? "✅ Đã điểm danh"
                                 : isToday(day.date)
                                 ? "Điểm danh"
+                                : isPast(day.date)
+                                ? "Đã diễn ra"
                                 : "Chưa diễn ra"}
                             </Button>
                             {expandedPhaseDay === day._id ? (
@@ -954,23 +964,55 @@ const TaskListPage: React.FC = () => {
                                           />
 
                                           <Stack direction="row" spacing={2}>
-                                            {task.leaderId === userId && (
+                                            {day.checkinStatus?.hasCheckedIn &&
+                                              task.leaderId === userId && (
+                                                <Button
+                                                  variant={
+                                                    task.status ===
+                                                    "in_progress"
+                                                      ? "contained"
+                                                      : "outlined"
+                                                  }
+                                                  color="success"
+                                                  onClick={() =>
+                                                    openModalWithTaskId(
+                                                      task._id,
+                                                      "complete"
+                                                    )
+                                                  }
+                                                  disabled={
+                                                    task.status ===
+                                                      "submitted" ||
+                                                    task.status === "completed"
+                                                  }
+                                                  sx={{
+                                                    borderRadius: 3,
+                                                    textTransform: "none",
+                                                    fontWeight: 600,
+                                                    px: 3,
+                                                  }}
+                                                  className={
+                                                    task.status ===
+                                                    "in_progress"
+                                                      ? "bg-green-500 text-white hover:bg-green-600"
+                                                      : "border-gray-300 text-gray-500"
+                                                  }
+                                                >
+                                                  {task.status === "in_progress"
+                                                    ? "Nộp báo cáo"
+                                                    : "Đã nộp"}
+                                                </Button>
+                                              )}
+                                            {day.checkinStatus
+                                              ?.hasCheckedIn && (
                                               <Button
-                                                variant={
-                                                  task.status === "in_progress"
-                                                    ? "contained"
-                                                    : "outlined"
-                                                }
-                                                color="success"
+                                                variant="outlined"
+                                                color="error"
                                                 onClick={() =>
                                                   openModalWithTaskId(
                                                     task._id,
-                                                    "complete"
+                                                    "report"
                                                   )
-                                                }
-                                                disabled={
-                                                  task.status === "submitted" ||
-                                                  task.status === "completed"
                                                 }
                                                 sx={{
                                                   borderRadius: 3,
@@ -978,55 +1020,33 @@ const TaskListPage: React.FC = () => {
                                                   fontWeight: 600,
                                                   px: 3,
                                                 }}
-                                                className={
-                                                  task.status === "in_progress"
-                                                    ? "bg-green-500 text-white hover:bg-green-600"
-                                                    : "border-gray-300 text-gray-500"
-                                                }
+                                                className="border-red-500 text-red-500 hover:bg-red-50"
                                               >
-                                                {task.status === "in_progress"
-                                                  ? "Nộp báo cáo"
-                                                  : "Đã nộp"}
+                                                Sự cố
                                               </Button>
                                             )}
-                                            <Button
-                                              variant="outlined"
-                                              color="error"
-                                              onClick={() =>
-                                                openModalWithTaskId(
-                                                  task._id,
-                                                  "report"
-                                                )
-                                              }
-                                              sx={{
-                                                borderRadius: 3,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                px: 3,
-                                              }}
-                                              className="border-red-500 text-red-500 hover:bg-red-50"
-                                            >
-                                              Sự cố
-                                            </Button>
-                                            <Button
-                                              variant="outlined"
-                                              color="primary"
-                                              onClick={() =>
-                                                openModalWithTaskId(
-                                                  task._id,
-                                                  "review"
-                                                )
-                                              }
-                                              sx={{
-                                                borderRadius: 3,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                px: 3,
-                                              }}
-                                              className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                                            >
-                                              Đánh giá đồng nghiệp
-                                            </Button>
+                                            {day.checkinStatus
+                                              ?.hasCheckedIn && (
+                                              <Button
+                                                variant="outlined"
+                                                color="primary"
+                                                onClick={() =>
+                                                  openModalWithTaskId(
+                                                    task._id,
+                                                    "review"
+                                                  )
+                                                }
+                                                sx={{
+                                                  borderRadius: 3,
+                                                  textTransform: "none",
+                                                  fontWeight: 600,
+                                                  px: 3,
+                                                }}
+                                                className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                                              >
+                                                Đánh giá đồng nghiệp
+                                              </Button>
+                                            )}
                                             <Button
                                               variant="outlined"
                                               color="info"
