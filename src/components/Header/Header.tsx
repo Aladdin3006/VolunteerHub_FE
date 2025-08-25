@@ -119,27 +119,30 @@ const Header: React.FC = () => {
       label: "Chỉnh sửa hồ sơ",
       icon: <FaUserEdit />,
       action: () => navigate("/profile"),
+      requiresLogin: true,
     },
     {
       label: "Nhiệm vụ trong tháng",
       icon: <FaTasks />,
       action: () => navigate("/myTask"),
+      requiresLogin: true,
     },
     {
       label: "Chiến Dịch của tôi",
       icon: <FaDesktop />,
       action: () => navigate("/myCampaign"),
+      requiresLogin: true,
     },
     { label: "Đăng xuất", icon: <FaSignOutAlt />, action: handleLogout },
-  ];
+  ].filter((item) => !item.requiresLogin || (item.requiresLogin && user));
 
   const navLinks = [
-    { label: "Trang Chủ", path: "/" },
-    { label: "Chiến Dịch", path: "/campaigns" },
-    { label: "Quyên góp", path: "/donations" },
-    { label: "Chiến dịch của tôi", path: "/myCampaign" },
-    { label: "Cộng đồng", path: "/news" },
-  ];
+    { label: "Trang Chủ", path: "/", requiresLogin: false },
+    { label: "Chiến Dịch", path: "/campaigns", requiresLogin: false },
+    { label: "Quyên góp", path: "/donations", requiresLogin: false },
+    { label: "Chiến dịch của tôi", path: "/myCampaign", requiresLogin: true },
+    { label: "Cộng đồng", path: "/news", requiresLogin: false },
+  ].filter((item) => !item.requiresLogin || (item.requiresLogin && user));
 
   return (
     <>

@@ -93,6 +93,7 @@ const CampaignVolunteerDetail: React.FC = () => {
   const isLoggedIn = !!currentUserId;
   const token = user.token || null;
   const hasRegistered = user?.faceDescriptor !== null;
+  const isCampaignCompleted = campaign?.status === "completed";
 
   // Flatten suggested skills
   const allSuggestedSkills: string[] = Array.from(
@@ -711,76 +712,78 @@ const CampaignVolunteerDetail: React.FC = () => {
             gap: 3,
           }}
         >
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ bgcolor: "primary.main", fontSize: "0.75rem" }}>
-                VHHT
-              </Avatar>
-              <Box>
-                <Typography fontWeight={700}>Người đăng</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Quản trị viên VHHT
-                </Typography>
-              </Box>
-            </Stack>
-            {!myVolunteer && <RegisterFaceModal />}
-            <Button
-              disabled={joinDisabled}
-              onClick={
-                isWithdrawalButton ? handleOpenWithdrawalDialog : handleJoin
-              }
-              fullWidth
-              variant="contained"
-              color={isWithdrawalButton ? "error" : "success"}
-              sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
-            >
-              {joinLoading ? "Đang gửi..." : joinLabel}
-            </Button>
-            {myVolunteer?.status === "approved" && (
-              <>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color={hasPendingCertificate ? "secondary" : "primary"}
-                  sx={{
-                    mt: 2,
-                    textTransform: "none",
-                    borderRadius: 2,
-                    bgcolor: hasPendingCertificate ? "#9e9e9e" : "#1976d2",
-                    "&:hover": {
-                      bgcolor: hasPendingCertificate ? "#757575" : "#1565c0",
-                    },
-                  }}
-                  onClick={handleOpenCertificateDialog}
-                  disabled={hasPendingCertificate || certificateLoading}
-                  startIcon={<VerifiedIcon />}
-                >
-                  {hasPendingCertificate
-                    ? "Đang chờ cấp chứng chỉ"
-                    : certificateLoading
-                    ? "Đang gửi..."
-                    : "Yêu cầu cấp chứng chỉ sớm"}
-                </Button>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color="success"
-                  sx={{
-                    mt: 2,
-                    textTransform: "none",
-                    borderRadius: 2,
-                    bgcolor: "#4caf50",
-                    "&:hover": {
-                      bgcolor: "#388e3c",
-                    },
-                  }}
-                  onClick={() => navigate(`/campaigns/${campaignId}/tasks`)}
-                >
-                  Xem nhiệm vụ
-                </Button>
-              </>
-            )}
-          </Paper>
+          {!isCampaignCompleted && (
+            <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar sx={{ bgcolor: "primary.main", fontSize: "0.75rem" }}>
+                  VHHT
+                </Avatar>
+                <Box>
+                  <Typography fontWeight={700}>Người đăng</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Quản trị viên VHHT
+                  </Typography>
+                </Box>
+              </Stack>
+              {!myVolunteer && <RegisterFaceModal />}
+              <Button
+                disabled={joinDisabled}
+                onClick={
+                  isWithdrawalButton ? handleOpenWithdrawalDialog : handleJoin
+                }
+                fullWidth
+                variant="contained"
+                color={isWithdrawalButton ? "error" : "success"}
+                sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
+              >
+                {joinLoading ? "Đang gửi..." : joinLabel}
+              </Button>
+              {myVolunteer?.status === "approved" && (
+                <>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color={hasPendingCertificate ? "secondary" : "primary"}
+                    sx={{
+                      mt: 2,
+                      textTransform: "none",
+                      borderRadius: 2,
+                      bgcolor: hasPendingCertificate ? "#9e9e9e" : "#1976d2",
+                      "&:hover": {
+                        bgcolor: hasPendingCertificate ? "#757575" : "#1565c0",
+                      },
+                    }}
+                    onClick={handleOpenCertificateDialog}
+                    disabled={hasPendingCertificate || certificateLoading}
+                    startIcon={<VerifiedIcon />}
+                  >
+                    {hasPendingCertificate
+                      ? "Đang chờ cấp chứng chỉ"
+                      : certificateLoading
+                      ? "Đang gửi..."
+                      : "Yêu cầu cấp chứng chỉ sớm"}
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="success"
+                    sx={{
+                      mt: 2,
+                      textTransform: "none",
+                      borderRadius: 2,
+                      bgcolor: "#4caf50",
+                      "&:hover": {
+                        bgcolor: "#388e3c",
+                      },
+                    }}
+                    onClick={() => navigate(`/campaigns/${campaignId}/tasks`)}
+                  >
+                    Xem nhiệm vụ
+                  </Button>
+                </>
+              )}
+            </Paper>
+          )}
           <Paper elevation={2} sx={{ p: 3, borderRadius: 3 }}>
             <Stack direction="row" spacing={1} alignItems="center" mb={2}>
               <CalendarMonthIcon color="primary" />
