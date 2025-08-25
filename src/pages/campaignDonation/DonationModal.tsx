@@ -14,6 +14,7 @@ import {
   Stack,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { LoadingButton } from "@mui/lab"; // 🆕
 import authService from "../../services/Authentication.service";
 
 interface DonationModalProps {
@@ -40,6 +41,10 @@ const DonationModal: React.FC<DonationModalProps> = ({
     message: "",
   });
 
+  const [loadingProvider, setLoadingProvider] = useState<
+    "zalopay" | "payos" | null
+  >(null);
+
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -58,6 +63,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
     e: React.FormEvent
   ) => {
     e.preventDefault();
+    setLoadingProvider(provider); // 🔥 bật loading
     try {
       const token = authService.getToken();
       const payload = {
@@ -99,6 +105,8 @@ const DonationModal: React.FC<DonationModalProps> = ({
     } catch (err) {
       console.error(`Lỗi gửi yêu cầu ${provider}:`, err);
       alert(`Có lỗi xảy ra khi gửi yêu cầu ${provider}.`);
+    } finally {
+      setLoadingProvider(null); // ✅ tắt loading khi xong
     }
   };
 
@@ -111,6 +119,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
       <form>
+        {/* Header */}
         <DialogTitle
           sx={{
             fontWeight: 600,
@@ -130,6 +139,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
           </IconButton>
         </DialogTitle>
 
+        {/* Body */}
         <DialogContent sx={{ px: 4 }}>
           <Typography variant="body2" align="center" mb={2}>
             Vui lòng điền thông tin của bạn để hoàn tất việc ủng hộ.
@@ -145,6 +155,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
                 setFormData({ ...formData, fullName: e.target.value })
               }
             />
+
             <TextField
               label="Số điện thoại"
               fullWidth
@@ -154,6 +165,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
                 setFormData({ ...formData, phoneNumber: e.target.value })
               }
             />
+
             <TextField
               label="Email *"
               type="email"
@@ -164,6 +176,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
                 setFormData({ ...formData, email: e.target.value })
               }
             />
+
             <FormControlLabel
               control={
                 <Checkbox
@@ -175,6 +188,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
               }
               label="Tôi muốn ủng hộ ẩn danh"
             />
+
             <TextField
               label="Số tiền ủng hộ *"
               type="number"
@@ -186,6 +200,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
                 setFormData({ ...formData, amount: e.target.value })
               }
             />
+
             <TextField
               label="Lời nhắn (tuỳ chọn)"
               fullWidth
@@ -199,6 +214,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
           </Stack>
         </DialogContent>
 
+        {/* Actions */}
         <DialogActions
           sx={{
             flexDirection: "column",
@@ -209,43 +225,47 @@ const DonationModal: React.FC<DonationModalProps> = ({
             pt: 2,
           }}
         >
-          <Button
-            onClick={(e) => handlePayment("zalopay", e)}
-            fullWidth
-            variant="contained"
-            sx={{
-              backgroundColor: "#f43f5e",
-              fontWeight: 600,
-              fontSize: "16px",
-              py: 1.2,
-              "&:hover": {
-                backgroundColor: "#e11d48",
-              },
-              borderRadius: "8px",
-            }}
-          >
-            Ủng hộ qua ZaloPay
-          </Button>
+          <Stack spacing={1.5}>
+            <LoadingButton
+              loading={loadingProvider === "zalopay"}
+              onClick={(e) => handlePayment("zalopay", e)}
+              fullWidth
+              variant="contained"
+              sx={{
+                backgroundColor: "#f43f5e",
+                fontWeight: 600,
+                fontSize: 16,
+                minHeight: 48,
+                textTransform: "uppercase",
+                borderRadius: 2,
+                "&:hover": { backgroundColor: "#e11d48" },
+                "& .MuiLoadingButton-loadingIndicator": { color: "white" },
+              }}
+            >
+              Ủng hộ qua ZaloPay
+            </LoadingButton>
 
-          <Button
-            onClick={(e) => handlePayment("payos", e)}
-            fullWidth
-            variant="contained"
-            sx={{
-              backgroundColor: "#0ea5e9",
-              fontWeight: 600,
-              fontSize: "16px",
-              py: 1.2,
-              "&:hover": {
-                backgroundColor: "#0284c7",
-              },
-              borderRadius: "8px",
-            }}
-          >
-            Ủng hộ qua PayOS
-          </Button>
+            <LoadingButton
+              loading={loadingProvider === "payos"}
+              onClick={(e) => handlePayment("payos", e)}
+              fullWidth
+              variant="contained"
+              sx={{
+                backgroundColor: "#0ea5e9",
+                fontWeight: 600,
+                fontSize: 16,
+                minHeight: 48,
+                textTransform: "uppercase",
+                borderRadius: 2,
+                "&:hover": { backgroundColor: "#0284c7" },
+                "& .MuiLoadingButton-loadingIndicator": { color: "white" },
+              }}
+            >
+              Ủng hộ qua PayOS (VietQr)
+            </LoadingButton>
+          </Stack>
 
-          <Typography variant="caption" textAlign="center">
+          <Typography variant="caption" textAlign="center" mt={1}>
             Bằng việc nhấp "Ủng hộ", bạn đồng ý với{" "}
             <Link href="#" underline="hover">
               điều khoản và điều kiện
@@ -254,6 +274,7 @@ const DonationModal: React.FC<DonationModalProps> = ({
           </Typography>
         </DialogActions>
       </form>
+
     </Dialog>
   );
 };
