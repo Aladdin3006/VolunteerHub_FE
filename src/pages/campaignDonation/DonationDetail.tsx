@@ -109,7 +109,7 @@ const DonationDetail: React.FC = () => {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [donations2, setDonations2] = useState<DonationTransaction[]>([]);
   const [expenses, setExpenses] = useState<DonationExpense[]>([]);
-  const [tab, setTab] = useState<"content" | "donors">("content");
+  const [tab, setTab] = useState<"content" | "donors">("donors");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -264,7 +264,7 @@ const DonationDetail: React.FC = () => {
             <Box flex={1}>
               <Card variant="outlined" sx={{ p: 2 }}>
                 <CardHeader
-                  avatar={<Avatar src={campaign?.createdBy?.avatar} />}
+                  avatar={<Avatar src='/pwa.png' />}
                   title={campaign?.title}
                   subheader={`Bởi ${
                     campaign?.createdBy?.fullName || "Tổ chức"
@@ -531,11 +531,11 @@ const DonationDetail: React.FC = () => {
               indicatorColor="primary"
               variant="fullWidth"
             >
-              <Tab value="content" label="Nội dung" />
               <Tab
                 value="donors"
                 label={`Danh sách ủng hộ (${donations2.length})`}
               />
+              <Tab value="content" label="Nội dung" />
             </Tabs>
           </Box>
 
@@ -550,7 +550,7 @@ const DonationDetail: React.FC = () => {
                   <strong>{campaign?.createdBy?.fullName || "Tổ chức"}</strong>.
                 </Typography>
                 <Typography mt={2}>
-                  * Toàn bộ số tiền sẽ được chuyển trực tiếp tới tổ chức.
+                  * Toàn bộ số tiền sẽ được chuyển trực tiếp tới tổ chức VHHT.
                 </Typography>
               </Box>
               <Box flex={1}>
@@ -558,13 +558,13 @@ const DonationDetail: React.FC = () => {
                   <CardHeader
                     avatar={
                       <Avatar
-                        src={campaign?.createdBy?.avatar}
+                        src='/pwa.png'
                         sx={{ width: 56, height: 56 }}
                       />
                     }
                     title={
                       <Typography fontWeight={600}>
-                        Thông tin tổ chức gây quỹ
+                        Dự án được gây quỹ bởi VHHT
                       </Typography>
                     }
                   />
@@ -579,14 +579,14 @@ const DonationDetail: React.FC = () => {
                     <Stack direction="row" spacing={1} mb={1}>
                       <LocationOnIcon fontSize="small" />
                       <Typography variant="body2">
-                        Địa chỉ không xác định
+                        Hội chữ thập đỏ Hà Tĩnh
                       </Typography>
                     </Stack>
                     <Stack direction="row" spacing={1} mb={1}>
                       <PhoneIcon fontSize="small" />
                       <Typography variant="body2">
                         Hotline:{" "}
-                        <strong style={{ color: "#d32f2f" }}>0869654747</strong>
+                        <strong style={{ color: "#d32f2f" }}>0911662996</strong>
                       </Typography>
                     </Stack>
                     <Stack direction="row" spacing={1}>
@@ -594,7 +594,7 @@ const DonationDetail: React.FC = () => {
                       <Typography variant="body2">
                         Email:{" "}
                         <a href="mailto:tổchức@example.com">
-                          tổchức@example.com
+                          vhht.hatinh@gmail.com
                         </a>
                       </Typography>
                     </Stack>
