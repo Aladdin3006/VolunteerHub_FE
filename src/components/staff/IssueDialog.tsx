@@ -18,8 +18,6 @@ import {
   Avatar,
   ListItem,
   ListItemAvatar,
-  Alert,
-  Snackbar,
 } from "@mui/material";
 import { ISSUE_API, Issue } from "../../apis/issue";
 import CreatePhaseModal from "./CreatePhaseModal";
@@ -31,6 +29,7 @@ import VolunteerRequestsModal from "./VolunteerRequestsModal";
 import { Campaign } from "@/pages/manager/ManagerCampaign";
 import { managerCampaignService } from "@/apis/manager";
 import axios from "axios";
+import OpenTaskCurrentCampaign from "./OpenTaskCurrentCampaign";
 
 interface IssueDialogProps {
   open: boolean;
@@ -62,9 +61,9 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const fetchTasksByVolunteer = async (
   userId: string,
+  token: string,
   year: number,
-  month: number,
-  token: string
+  month: number
 ): Promise<VolunteerTask[]> => {
   const response = await axios.get(`${API_BASE}/task/${userId}/volunteer`, {
     params: { year, month },
@@ -186,8 +185,12 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
     null
   );
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState("");
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [selectedVolunteerTasks, setSelectedVolunteerTasks] = useState<
+    VolunteerTask[]
+  >([]);
+  const [selectedVolunteerName, setSelectedVolunteerName] = useState("");
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
 
   const handleOpenCheckInDialog = (phase: Phase, phaseDay: PhaseDay) => {
     setSelectedPhase(phase);
@@ -320,9 +323,9 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
 
         const tasks = await fetchTasksByVolunteer(
           issue.reportedBy._id,
+          user.token,
           year,
-          month,
-          user.token
+          month
         );
 
         // Filter tasks for current campaign and unfinished status
@@ -334,13 +337,10 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
         );
 
         if (unfinishedTasks.length > 0) {
-          const taskTitles = unfinishedTasks
-            .map((task) => `"${task.title}"`)
-            .join(", ");
-          setAlertMessage(
-            `Tình nguyện viên này còn nhiệm vụ ${taskTitles} chưa hoàn thành.`
-          );
-          setAlertOpen(true);
+          setSelectedVolunteerTasks(unfinishedTasks);
+          setSelectedVolunteerName(issue.reportedBy.fullName);
+          setSelectedIssue(issue);
+          setTaskModalOpen(true);
           return;
         }
 
@@ -384,8 +384,28 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
     setIssueTypeTab(newValue);
   };
 
-  const handleCloseAlert = () => {
-    setAlertOpen(false);
+  const handleCloseTaskModal = () => {
+    setTaskModalOpen(false);
+    setSelectedVolunteerTasks([]);
+    setSelectedVolunteerName("");
+    setSelectedIssue(null);
+  };
+
+  const handleConfirmTaskModal = async () => {
+    if (selectedIssue) {
+      try {
+        await ISSUE_API.requestCertificateEarly({
+          campaignId: selectedIssue.relatedEntity.entityId,
+          userId: selectedIssue.reportedBy._id,
+          issuedDate: new Date().toISOString(),
+        });
+        await ISSUE_API.updateIssue(selectedIssue._id, { status: "closed" });
+        fetchIssues();
+      } catch (error) {
+        console.error("Error resolving issue:", error);
+      }
+    }
+    handleCloseTaskModal();
   };
 
   return (
@@ -603,21 +623,13 @@ const IssueDialog: React.FC<IssueDialogProps> = ({
         onClose={handleCloseDetailDialog}
         issueId={selectedIssueId}
       />
-
-      <Snackbar
-        open={alertOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseAlert}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleCloseAlert}
-          severity="warning"
-          sx={{ width: "100%" }}
-        >
-          {alertMessage}
-        </Alert>
-      </Snackbar>
+      <OpenTaskCurrentCampaign
+        open={taskModalOpen}
+        onClose={handleCloseTaskModal}
+        volunteerName={selectedVolunteerName}
+        campaignName={selectedCampaign.name}
+        tasks={selectedVolunteerTasks}
+      />
     </>
   );
 };

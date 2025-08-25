@@ -34,6 +34,7 @@ import ManageTask from "./ManageTask";
 import CheckInDialog from "./CheckInDialog";
 import DepartmentManager from "./DepartmentManager";
 import IssueDialog from "./IssueDialog";
+import OpenTaskModal from "./OpenTaskModal";
 
 interface VolunteerRequestsModalProps {
   open: boolean;
@@ -87,6 +88,13 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
   const [selectedPhaseDay, setSelectedPhaseDay] = useState<PhaseDay | null>(
     null
   );
+  const [openTaskModal, setOpenTaskModal] = useState(false);
+  const [selectedVolunteerId, setSelectedVolunteerId] = useState<string | null>(
+    null
+  );
+  const [selectedVolunteerName, setSelectedVolunteerName] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const fetchVolunteers = async () => {
@@ -195,6 +203,18 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
     setSelectedPhaseDay(phaseDay);
   };
 
+  const handleOpenTaskModal = (volunteerId: string, volunteerName: string) => {
+    setSelectedVolunteerId(volunteerId);
+    setSelectedVolunteerName(volunteerName);
+    setOpenTaskModal(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setOpenTaskModal(false);
+    setSelectedVolunteerId(null);
+    setSelectedVolunteerName(null);
+  };
+
   const pendingVolunteers = volunteers.filter((v) => v.status === "pending");
   const approvedVolunteers = volunteers.filter((v) => v.status === "approved");
   const rejectedVolunteers = volunteers.filter((v) => v.status === "rejected");
@@ -208,284 +228,319 @@ const VolunteerRequestsModal: React.FC<VolunteerRequestsModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ textAlign: "center" }}>
-        Manage "{selectedCampaign.name}" - "
-        {
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ textAlign: "center" }}>
+          Manage "{selectedCampaign.name}" - "
           {
-            0: "Phases",
-            1: "Tasks",
-            2: "CheckIn",
-            3: "Departments",
-            4: "Volunteers",
-            5: "Issues",
-          }[activeTab]
-        }
-        "
-      </DialogTitle>
-      <DialogContent>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          aria-label="management tabs"
-        >
-          <Tab label="Phases" />
-          <Tab label="Tasks" />
-          <Tab label="CheckIn" />
-          <Tab label="Departments" />
-          <Tab label="Volunteers" />
-          <Tab label="Issues" />
-        </Tabs>
-        <TabPanel value={activeTab} index={0}>
-          <CreatePhaseModal
-            campaignId={campaignId}
-            open={activeTab === 0}
-            onClose={onClose}
-            selectedCampaign={selectedCampaign}
-          />
-        </TabPanel>
-        <TabPanel value={activeTab} index={1}>
-          <ManageTask campaignId={campaignId} />
-        </TabPanel>
-        <TabPanel value={activeTab} index={2}>
-          <CheckInDialog
-            campaignId={campaignId}
-            open={activeTab === 2}
-            onClose={onClose}
-            selectedCampaign={selectedCampaign}
-            onTabChange={onTabChange}
-            phase={selectedPhase}
-            phaseDay={selectedPhaseDay}
-            onPhaseSelect={handlePhaseSelect}
-            onPhaseDaySelect={handlePhaseDaySelect}
-          />
-        </TabPanel>
-        <TabPanel value={activeTab} index={3}>
-          <DepartmentManager campaignId={campaignId} />
-        </TabPanel>
-        <TabPanel value={activeTab} index={4}>
-          <Box
-            sx={{
-              p: 2,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
+            {
+              0: "Phases",
+              1: "Tasks",
+              2: "CheckIn",
+              3: "Departments",
+              4: "Volunteers",
+              5: "Issues",
+            }[activeTab]
+          }
+          "
+        </DialogTitle>
+        <DialogContent>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="management tabs"
           >
-            <Typography variant="h6" gutterBottom>
-              Volunteer Requests
-            </Typography>
-            {loading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Box sx={{ width: "100%", minHeight: 300 }}>
-                {error && (
-                  <Alert
-                    severity="error"
-                    sx={{ mb: 2 }}
-                    onClose={() => setError(null)}
-                  >
-                    {error}
-                  </Alert>
-                )}
-                <Box
-                  sx={{
-                    mb: 3,
-                    display: "flex",
-                    gap: 2,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Chip
-                    label={`Pending: ${pendingVolunteers.length}`}
-                    color="warning"
-                    variant="outlined"
-                  />
-                  <Chip
-                    label={`Approved: ${approvedVolunteers.length}`}
-                    color="success"
-                    variant="outlined"
-                  />
-                  <Chip
-                    label={`Rejected: ${rejectedVolunteers.length}`}
-                    color="error"
-                    variant="outlined"
-                  />
+            <Tab label="Phases" />
+            <Tab label="Tasks" />
+            <Tab label="CheckIn" />
+            <Tab label="Departments" />
+            <Tab label="Volunteers" />
+            <Tab label="Issues" />
+          </Tabs>
+          <TabPanel value={activeTab} index={0}>
+            <CreatePhaseModal
+              campaignId={campaignId}
+              open={activeTab === 0}
+              onClose={onClose}
+              selectedCampaign={selectedCampaign}
+            />
+          </TabPanel>
+          <TabPanel value={activeTab} index={1}>
+            <ManageTask campaignId={campaignId} />
+          </TabPanel>
+          <TabPanel value={activeTab} index={2}>
+            <CheckInDialog
+              campaignId={campaignId}
+              open={activeTab === 2}
+              onClose={onClose}
+              selectedCampaign={selectedCampaign}
+              onTabChange={onTabChange}
+              phase={selectedPhase}
+              phaseDay={selectedPhaseDay}
+              onPhaseSelect={handlePhaseSelect}
+              onPhaseDaySelect={handlePhaseDaySelect}
+            />
+          </TabPanel>
+          <TabPanel value={activeTab} index={3}>
+            <DepartmentManager campaignId={campaignId} />
+          </TabPanel>
+          <TabPanel value={activeTab} index={4}>
+            <Box
+              sx={{
+                p: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                Volunteer Requests
+              </Typography>
+              {loading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+                  <CircularProgress />
                 </Box>
-                {volunteers.length === 0 ? (
-                  <Alert severity="info">
-                    No volunteer requests found for this campaign.
-                  </Alert>
-                ) : (
-                  <Grid container spacing={3} direction="column">
-                    <Grid>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Pending Volunteers
-                      </Typography>
-                      <TableContainer component={Paper} sx={{ width: "100%" }}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Name</TableCell>
-                              <TableCell>Email</TableCell>
-                              <TableCell>Phone</TableCell>
-                              <TableCell>Status</TableCell>
-                              <TableCell>Registered At</TableCell>
-                              <TableCell>Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {pendingVolunteers.map((volunteer) => (
-                              <TableRow key={volunteer.user._id}>
-                                <TableCell>{volunteer.user.fullName}</TableCell>
-                                <TableCell>{volunteer.user.email}</TableCell>
-                                <TableCell>{volunteer.user.phone}</TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label={volunteer.status.toUpperCase()}
-                                    color={getStatusColor(volunteer.status)}
-                                    size="small"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  {formatDate(volunteer.registeredAt)}
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="contained"
-                                    color="success"
-                                    size="small"
-                                    onClick={() =>
-                                      handleAcceptVolunteer(volunteer.user._id)
-                                    }
-                                    disabled={acceptingVolunteers.has(
-                                      volunteer.user._id
-                                    )}
-                                  >
-                                    {acceptingVolunteers.has(volunteer.user._id)
-                                      ? "Approving"
-                                      : "Approve"}
-                                  </Button>
-                                </TableCell>
+              ) : (
+                <Box sx={{ width: "100%", minHeight: 300 }}>
+                  {error && (
+                    <Alert
+                      severity="error"
+                      sx={{ mb: 2 }}
+                      onClose={() => setError(null)}
+                    >
+                      {error}
+                    </Alert>
+                  )}
+                  <Box
+                    sx={{
+                      mb: 3,
+                      display: "flex",
+                      gap: 2,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Chip
+                      label={`Pending: ${pendingVolunteers.length}`}
+                      color="warning"
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={`Approved: ${approvedVolunteers.length}`}
+                      color="success"
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={`Rejected: ${rejectedVolunteers.length}`}
+                      color="error"
+                      variant="outlined"
+                    />
+                  </Box>
+                  {volunteers.length === 0 ? (
+                    <Alert severity="info">
+                      No volunteer requests found for this campaign.
+                    </Alert>
+                  ) : (
+                    <Grid container spacing={3} direction="column">
+                      <Grid>
+                        <Typography variant="subtitle1" gutterBottom>
+                          Pending Volunteers
+                        </Typography>
+                        <TableContainer
+                          component={Paper}
+                          sx={{ width: "100%" }}
+                        >
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Name</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Phone</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Registered At</TableCell>
+                                <TableCell>Actions</TableCell>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Grid>
-                    <Grid>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Approved Volunteers
-                      </Typography>
-                      <TableContainer component={Paper} sx={{ width: "100%" }}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Name</TableCell>
-                              <TableCell>Email</TableCell>
-                              <TableCell>Phone</TableCell>
-                              <TableCell>Status</TableCell>
-                              <TableCell>Registered At</TableCell>
-                              <TableCell>Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {approvedVolunteers.map((volunteer) => (
-                              <TableRow key={volunteer.user._id}>
-                                <TableCell>{volunteer.user.fullName}</TableCell>
-                                <TableCell>{volunteer.user.email}</TableCell>
-                                <TableCell>{volunteer.user.phone}</TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label={volunteer.status.toUpperCase()}
-                                    color={getStatusColor(volunteer.status)}
-                                    size="small"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  {formatDate(volunteer.registeredAt)}
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="contained"
-                                    color="error"
-                                    size="small"
-                                    onClick={() =>
-                                      handleRejectVolunteer(volunteer.user._id)
-                                    }
-                                    disabled={rejectingVolunteers.has(
-                                      volunteer.user._id
-                                    )}
-                                  >
-                                    {rejectingVolunteers.has(volunteer.user._id)
-                                      ? "Rejecting"
-                                      : "Reject"}
-                                  </Button>
-                                </TableCell>
+                            </TableHead>
+                            <TableBody>
+                              {pendingVolunteers.map((volunteer) => (
+                                <TableRow key={volunteer.user._id}>
+                                  <TableCell>
+                                    {volunteer.user.fullName}
+                                  </TableCell>
+                                  <TableCell>{volunteer.user.email}</TableCell>
+                                  <TableCell>{volunteer.user.phone}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={volunteer.status.toUpperCase()}
+                                      color={getStatusColor(volunteer.status)}
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatDate(volunteer.registeredAt)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="contained"
+                                      color="success"
+                                      size="small"
+                                      onClick={() =>
+                                        handleOpenTaskModal(
+                                          volunteer.user._id,
+                                          volunteer.user.fullName
+                                        )
+                                      }
+                                      disabled={acceptingVolunteers.has(
+                                        volunteer.user._id
+                                      )}
+                                    >
+                                      {acceptingVolunteers.has(
+                                        volunteer.user._id
+                                      )
+                                        ? "Approving"
+                                        : "Approve"}
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Grid>
+                      <Grid>
+                        <Typography variant="subtitle1" gutterBottom>
+                          Approved Volunteers
+                        </Typography>
+                        <TableContainer
+                          component={Paper}
+                          sx={{ width: "100%" }}
+                        >
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Name</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Phone</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Registered At</TableCell>
+                                <TableCell>Actions</TableCell>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Grid>
-                    <Grid>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Rejected Volunteers
-                      </Typography>
-                      <TableContainer component={Paper} sx={{ width: "100%" }}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Name</TableCell>
-                              <TableCell>Email</TableCell>
-                              <TableCell>Phone</TableCell>
-                              <TableCell>Status</TableCell>
-                              <TableCell>Registered At</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {rejectedVolunteers.map((volunteer) => (
-                              <TableRow key={volunteer.user._id}>
-                                <TableCell>{volunteer.user.fullName}</TableCell>
-                                <TableCell>{volunteer.user.email}</TableCell>
-                                <TableCell>{volunteer.user.phone}</TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label={volunteer.status.toUpperCase()}
-                                    color={getStatusColor(volunteer.status)}
-                                    size="small"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  {formatDate(volunteer.registeredAt)}
-                                </TableCell>
+                            </TableHead>
+                            <TableBody>
+                              {approvedVolunteers.map((volunteer) => (
+                                <TableRow key={volunteer.user._id}>
+                                  <TableCell>
+                                    {volunteer.user.fullName}
+                                  </TableCell>
+                                  <TableCell>{volunteer.user.email}</TableCell>
+                                  <TableCell>{volunteer.user.phone}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={volunteer.status.toUpperCase()}
+                                      color={getStatusColor(volunteer.status)}
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatDate(volunteer.registeredAt)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="contained"
+                                      color="error"
+                                      size="small"
+                                      onClick={() =>
+                                        handleRejectVolunteer(
+                                          volunteer.user._id
+                                        )
+                                      }
+                                      disabled={rejectingVolunteers.has(
+                                        volunteer.user._id
+                                      )}
+                                    >
+                                      {rejectingVolunteers.has(
+                                        volunteer.user._id
+                                      )
+                                        ? "Rejecting"
+                                        : "Reject"}
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Grid>
+                      <Grid>
+                        <Typography variant="subtitle1" gutterBottom>
+                          Rejected Volunteers
+                        </Typography>
+                        <TableContainer
+                          component={Paper}
+                          sx={{ width: "100%" }}
+                        >
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Name</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Phone</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Registered At</TableCell>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                            </TableHead>
+                            <TableBody>
+                              {rejectedVolunteers.map((volunteer) => (
+                                <TableRow key={volunteer.user._id}>
+                                  <TableCell>
+                                    {volunteer.user.fullName}
+                                  </TableCell>
+                                  <TableCell>{volunteer.user.email}</TableCell>
+                                  <TableCell>{volunteer.user.phone}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={volunteer.status.toUpperCase()}
+                                      color={getStatusColor(volunteer.status)}
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatDate(volunteer.registeredAt)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Grid>
                     </Grid>
-                  </Grid>
-                )}
-              </Box>
-            )}
-          </Box>
-        </TabPanel>
-        <TabPanel value={activeTab} index={5}>
-          <IssueDialog
-            open={activeTab === 5}
-            onClose={onClose}
-            campaignId={campaignId}
-            selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
-          />
-        </TabPanel>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
-      </DialogActions>
-    </Dialog>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </TabPanel>
+          <TabPanel value={activeTab} index={5}>
+            <IssueDialog
+              open={activeTab === 5}
+              onClose={onClose}
+              campaignId={campaignId}
+              selectedCampaign={{ name: selectedCampaign.name || "Campaign" }}
+            />
+          </TabPanel>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+      {selectedVolunteerId && selectedVolunteerName && (
+        <OpenTaskModal
+          open={openTaskModal}
+          onClose={handleCloseTaskModal}
+          onConfirm={() => handleAcceptVolunteer(selectedVolunteerId)}
+          volunteerId={selectedVolunteerId}
+          volunteerName={selectedVolunteerName}
+        />
+      )}
+    </>
   );
 };
 

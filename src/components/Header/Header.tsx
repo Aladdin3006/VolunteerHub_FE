@@ -170,15 +170,24 @@ const Header: React.FC = () => {
               to="/"
               display="flex"
               alignItems="center"
-              gap={1}
-              sx={{ textDecoration: "none" }}
+              gap={0}
+              sx={{ textDecoration: "none", "& img": { display: "block" } }}
             >
-              <img src="/logo.png" alt="Logo" style={{ height: 40 }} />
+              <Box
+                component="img"
+                src="/logo-remove-bg.png"
+                alt="Logo"
+                sx={{ height: 60, mr: -3 }}
+              />
               <Box>
                 <Typography variant="h6" fontWeight={700} color="#1976d2">
                   VolunteerHub
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: "1rem" }}
+                >
                   Hà Tĩnh
                 </Typography>
               </Box>
