@@ -48,23 +48,30 @@ export default function MapLocationPicker({
     return <Marker position={position} icon={markerIcon} />;
   }
 
-  // nhận tọa độ mới từ form cha
+  // Nhận tọa độ mới từ form cha
   useEffect(() => {
     if (center) setPosition(center);
   }, [center]);
 
+  // Fetch địa chỉ với debounce và giới hạn Việt Nam
   useEffect(() => {
     if (hideSearchInput) return;
     if (query.length < 3) return;
-    const controller = new AbortController();
-    fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`,
-      { signal: controller.signal }
-    )
-      .then((r) => r.json())
-      .then((data) => setSuggestions(data))
-      .catch(() => {});
-    return () => controller.abort();
+
+    const handler = setTimeout(() => {
+      const controller = new AbortController();
+      fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query
+        )}&countrycodes=vn&limit=10`,
+        { signal: controller.signal }
+      )
+        .then((r) => r.json())
+        .then((data) => setSuggestions(data))
+        .catch(() => { });
+    }, 300); // debounce 300ms
+
+    return () => clearTimeout(handler);
   }, [query, hideSearchInput]);
 
   const handleSelect = (s: any) => {
@@ -79,9 +86,24 @@ export default function MapLocationPicker({
     <div>
       {!hideSearchInput && (
         <div style={{ position: "relative" }}>
-          <TextField fullWidth label="Địa chỉ" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <TextField
+            fullWidth
+            label="Địa chỉ"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
           {suggestions.length > 0 && (
-            <Paper style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 2000, maxHeight: 220, overflowY: "auto" }}>
+            <Paper
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                zIndex: 2000,
+                maxHeight: 220,
+                overflowY: "auto",
+              }}
+            >
               <List>
                 {suggestions.map((s, i) => (
                   <ListItem button key={i} onClick={() => handleSelect(s)}>
@@ -94,12 +116,15 @@ export default function MapLocationPicker({
         </div>
       )}
 
-      <MapContainer center={position} zoom={13} style={{ height: mapHeight, width: "100%", marginTop: hideSearchInput ? 0 : 10 }}>
+      <MapContainer
+        center={position}
+        zoom={13}
+        style={{ height: mapHeight, width: "100%", marginTop: hideSearchInput ? 0 : 10 }}
+      >
         <TileLayer
-          attribution='© OpenStreetMap contributors'
+          attribution="© OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {/* 👇 đảm bảo map recenter khi position thay đổi */}
         <RecenterMap pos={position} />
         <LocationMarker />
       </MapContainer>

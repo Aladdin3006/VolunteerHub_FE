@@ -27,8 +27,12 @@ import "leaflet/dist/leaflet.css";
 import { StormAPI } from "@/apis/storm.api";
 import { ReliefPointAPI } from "@/apis/reliefpoint.api";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/vi"; // tiếng Việt
 import ManagerTabs from "../ManagerTabs";
 import CreateReliefPointDialog from "../ReliefPointCreateDialog";
+import RescueHistoryDialog from "@/components/storm/RescueHistoryDialog";
 
 interface Storm {
   _id: string;
@@ -43,6 +47,18 @@ interface Storm {
   createdAt: string;
 }
 
+interface RescueProof {
+  images: string[];
+  note?: string;
+  uploadedAt?: string;
+}
+
+interface RescueEntry {
+  rescuedAt?: string;
+  rescueNote?: string;
+  rescueProofs?: RescueProof[];
+}
+
 interface ReliefPoint {
   _id: string;
   name: string;
@@ -52,25 +68,25 @@ interface ReliefPoint {
   description?: string;
   surplus?: Array<{
     type:
-      | "thực phẩm"
-      | "nước uống"
-      | "quần áo"
-      | "thuốc men"
-      | "chăn màn"
-      | "dụng cụ y tế"
-      | "khác";
+    | "thực phẩm"
+    | "nước uống"
+    | "quần áo"
+    | "thuốc men"
+    | "chăn màn"
+    | "dụng cụ y tế"
+    | "khác";
     quantity: number;
     note: string;
     _id?: string;
   }>;
   needs?: Array<{
     type:
-      | "người mắc kẹt"
-      | "bị thương"
-      | "thiếu đồ ăn"
-      | "thiếu nước"
-      | "thiếu thuốc"
-      | "khác";
+    | "người mắc kẹt"
+    | "bị thương"
+    | "thiếu đồ ăn"
+    | "thiếu nước"
+    | "thiếu thuốc"
+    | "khác";
     quantity: number;
     note: string;
     _id?: string;
@@ -82,7 +98,12 @@ interface ReliefPoint {
   updatedAt?: string;
   __v?: number;
   contact?: string;
+  rescueStatus?: boolean;
+  rescueList?: RescueEntry[];
 }
+
+dayjs.extend(relativeTime);
+dayjs.locale("vi");
 
 const supplyIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
@@ -144,7 +165,13 @@ export default function ReliefPointManager() {
   const [stormCenter, setStormCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [activeLink, setActiveLink] = useState<"storms" | "campaigns">("storms");
+  const [openRescueDialog, setOpenRescueDialog] = useState(false);
+  const [rescuePointId, setRescuePointId] = useState<string | null>(null);
+  const [openWindy, setOpenWindy] = useState(false);
   const navigate = useNavigate();
+  const openRescueHistory = (id: string) => { setRescuePointId(id); setOpenRescueDialog(true); };
+  const closeRescueHistory = () => { setOpenRescueDialog(false); setRescuePointId(null); };
+  const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
   useEffect(() => {
     const styleEl = document.createElement("style");
@@ -158,7 +185,7 @@ export default function ReliefPointManager() {
       try {
         const data = await StormAPI.getAllStorms();
         setStorms(data);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -206,9 +233,9 @@ export default function ReliefPointManager() {
   return (
     <Box>
       <ManagerTabs activeTab={activeLink} onTabChange={(v) => setActiveLink(v)} />
-      <Typography variant="h5" fontWeight="bold" p={3}>📍 Quản lý điểm cứu trợ</Typography>
+      <Typography variant="h5" fontWeight="bold" p={1}>📍 Quản lý điểm cứu trợ</Typography>
 
-      <Stack direction="row" spacing={2} alignItems="center" mb={3} pl={3}>
+      <Stack direction="row" spacing={2} alignItems="center" mb={1} pl={3}>
         <Typography>🌪️ Cơn bão:</Typography>
         <Select value={selectedStorm} onChange={(e) => setSelectedStorm(e.target.value)} size="small" sx={{ minWidth: 220 }} displayEmpty>
           <MenuItem value="" disabled>Chọn cơn bão</MenuItem>
@@ -240,6 +267,54 @@ export default function ReliefPointManager() {
                   const updated = await StormAPI.getAllStorms();
                   setStorms(updated);
                 }}>Kích hoạt cảnh báo bão</Button>
+              )}
+              {storm.status == "ended" ? (
+                <></>
+              ) : (
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={async () => {
+                      await StormAPI.deactivateStormRL(storm._id);
+                      const updated = await StormAPI.getAllStorms();
+                      setStorms(updated);
+                    }}
+                  >
+                    Thông báo bão đã tan
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    color="info"
+                    onClick={() => setOpenWindy(true)}
+                    sx={{ ml: 1 }}
+                  >
+                    🌪️ Thông tin cơn bão
+                  </Button>
+
+                  <Dialog
+                    open={openWindy}
+                    onClose={() => setOpenWindy(false)}
+                    maxWidth="lg"
+                    fullWidth
+                  >
+                    <DialogTitle>Thông tin cơn bão {storm.name}</DialogTitle>
+                    <DialogContent>
+                      <iframe
+                        width="100%"
+                        height="500"
+                        src="https://embed.windy.com/embed2.html?lat=16.0471&lon=108.2068&detailLat=16.0471&detailLon=108.2068&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+                        frameBorder="0"
+                        title="Windy Live Map"
+                      />
+                    </DialogContent>
+                    <DialogActions>
+                      <Button onClick={() => setOpenWindy(false)}>Đóng</Button>
+                    </DialogActions>
+                  </Dialog>
+                </>
+
               )}
             </>
           );
@@ -293,8 +368,33 @@ export default function ReliefPointManager() {
         <Paper variant="outlined">
           {filteredPoints.map((p) => (
             <Box key={p._id} p={2} borderBottom="1px solid #eee" sx={{ cursor: "pointer" }} onClick={() => setSelectedPoint(p)}>
-              <Typography fontWeight={600}>{p.name} – {p.type === "supply" ? "🟢 Cung cấp" : "🔴 Cần giúp"}</Typography>
-              <Typography variant="caption" color="gray">{new Date(p.createdAt).toLocaleString()}</Typography>
+              <Typography fontWeight={600}>
+                {p.type === "supply" ? "🟢" : "🔴"} {p.name} -{" "}
+                <Box component="span" sx={{ fontSize: "0.85rem", fontWeight: 400 }}>
+                  {p.description}
+                </Box>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {dayjs(p.createdAt).fromNow()}
+              </Typography>
+              {p.type !== "supply" && (
+                <Button
+                  variant="outlined"
+                  color="info"
+                  size="small"
+                  onClick={() => openRescueHistory(p._id)}
+                  sx={{
+                    fontSize: "0.7rem",
+                    textTransform: "none",
+                    py: 0.2,
+                    px: 0.8,
+                    ml: 1,
+                    borderRadius: 2,
+                  }}
+                >
+                  {(p.rescueList?.length ?? 0)} lượt cứu trợ
+                </Button>
+              )}
             </Box>
           ))}
         </Paper>
@@ -311,53 +411,112 @@ export default function ReliefPointManager() {
         onClose={() => setOpenModal(false)}
         onCreated={(pt) => setPoints((prev) => [...prev, pt])}
       />
-
       <Dialog open={!!selectedPoint} onClose={() => setSelectedPoint(null)} maxWidth="sm" fullWidth>
-        <DialogTitle><Typography variant="h6" fontWeight="bold">Chi tiết điểm cứu trợ</Typography></DialogTitle>
+        <DialogTitle>
+          <Typography variant="h6" fontWeight="bold">
+            Chi tiết điểm cứu trợ
+          </Typography>
+        </DialogTitle>
         <DialogContent dividers>
           {selectedPoint && (
-            <Box>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <Stack spacing={2}>
+              {/* Header */}
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Box>
-                  <Typography variant="h5" color="primary" fontWeight={600}>{selectedPoint.name}</Typography>
-                  <Box display="flex" alignItems="center" gap={1} mt={1}>
-                    <Chip label={selectedPoint.type === "supply" ? "Cung cấp" : "Cần giúp"} color={selectedPoint.type === "supply" ? "success" : "error"} size="small" />
-                    <Chip label={selectedPoint.verified ? "Đã xác minh" : "Chưa xác minh"} color={selectedPoint.verified ? "info" : "default"} variant={selectedPoint.verified ? "filled" : "outlined"} size="small" />
-                  </Box>
+                  <Typography variant="h5" color="primary" fontWeight={600}>
+                    {selectedPoint.name}
+                  </Typography>
+                  <Stack direction="row" spacing={1} mt={1}>
+                    <Chip
+                      label={selectedPoint.type === "supply" ? "Cung cấp" : "Cần giúp"}
+                      color={selectedPoint.type === "supply" ? "success" : "error"}
+                      size="small"
+                    />
+                    <Chip
+                      label={selectedPoint.verified ? "Đã xác minh" : "Chưa xác minh"}
+                      color={selectedPoint.verified ? "info" : "default"}
+                      variant={selectedPoint.verified ? "filled" : "outlined"}
+                      size="small"
+                    />
+                    {selectedPoint.type === "supply" ? <></> :
+                      <Chip
+                        label={selectedPoint.rescueStatus ? "Đã giải quyết" : "Vẫn cần trợ giúp"}
+                        color={selectedPoint.rescueStatus ? "success" : "warning"}
+                        size="small"
+                      />}
+                  </Stack>
                 </Box>
               </Box>
+
+              {selectedPoint.type === "supply" ? <></> :
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="info"
+                  onClick={() => openRescueHistory(selectedPoint._id)}
+                >
+                  {(selectedPoint.rescueList?.length ?? 0)} lượt cứu trợ
+                </Button>
+              }
+
+              {/* Description */}
               {selectedPoint.description && (
-                <Typography sx={{ mb: 1 }}><b>Mô tả:</b> {selectedPoint.description}</Typography>
+                <Typography>
+                  <b>Mô tả:</b> {selectedPoint.description}
+                </Typography>
               )}
-              <Typography sx={{ mb: 1 }}><b>Liên hệ:</b> {selectedPoint.contact || "Không có"}</Typography>
-              <Typography sx={{ mb: 1 }}><b>Tạo lúc:</b> {new Date(selectedPoint.createdAt).toLocaleString()}</Typography>
-              {selectedPoint.type === "supply" && selectedPoint.surplus?.length ? (
-                <Box sx={{ mt: 2 }}>
-                  <Typography fontWeight={600}>Cung Cấp</Typography>
+              <Typography>
+                <b>Liên hệ:</b> {selectedPoint.contact || "Không có"}
+              </Typography>
+              <Typography>
+                <b>Tạo lúc:</b> {dayjs(selectedPoint.createdAt).fromNow()}
+              </Typography>
+
+              {/* Supply */}
+              {selectedPoint.type === "supply" && selectedPoint.surplus?.length > 0 && (
+                <Box>
+                  <Typography fontWeight={600}>Cung cấp</Typography>
                   {selectedPoint.surplus.map((s, i) => (
-                    <Typography key={i}>{s.type}: {s.quantity} – {s.note || "Không có ghi chú"}</Typography>
+                    <Typography key={i}>
+                      {s.type}: {s.quantity} – {s.note || "Không có ghi chú"}
+                    </Typography>
                   ))}
                 </Box>
-              ) : null}
-              {selectedPoint.type === "need" && selectedPoint.needs?.length ? (
-                <Box sx={{ mt: 2 }}>
+              )}
+
+              {/* Needs */}
+              {selectedPoint.type === "need" && selectedPoint.needs?.length > 0 && (
+                <Box>
                   <Typography fontWeight={600}>Nhu cầu</Typography>
                   {selectedPoint.needs.map((n, i) => (
-                    <Typography key={i}>{n.type}: {n.quantity} – {n.note || "Không có ghi chú"}</Typography>
+                    <Typography key={i}>
+                      {n.type}: {n.quantity} – {n.note || "Không có ghi chú"}
+                    </Typography>
                   ))}
                 </Box>
-              ) : null}
-            </Box>
+              )}
+            </Stack>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setSelectedPoint(null)}>Đóng</Button>
           {selectedPoint && !selectedPoint.verified && (
-            <Button variant="contained" color="primary" onClick={handleVerifyPoint} disabled={verifying}>Xác minh</Button>
+            <Button variant="contained" color="primary" onClick={handleVerifyPoint} disabled={verifying}>
+              Xác minh
+            </Button>
           )}
-          <Button variant="contained" color="error" onClick={handleDeletePoint}>Xóa</Button>
+          <Button variant="contained" color="error" onClick={handleDeletePoint}>
+            Xóa
+          </Button>
         </DialogActions>
       </Dialog>
+      <RescueHistoryDialog
+        open={openRescueDialog}
+        onClose={closeRescueHistory}
+        pointId={rescuePointId}
+        apiBase={API_BASE}
+      />
     </Box>
+
   );
 }
