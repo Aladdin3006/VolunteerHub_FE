@@ -36,7 +36,7 @@ const ManagerTabs: React.FC<ManagerTabsProps> = ({ activeTab, onTabChange }) => 
       icon: <MonetizationOn />,
     },
     {
-      label: "Quản lý cảnh báo bão",
+      label: "Quản lý cảnh báo thảm hoạ",
       value: "storms",
       path: "/manager/storms",
       icon: <FlashOn />,

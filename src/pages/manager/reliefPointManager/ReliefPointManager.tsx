@@ -236,9 +236,9 @@ export default function ReliefPointManager() {
       <Typography variant="h5" fontWeight="bold" p={1}>📍 Quản lý điểm cứu trợ</Typography>
 
       <Stack direction="row" spacing={2} alignItems="center" mb={1} pl={3}>
-        <Typography>🌪️ Cơn bão:</Typography>
+        <Typography>🌪️ Thảm hoạ:</Typography>
         <Select value={selectedStorm} onChange={(e) => setSelectedStorm(e.target.value)} size="small" sx={{ minWidth: 220 }} displayEmpty>
-          <MenuItem value="" disabled>Chọn cơn bão</MenuItem>
+          <MenuItem value="" disabled>Chọn cảnh báo thảm hoạ</MenuItem>
           {storms.map((s) => (
             <MenuItem key={s._id} value={s._id}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

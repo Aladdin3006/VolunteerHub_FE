@@ -5,7 +5,8 @@ import HeroSection from "../../components/landing/Hero";
 import StatsSection from "../../components/landing/StatsSection";
 import VolunteerMarqueeFeedback from "../../components/landing/FeedBack";
 import { Box } from "@mui/material";
-
+import VolunteerHubFeatureGrid from "@/components/landing/VolunteerHubFeatureGrid";
+import RankingDashboard from "@/components/landing/Ranking";
 const Home: React.FC = () => {
 
   return (
@@ -24,6 +25,7 @@ const Home: React.FC = () => {
       >
         <StatsSection />
         <VolunteerMarqueeFeedback/>
+        <VolunteerHubFeatureGrid/>
       </Box>
       <Footer />
     </div>
