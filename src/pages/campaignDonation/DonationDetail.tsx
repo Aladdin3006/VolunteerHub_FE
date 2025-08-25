@@ -264,7 +264,7 @@ const DonationDetail: React.FC = () => {
             <Box flex={1}>
               <Card variant="outlined" sx={{ p: 2 }}>
                 <CardHeader
-                  avatar={<Avatar src='/pwa.png' />}
+                  avatar={<Avatar src="/pwa.png" />}
                   title={campaign?.title}
                   subheader={`Bởi ${
                     campaign?.createdBy?.fullName || "Tổ chức"
@@ -546,21 +546,18 @@ const DonationDetail: React.FC = () => {
                   {campaign?.description || "Không có mô tả"}
                 </Typography>
                 <Typography mt={2}>
-                  * Dự án được tổ chức bởi{" "}
-                  <strong>{campaign?.createdBy?.fullName || "Tổ chức"}</strong>.
+                  * Dự án được tổ chức bởi <strong>VHHT</strong>.
                 </Typography>
                 <Typography mt={2}>
-                  * Toàn bộ số tiền sẽ được chuyển trực tiếp tới tổ chức VHHT.
+                  * Toàn bộ số tiền sẽ được chuyển trực tiếp tới Hội chữ thập đỏ
+                  Hà Tĩnh.
                 </Typography>
               </Box>
               <Box flex={1}>
                 <Card elevation={2} sx={{ borderRadius: 4 }}>
                   <CardHeader
                     avatar={
-                      <Avatar
-                        src='/pwa.png'
-                        sx={{ width: 56, height: 56 }}
-                      />
+                      <Avatar src="/pwa.png" sx={{ width: 56, height: 56 }} />
                     }
                     title={
                       <Typography fontWeight={600}>
@@ -569,9 +566,6 @@ const DonationDetail: React.FC = () => {
                     }
                   />
                   <CardContent>
-                    <Typography fontWeight={600} mb={0.5}>
-                      {campaign?.createdBy?.fullName}
-                    </Typography>
                     <Typography fontStyle="italic" mb={2}>
                       “Đây là một tổ chức hoạt động vì cộng đồng.”
                     </Typography>
