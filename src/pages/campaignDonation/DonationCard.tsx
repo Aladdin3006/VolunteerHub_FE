@@ -116,7 +116,10 @@ const FundraisingCard: React.FC<Props> = ({ campaign, style }) => {
           <Box display="flex" alignItems="center">
             <EventOutlined fontSize="small" sx={{ mr: 1 }} />
             <Typography variant="body2">
-              {new Date(campaign.createdAt).toLocaleDateString()}
+              {new Date(campaign.createdAt).toLocaleDateString()} - {" "}
+            </Typography>
+            <Typography variant="body2">
+              {new Date(campaign.endDate).toLocaleDateString()}
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>

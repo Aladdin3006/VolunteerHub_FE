@@ -26,7 +26,8 @@ export interface IDonationDataUpload {
    * categories ids
    */
   tags: string[];
-  totalEnd: Number
+  // totalEnd: Number,
+  endDate: number;    // xoa
 }
 
 export interface IDonationDataItem {
@@ -37,7 +38,9 @@ export interface IDonationDataItem {
   thumbnail: string;
   images: string[];
   tags: ICategory[];
-  totalEnd: Number;
+  // totalEnd: Number;
+  endDate: number;
+ 
 }
 
 export const DONATION_API = {
@@ -58,6 +61,7 @@ export const DONATION_API = {
       ...data,
       thumbnail: campaignImg,
       images: gallery,
+      endDate: data.endDate,                              //cần nếu xóa
     };
     return axiosInstance.post(`/donate`, submitData, {
       extraOptions: {

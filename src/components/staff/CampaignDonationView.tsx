@@ -183,12 +183,12 @@ const CampaignDonationView: React.FC = () => {
                 <CalendarTodayIcon sx={{ mr: 2, color: "primary.main" }} />
                 <ListItemText
                   primary="Thời gian"
-                  secondary={`${new Date(
-                    campaign.createdAt
-                  ).toLocaleDateString()} - ${new Date(
-                    campaign.updatedAt
-                  ).toLocaleDateString()}`}
+                  secondary={`${new Date(campaign.createdAt).toLocaleDateString()} - ${campaign.endDate
+                      ? new Date(campaign.endDate).toLocaleDateString()
+                      : "12/31/2025"
+                    }`}
                 />
+
               </ListItem>
               <Divider sx={{ my: 1 }} />
               <ListItem>

@@ -30,6 +30,7 @@ export interface IDonationFormData {
   thumbnail: IMediaFile;
   images: IMediaFile[];
   tags: ICategory[];
+  endDate: number; // Thêm trường này
 }
 
 interface IProps extends StackProps {
@@ -50,6 +51,7 @@ const initialValue: IDonationFormData = {
   thumbnail: { url: "", type: "image" },
   images: [],
   tags: [],
+  endDate: Date.now() + 7 * 24 * 60 * 60 * 1000,   // xoa
 };
 
 const validationSchema = Yup.object({
@@ -63,6 +65,9 @@ const validationSchema = Yup.object({
   }),
   tags: Yup.array().min(1, "Vui lòng chọn ít nhất 1 danh mục"),
   images: Yup.array().min(1, "Vui lòng chọn ít nhất 1 ảnh"),
+  endDate: Yup.number()                                        //xoa
+    .min(Date.now(), "Ngày kết thúc phải ở tương lai")
+    .required("Thiếu ngày kết thúc"),
 });
 
 export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
@@ -79,6 +84,7 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
       title: values.title,
       goalAmount: values.goalAmount,
       tags: values.tags.map((cate) => cate._id),
+      endDate: values.endDate,                       //xoa
     };
 
     await onSubmitForm(payload);
@@ -261,6 +267,23 @@ export const DonationForm = forwardRef<HTMLDivElement, IProps>((props, ref) => {
             inputProps={{
               min: MIN_AMOUNT,
               step: 1,
+            }}
+          />
+
+          <TextField             /// xoa
+            label="Ngày kết thúc"
+            name="endDate"
+            fullWidth
+            type="date"
+            value={new Date(formik.values.endDate).toISOString().split("T")[0]} // Chuyển timestamp thành định dạng YYYY-MM-DD
+            onChange={(e) => {
+              formik.setFieldValue("endDate", new Date(e.target.value).getTime());
+            }}
+            onBlur={formik.handleBlur}
+            error={!!formik.touched.endDate && !!formik.errors.endDate}
+            helperText={(formik.touched.endDate && formik.errors.endDate) || " "}
+            InputLabelProps={{
+              shrink: true, // Đảm bảo label không bị che khuất
             }}
           />
 
