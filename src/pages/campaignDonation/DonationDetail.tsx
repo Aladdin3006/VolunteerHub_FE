@@ -402,7 +402,7 @@ const DonationDetail: React.FC = () => {
                                   fontWeight={700}
                                   color="primary"
                                 >
-                                  {campaign?.totalEnd?.toLocaleString()} đ
+                                   {(campaign?.totalEnd ?? 0).toLocaleString()} đ
                                 </Typography>
                               </Box>
 
