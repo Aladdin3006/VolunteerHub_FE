@@ -40,6 +40,7 @@ import {
   Info,
   KeyboardArrowLeft,
   Group as GroupIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../components/Header/Header";
@@ -274,6 +275,39 @@ const TaskListPage: React.FC = () => {
       address: checkinLocation.address,
     });
     setCheckinModalOpen(true);
+  };
+
+  const handleRefreshCheckIn = (
+    phaseId: string,
+    phaseDayId: string,
+    checkinLocation: { coordinates: [number, number]; address: string }
+  ) => {
+    // Remove phaseDayId from checkedInPhaseDays to allow re-check-in
+    setCheckedInPhaseDays((prev) =>
+      prev.filter((id) => id !== String(phaseDayId))
+    );
+
+    // Update phases state to reset check-in status
+    setPhases((prevPhases) =>
+      prevPhases.map((phase) => ({
+        ...phase,
+        phaseDays: phase.phaseDays.map((day) =>
+          day._id === phaseDayId
+            ? {
+                ...day,
+                checkinStatus: {
+                  hasCheckedIn: false,
+                  checkinTime: null,
+                  method: null,
+                },
+              }
+            : day
+        ),
+      }))
+    );
+
+    // Open check-in modal again
+    handleCheckIn(phaseId, phaseDayId, checkinLocation);
   };
 
   const handleCheckinSuccess = (phaseDayId: string) => {
@@ -729,49 +763,75 @@ const TaskListPage: React.FC = () => {
                             spacing={2}
                             alignItems="center"
                           >
-                            <Button
-                              variant={
-                                day.checkinStatus?.hasCheckedIn
-                                  ? "contained"
-                                  : "outlined"
-                              }
-                              color={
-                                day.checkinStatus?.hasCheckedIn
-                                  ? "success"
-                                  : "primary"
-                              }
-                              disabled={
-                                day.checkinStatus?.hasCheckedIn ||
-                                !isToday(day.date)
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCheckIn(
-                                  phase._id,
-                                  day._id,
-                                  day.checkinLocation
-                                );
-                              }}
-                              sx={{
-                                borderRadius: 3,
-                                textTransform: "none",
-                                fontWeight: 600,
-                                px: 3,
-                              }}
-                              className={
-                                day.checkinStatus?.hasCheckedIn
-                                  ? "bg-green-500 text-white"
-                                  : "border-blue-500 text-blue-500 hover:bg-blue-50"
-                              }
-                            >
-                              {day.checkinStatus?.hasCheckedIn
-                                ? "✅ Đã điểm danh"
-                                : isToday(day.date)
-                                ? "Điểm danh"
-                                : isPast(day.date)
-                                ? "Đã diễn ra"
-                                : "Chưa diễn ra"}
-                            </Button>
+                            {day.checkinStatus?.hasCheckedIn ? (
+                              <>
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  disabled={!isToday(day.date)}
+                                  sx={{
+                                    borderRadius: 3,
+                                    textTransform: "none",
+                                    fontWeight: 600,
+                                    px: 3,
+                                  }}
+                                  className="bg-green-500 text-white"
+                                >
+                                  ✅ Đã điểm danh
+                                </Button>
+                                {isToday(day.date) && (
+                                  <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    startIcon={<RefreshIcon />}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRefreshCheckIn(
+                                        phase._id,
+                                        day._id,
+                                        day.checkinLocation
+                                      );
+                                    }}
+                                    sx={{
+                                      borderRadius: 3,
+                                      textTransform: "none",
+                                      fontWeight: 600,
+                                      px: 3,
+                                    }}
+                                    className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                                  >
+                                    Làm mới
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              <Button
+                                variant="outlined"
+                                color="primary"
+                                disabled={!isToday(day.date)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCheckIn(
+                                    phase._id,
+                                    day._id,
+                                    day.checkinLocation
+                                  );
+                                }}
+                                sx={{
+                                  borderRadius: 3,
+                                  textTransform: "none",
+                                  fontWeight: 600,
+                                  px: 3,
+                                }}
+                                className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                              >
+                                {isToday(day.date)
+                                  ? "Điểm danh"
+                                  : isPast(day.date)
+                                  ? "Đã diễn ra"
+                                  : "Chưa diễn ra"}
+                              </Button>
+                            )}
                             {expandedPhaseDay === day._id ? (
                               <ExpandLess className="text-blue-500" />
                             ) : (
@@ -859,7 +919,6 @@ const TaskListPage: React.FC = () => {
                                         {task.description}
                                       </Typography>
 
-                                      {/* Status and action buttons row remains unchanged */}
                                       <Box
                                         sx={{
                                           display: "flex",
@@ -1277,7 +1336,6 @@ const TaskListPage: React.FC = () => {
                   {selectedTask?.peerReviews &&
                   selectedTask.peerReviews.length > 0 ? (
                     <>
-                      {/* Calculate average score and total reviews for current user */}
                       {(() => {
                         const userReviews = selectedTask.peerReviews.filter(
                           (review) => review.reviewee === userId
@@ -1335,7 +1393,6 @@ const TaskListPage: React.FC = () => {
                           </Box>
                         );
                       })()}
-                      {/* List of reviews for current user - Anonymous version */}
                       <Box>
                         <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
                           Danh sách bình luận

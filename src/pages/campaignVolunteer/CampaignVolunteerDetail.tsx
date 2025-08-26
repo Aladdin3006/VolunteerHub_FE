@@ -92,7 +92,9 @@ const CampaignVolunteerDetail: React.FC = () => {
   const currentUserId = user._id || user.id;
   const isLoggedIn = !!currentUserId;
   const token = user.token || null;
-  const hasRegistered = user?.faceDescriptor !== null;
+  const [hasRegistered, setHasRegistered] = useState(
+    user?.faceDescriptor !== null
+  );
   const isCampaignCompleted = campaign?.status === "completed";
 
   // Flatten suggested skills
@@ -360,6 +362,18 @@ const CampaignVolunteerDetail: React.FC = () => {
     } finally {
       setJoinLoading(false);
     }
+  };
+  const handleFaceRegistrationSuccess = () => {
+    // Update user data in localStorage
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        ...storedUser,
+        faceDescriptor: true, // Assume faceDescriptor is set to true or actual value
+      })
+    );
+    setHasRegistered(true); // Update state to reflect registration
   };
 
   const handleOpenWithdrawalDialog = () => {

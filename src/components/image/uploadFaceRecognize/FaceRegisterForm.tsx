@@ -13,7 +13,11 @@ import {
 import Webcam from "react-webcam";
 import authService from "../../../services/Authentication.service";
 
-const RegisterFaceModal = () => {
+interface RegisterFaceModalProps {
+  onSuccess?: () => void; // Add callback prop
+}
+
+const RegisterFaceModal: React.FC<RegisterFaceModalProps> = ({ onSuccess }) => {
   const webcamRef = useRef<Webcam>(null);
 
   const [currentUser, setCurrentUser] = useState(authService.getUser());
@@ -25,8 +29,10 @@ const RegisterFaceModal = () => {
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<{ status?: string; error?: string }>({});
-  const fastAPIurl = import.meta.env.VITE_FAST_API
+  const [response, setResponse] = useState<{ status?: string; error?: string }>(
+    {}
+  );
+  const fastAPIurl = import.meta.env.VITE_FAST_API;
 
   const captureImage = async () => {
     if (!webcamRef.current) return;
@@ -77,6 +83,11 @@ const RegisterFaceModal = () => {
       setCurrentUser(updatedUser); // ⚡ để UI re-render ngay
 
       setResponse({ status: data.status });
+
+      // ✅ Call the success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err: any) {
       setResponse({ error: err.message });
     } finally {
@@ -98,15 +109,17 @@ const RegisterFaceModal = () => {
   return (
     <Box sx={{ mt: 4 }}>
       {hasRegistered ? (
-        <Alert severity="success">
-          ✅ Bạn đã đăng ký khuôn mặt.
-        </Alert>
+        <Alert severity="success">✅ Bạn đã đăng ký khuôn mặt.</Alert>
       ) : (
         <>
           <Alert severity="warning" sx={{ mb: 2 }}>
             ⚠️ Bạn chưa đăng ký khuôn mặt để check-in.
           </Alert>
-          <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setOpen(true)}
+          >
             Đăng ký khuôn mặt
           </Button>
         </>
@@ -122,7 +135,11 @@ const RegisterFaceModal = () => {
                 screenshotFormat="image/jpeg"
                 videoConstraints={{ facingMode: "user" }}
                 width="100%"
-                style={{ borderRadius: 8, marginTop: 8, transform: "scaleX(-1)" }}
+                style={{
+                  borderRadius: 8,
+                  marginTop: 8,
+                  transform: "scaleX(-1)",
+                }}
               />
               <Button
                 fullWidth
@@ -170,8 +187,16 @@ const RegisterFaceModal = () => {
           ) : preview ? (
             <>
               <Button onClick={reset}>Chụp lại</Button>
-              <Button onClick={handleRegister} disabled={loading} variant="contained">
-                {loading ? <CircularProgress size={20} /> : "Dùng ảnh này để đăng ký"}
+              <Button
+                onClick={handleRegister}
+                disabled={loading}
+                variant="contained"
+              >
+                {loading ? (
+                  <CircularProgress size={20} />
+                ) : (
+                  "Dùng ảnh này để đăng ký"
+                )}
               </Button>
             </>
           ) : (
