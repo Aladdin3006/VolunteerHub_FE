@@ -5,51 +5,99 @@ import {
   Tab,
   Container,
   Typography,
-  Grid,
   CircularProgress,
-  Paper, // Thêm Paper để tạo nền cho Tabs
+  Paper,
+  Button,
+  Menu,
+  MenuItem,
+  TextField,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
-import { getCampaignVolunteer, CampaignVolunteer } from "../../apis/campaign";
+import {
+  getCampaignVolunteer,
+  getCategories,
+  CampaignVolunteer,
+  Category,
+} from "../../apis/campaign";
 import VolunteerCard from "./VolunteerCard";
-import { MoodBad } from "@mui/icons-material"; // Icon cho trạng thái trống
+import { MoodBad, Search } from "@mui/icons-material";
 
 const CampaignHome: React.FC = () => {
-  const [volunteerCampaigns, setVolunteerCampaigns] = useState<CampaignVolunteer[]>([]);
+  const [volunteerCampaigns, setVolunteerCampaigns] = useState<
+    CampaignVolunteer[]
+  >([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<"in-progress" | "completed">("in-progress");
+  const [selectedTab, setSelectedTab] = useState<"in-progress" | "completed">(
+    "in-progress"
+  );
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await getCampaignVolunteer();
-        const approvedCampaigns = Array.isArray(data)
-          ? data.filter((c) => c.acceptStatus === "approved")
+        const [campaignData, categoryData] = await Promise.all([
+          getCampaignVolunteer(),
+          getCategories(),
+        ]);
+        const approvedCampaigns = Array.isArray(campaignData)
+          ? campaignData.filter((c) => c.acceptStatus === "approved")
           : [];
         setVolunteerCampaigns(approvedCampaigns);
+        setCategories(categoryData);
+
+        // Check for category query param
+        const params = new URLSearchParams(location.search);
+        const categoryId = params.get("category");
+        if (categoryId) {
+          setSelectedCategory(categoryId);
+        }
       } catch (err) {
-        console.error("Fetch campaigns error:", err);
+        console.error("Fetch data error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [location.search]);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: "in-progress" | "completed") => {
+  const handleTabChange = (
+    _: React.SyntheticEvent,
+    newValue: "in-progress" | "completed"
+  ) => {
     setSelectedTab(newValue);
+    setSelectedCategory(null); // Reset category filter when changing tabs
+    setSearchQuery(""); // Reset search query when changing tabs
+    navigate("/campaigns"); // Clear query params
   };
 
-  // Nâng cấp Banner: Thêm gradient và mô tả
+  const handleCategoryClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCategorySelect = (categoryId: string | null) => {
+    setSelectedCategory(categoryId);
+    setAnchorEl(null);
+    navigate(categoryId ? `/campaigns?category=${categoryId}` : "/campaigns");
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
+
   const Banner = () => (
     <Box
       sx={{
-        height: 360, // Tăng chiều cao một chút
-        backgroundImage: "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
+        height: 360,
+        backgroundImage:
+          "url(https://images.pexels.com/photos/6646921/pexels-photo-6646921.jpeg)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
@@ -58,11 +106,16 @@ const CampaignHome: React.FC = () => {
         justifyContent: "center",
         color: "#fff",
         textAlign: "center",
-        mb: 6, // Tăng khoảng cách dưới
+        mb: 6,
       }}
     >
-      {/* Lớp phủ gradient để tạo chiều sâu */}
-      <Box sx={{ position: "absolute", inset: 0, background: "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.6))" }} />
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.6))",
+        }}
+      />
       <Box sx={{ position: "relative", px: 2 }}>
         <Typography variant="h2" sx={{ fontWeight: 700, mb: 1 }}>
           Chung tay hành động
@@ -75,13 +128,22 @@ const CampaignHome: React.FC = () => {
   );
 
   const filteredCampaigns = volunteerCampaigns.filter(
-    (c) => c.status === selectedTab && c.acceptStatus === "approved"
+    (c) =>
+      (selectedTab === "in-progress"
+        ? ["in-progress", "upcoming"].includes(c.status || "")
+        : c.status === "completed") &&
+      c.acceptStatus === "approved" &&
+      (selectedCategory
+        ? c.categories?.some((cat) => cat._id === selectedCategory)
+        : true) &&
+      (searchQuery
+        ? c.name.toLowerCase().includes(searchQuery.toLowerCase())
+        : true)
   );
 
-  // Component cho trạng thái trống
   const EmptyState = () => (
     <Box textAlign="center" py={10}>
-      <MoodBad sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+      <MoodBad sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
       <Typography variant="h6" color="text.secondary">
         Không tìm thấy dự án nào
       </Typography>
@@ -91,7 +153,6 @@ const CampaignHome: React.FC = () => {
     </Box>
   );
 
-  // Style chung cho các Tab để tránh lặp code
   const tabStyle = {
     fontWeight: 600,
     fontSize: "1rem",
@@ -99,8 +160,8 @@ const CampaignHome: React.FC = () => {
     flexGrow: 1,
     minWidth: 0,
     color: "text.primary",
-    '&.Mui-selected': {
-      color: 'primary.main', // Màu cho tab được chọn
+    "&.Mui-selected": {
+      color: "primary.main",
     },
   };
 
@@ -110,15 +171,14 @@ const CampaignHome: React.FC = () => {
       <Banner />
 
       <Container maxWidth="xl" sx={{ mb: 8 }}>
-        {/* Nâng cấp Tabs: Đặt trong Paper để nổi bật hơn */}
         <Paper
           elevation={2}
           sx={{
-            maxWidth: 600,
+            maxWidth: 800,
             mx: "auto",
-            mb: 6, // Tăng khoảng cách
+            mb: 4,
             borderRadius: 2,
-            overflow: 'hidden'
+            overflow: "hidden",
           }}
         >
           <Tabs
@@ -137,7 +197,94 @@ const CampaignHome: React.FC = () => {
           </Tabs>
         </Paper>
 
-        {/* Grid hoặc loader */}
+        <Box
+          sx={{
+            maxWidth: 600,
+            mx: "auto",
+            mb: 6,
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+            p: 2,
+            bgcolor: "background.paper",
+            borderRadius: 3,
+            boxShadow: 2,
+          }}
+        >
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="🔍 Tìm kiếm dự án theo tên..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <Search sx={{ mr: 1, color: "text.secondary" }} />
+              ),
+              sx: { borderRadius: 2 },
+            }}
+            sx={{
+              flex: 3,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 3,
+                bgcolor: "background.default",
+              },
+            }}
+          />
+
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCategoryClick}
+            sx={{
+              flex: 1,
+              textTransform: "none",
+              borderRadius: 3,
+              minWidth: 140,
+              fontWeight: 500,
+              bgcolor: "primary.main",
+              color: "white",
+              boxShadow: 1,
+              "&:hover": {
+                bgcolor: "primary.dark",
+              },
+            }}
+          >
+            {selectedCategory
+              ? categories.find((cat) => cat._id === selectedCategory)?.name ||
+                "Danh mục"
+              : "Danh mục"}
+          </Button>
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={() => handleCategorySelect(null)}
+            PaperProps={{
+              elevation: 3,
+              sx: { borderRadius: 2, mt: 1, minWidth: 180 },
+            }}
+          >
+            <MenuItem
+              onClick={() => handleCategorySelect(null)}
+              sx={{ fontWeight: !selectedCategory ? 600 : 400 }}
+            >
+              Tất cả
+            </MenuItem>
+            {categories.map((category) => (
+              <MenuItem
+                key={category._id}
+                onClick={() => handleCategorySelect(category._id)}
+                sx={{
+                  fontWeight: selectedCategory === category._id ? 600 : 400,
+                }}
+              >
+                {category.name}
+              </MenuItem>
+            ))}
+          </Menu>
+        </Box>
+
         {loading ? (
           <Box sx={{ textAlign: "center", mt: 6 }}>
             <CircularProgress size={50} />
@@ -146,9 +293,9 @@ const CampaignHome: React.FC = () => {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, 370px)", // Chiều rộng cố định mỗi card
-              gap: 5, // khoảng cách giữa các card
-              justifyContent: "center", // căn giữa toàn bộ grid
+              gridTemplateColumns: "repeat(auto-fill, 370px)",
+              gap: 5,
+              justifyContent: "center",
             }}
           >
             {filteredCampaigns.map((c) => (
@@ -159,9 +306,8 @@ const CampaignHome: React.FC = () => {
               />
             ))}
           </Box>
-
         ) : (
-          <EmptyState /> // Hiển thị trạng thái trống
+          <EmptyState />
         )}
       </Container>
 

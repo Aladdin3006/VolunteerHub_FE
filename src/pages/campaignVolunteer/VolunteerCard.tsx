@@ -28,17 +28,43 @@ interface Props {
 const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
   const navigate = useNavigate();
 
-  // Tính toán giả lập cho thanh tiến độ
   const volunteersJoined = campaign.volunteers?.length || 0;
   const progress = Math.min(volunteersJoined * 100, 100);
 
-  // Assign letters to categories (simulating the DonationCard's A-Z pattern)
   const categoryLetters = "ABCDEFGHIMNYT".split("");
   const categoriesWithLetters =
     campaign.categories?.map((cat, index) => ({
       ...cat,
       letter: categoryLetters[index] || "",
     })) || [];
+
+  const getStatusLabel = () => {
+    switch (campaign.status) {
+      case "upcoming":
+        return "Sắp diễn ra";
+      case "in-progress":
+        return "Đang diễn ra";
+      case "completed":
+        return "Đã kết thúc";
+      default:
+        return "Đang diễn ra";
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (campaign.status) {
+      case "upcoming":
+        return "rgba(255, 165, 0, 0.8)"; // Orange for upcoming
+      case "in-progress":
+        return "rgba(25, 118, 210, 0.8)"; // Blue for in-progress
+      default:
+        return "rgba(0, 0, 0, 0.5)"; // Gray for completed
+    }
+  };
+
+  const handleCategoryClick = (categoryId: string) => {
+    navigate(`/campaigns?category=${categoryId}`);
+  };
 
   return (
     <Card
@@ -68,9 +94,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           sx={{ cursor: "pointer" }}
         />
         <Chip
-          label={
-            campaign.status === "in-progress" ? "Đang diễn ra" : "Đã kết thúc"
-          }
+          label={getStatusLabel()}
           color={campaign.status === "in-progress" ? "success" : "default"}
           size="small"
           sx={{
@@ -78,10 +102,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
             top: 12,
             right: 12,
             color: "#fff",
-            backgroundColor:
-              campaign.status === "in-progress"
-                ? "rgba(25, 118, 210, 0.8)"
-                : "rgba(0, 0, 0, 0.5)",
+            backgroundColor: getStatusColor(),
           }}
         />
       </Box>
@@ -119,22 +140,19 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           </Box>
           <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
             <CategoryOutlined fontSize="small" sx={{ mr: 1 }} />
-            {categoriesWithLetters.map((cat, index) => (
+            {categoriesWithLetters.map((cat) => (
               <Button
                 key={cat._id}
                 variant="contained"
                 size="small"
+                onClick={() => handleCategoryClick(cat._id)}
                 sx={{
                   backgroundColor: "#4CAF50",
-                  color: "#ffffffff",
+                  color: "#ffffff",
                   borderRadius: "20px",
                   padding: "0px 5px",
                   minWidth: "50px",
                   textTransform: "none",
-                  "& .MuiButton-label": {
-                    fontSize: "0.4rem",
-                    fontWeight: "normal",
-                  },
                   "&:hover": {
                     backgroundColor: "#45a049",
                   },
@@ -146,7 +164,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
                       height: 18,
                       backgroundColor: "#D3D3D3",
                       color: "#808080",
-                      fontSize: "0.25rem",
+                      fontSize: "0.75rem",
                       fontWeight: "bold",
                       display: "flex",
                       alignItems: "center",

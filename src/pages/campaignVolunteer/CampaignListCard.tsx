@@ -16,6 +16,7 @@ import {
   Info,
   CheckCircle,
   Schedule,
+  LocationOnOutlined,
 } from "@mui/icons-material";
 
 interface Campaign {
@@ -194,10 +195,18 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
           />
         </Box>
 
-        <Box display="flex" alignItems="center" mb={1}>
-          <Category sx={{ fontSize: 16, mr: 1, color: "text.secondary" }} />
-          <Typography variant="body2" color="text.secondary">
-            {campaign.location?.address || "Chưa rõ địa điểm"}
+        <Box display="flex" alignItems="center">
+          <LocationOnOutlined fontSize="small" sx={{ mr: 1 }} />
+          <Typography
+            variant="body2"
+            noWrap
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {campaign.location?.address || "Nhiều địa điểm"}
           </Typography>
         </Box>
 
