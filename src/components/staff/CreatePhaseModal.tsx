@@ -52,6 +52,7 @@ import DepartmentManager from "../../components/staff/DepartmentManager";
 import VolunteerRequestsModal from "../../components/staff/VolunteerRequestsModal";
 import CheckInDialog from "./CheckInDialog";
 import IssueDialog from "./IssueDialog";
+import MapLocationPicker from "../utils/MapLocationPicker";
 
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -214,16 +215,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-              ...phase,
-              phaseDays: [
-                ...phase.phaseDays,
-                {
-                  id: `new-day-${Date.now()}`,
-                  date: new Date(),
-                  location: { coordinates: null, address: "" },
-                } as PhaseDayData,
-              ],
-            }
+            ...phase,
+            phaseDays: [
+              ...phase.phaseDays,
+              {
+                id: `new-day-${Date.now()}`,
+                date: new Date(),
+                location: { coordinates: null, address: "" },
+              } as PhaseDayData,
+            ],
+          }
           : phase
       )
     );
@@ -234,9 +235,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-              ...phase,
-              phaseDays: phase.phaseDays.filter((day) => day.id !== dayId),
-            }
+            ...phase,
+            phaseDays: phase.phaseDays.filter((day) => day.id !== dayId),
+          }
           : phase
       )
     );
@@ -252,16 +253,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           phases.map((phase) =>
             phase._id === phaseId
               ? {
-                  ...phase,
-                  phaseDays: [
-                    ...phase.phaseDays,
-                    {
-                      id: dayId,
-                      date: new Date(),
-                      location: { coordinates: null, address: "" },
-                    },
-                  ],
-                }
+                ...phase,
+                phaseDays: [
+                  ...phase.phaseDays,
+                  {
+                    id: dayId,
+                    date: new Date(),
+                    location: { coordinates: null, address: "" },
+                  },
+                ],
+              }
               : phase
           )
         );
@@ -278,12 +279,12 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-              ...phase,
-              [field]:
-                field === "startDate" || field === "endDate"
-                  ? new Date(value)
-                  : value,
-            }
+            ...phase,
+            [field]:
+              field === "startDate" || field === "endDate"
+                ? new Date(value)
+                : value,
+          }
           : phase
       )
     );
@@ -299,16 +300,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-              ...phase,
-              phaseDays: phase.phaseDays.map((day) =>
-                day.id === dayId
-                  ? {
-                      ...day,
-                      [field]: field === "date" ? new Date(value) : value,
-                    }
-                  : day
-              ),
-            }
+            ...phase,
+            phaseDays: phase.phaseDays.map((day) =>
+              day.id === dayId
+                ? {
+                  ...day,
+                  [field]: field === "date" ? new Date(value) : value,
+                }
+                : day
+            ),
+          }
           : phase
       )
     );
@@ -357,9 +358,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         phases.map((phase) =>
           phase._id === phaseId
             ? {
-                ...phase,
-                status: updatedPhase.status,
-              }
+              ...phase,
+              status: updatedPhase.status,
+            }
             : phase
         )
       );
@@ -627,7 +628,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                               }
                               helperText={
                                 !phase.startDate ||
-                                isNaN(phase.startDate.getTime())
+                                  isNaN(phase.startDate.getTime())
                                   ? "Start date is required"
                                   : ""
                               }
@@ -661,8 +662,8 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                   : phase.startDate &&
                                     phase.endDate &&
                                     phase.startDate >= phase.endDate
-                                  ? "End date must be after start date"
-                                  : ""
+                                    ? "End date must be after start date"
+                                    : ""
                               }
                             />
                           </Grid>
@@ -720,59 +721,32 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                     <Typography variant="body2" gutterBottom>
                                       Check-in Location
                                     </Typography>
-                                    <Box
-                                      sx={{
-                                        height: "200px",
-                                        width: "100%",
-                                        mb: 1,
+
+                                    <MapLocationPicker
+                                      defaultLocation={{ lat: 21.0278, lng: 105.8342 }}
+                                      mapHeight="250px"
+                                      center={
+                                        day.location.coordinates
+                                          ? { lat: day.location.coordinates[0], lng: day.location.coordinates[1] }
+                                          : null
+                                      }
+                                      onPick={(coords) => {
+                                        updateDayLocation(
+                                          phase._id,
+                                          day.id,
+                                          [coords.lat, coords.lng],
+                                          coords.address || `Lat: ${coords.lat}, Lng: ${coords.lng}`
+                                        );
                                       }}
-                                    >
-                                      <MapContainer
-                                        center={[21.0278, 105.8342]}
-                                        zoom={13}
-                                        style={{
-                                          height: "100%",
-                                          width: "100%",
-                                        }}
-                                      >
-                                        <TileLayer
-                                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                        />
-                                        {day.location.coordinates && (
-                                          <Marker
-                                            position={day.location.coordinates}
-                                          >
-                                            <Popup>
-                                              {day.location.address}
-                                            </Popup>
-                                          </Marker>
-                                        )}
-                                        <MapClickHandler
-                                          phaseId={phase._id}
-                                          dayId={day.id}
-                                          updateDayLocation={updateDayLocation}
-                                        />
-                                      </MapContainer>
-                                    </Box>
-                                    <Typography
-                                      variant="body2"
-                                      color="textSecondary"
-                                    >
-                                      {day.location.address ||
-                                        "Click map to select location"}
+                                    // 👉 bỏ hideSearchInput
+                                    />
+
+                                    <Typography variant="body2" color="textSecondary">
+                                      {day.location.address || "Click map or search to select location"}
                                     </Typography>
-                                    {!day.location.coordinates && (
-                                      <Typography variant="body2" color="error">
-                                        Location is required
-                                      </Typography>
-                                    )}
-                                    {!day.location.address && (
-                                      <Typography variant="body2" color="error">
-                                        Location address is required
-                                      </Typography>
-                                    )}
                                   </Grid>
+
+
                                 </Grid>
                               </Paper>
                             ))}

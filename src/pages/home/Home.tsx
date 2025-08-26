@@ -7,6 +7,7 @@ import VolunteerMarqueeFeedback from "../../components/landing/FeedBack";
 import { Box } from "@mui/material";
 import VolunteerHubFeatureGrid from "@/components/landing/VolunteerHubFeatureGrid";
 import RankingDashboard from "@/components/landing/Ranking";
+import CampaignDashboard from "../manager/CampaignDashBoard";
 const Home: React.FC = () => {
 
   return (
@@ -26,6 +27,7 @@ const Home: React.FC = () => {
         <StatsSection />
         <VolunteerMarqueeFeedback/>
         <VolunteerHubFeatureGrid/>
+        <CampaignDashboard/>
       </Box>
       <Footer />
     </div>
