@@ -136,7 +136,7 @@ const DonationDetail: React.FC = () => {
       query: { userId: "guest", campaignId },
     });
 
-    socketInstance.on("connect", () => {});
+    socketInstance.on("connect", () => { });
     socketInstance.on("connect_error", (e) => console.error("socket error", e));
 
     const fetchCampaignData = async () => {
@@ -180,9 +180,9 @@ const DonationDetail: React.FC = () => {
       setCampaign((prev) =>
         prev
           ? {
-              ...prev,
-              currentAmount: prev.currentAmount + d.transaction.amount,
-            }
+            ...prev,
+            currentAmount: prev.currentAmount + d.transaction.amount,
+          }
           : prev
       );
     };
@@ -266,9 +266,8 @@ const DonationDetail: React.FC = () => {
                 <CardHeader
                   avatar={<Avatar src="/pwa.png" />}
                   title={campaign?.title}
-                  subheader={`Bởi ${
-                    campaign?.createdBy?.fullName || "Tổ chức"
-                  }`}
+                  subheader={`Bởi ${campaign?.createdBy?.fullName || "Tổ chức"
+                    }`}
                   sx={{
                     "& .MuiCardHeader-title": {
                       fontSize: "1.30rem", // Tăng cỡ chữ, bạn có thể điều chỉnh giá trị này
@@ -427,6 +426,15 @@ const DonationDetail: React.FC = () => {
                                     (campaign.currentAmount ?? 0)
                                   )?.toLocaleString()}{" "}
                                   đ
+                                </Typography>
+                              </Box>
+
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body2" color="text.secondary">
+                                  Tổng số tiền còn lại:
+                                </Typography>
+                                <Typography variant="subtitle1" fontWeight={700} color="success.main">
+                                  {(campaign?.currentAmount ?? 0)?.toLocaleString()} đ
                                 </Typography>
                               </Box>
                             </Stack>
