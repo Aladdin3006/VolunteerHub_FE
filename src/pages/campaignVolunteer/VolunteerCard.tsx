@@ -69,8 +69,8 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style, userLocation }) => {
       ? calculateDistance(
           userLocation.latitude,
           userLocation.longitude,
-          campaign.location.coordinates[1], // latitude
-          campaign.location.coordinates[0] // longitude
+          campaign.location.coordinates[0], // latitude
+          campaign.location.coordinates[1] // longitude
         ).toFixed(1)
       : null;
 

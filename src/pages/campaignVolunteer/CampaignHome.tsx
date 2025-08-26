@@ -151,14 +151,14 @@ const CampaignHome: React.FC = () => {
           const distA = calculateDistance(
             userLocation.latitude,
             userLocation.longitude,
-            a.location.coordinates[1], // latitude
-            a.location.coordinates[0] // longitude
+            a.location.coordinates[0], // latitude
+            a.location.coordinates[1] // longitude
           );
           const distB = calculateDistance(
             userLocation.latitude,
             userLocation.longitude,
-            b.location.coordinates[1], // latitude
-            b.location.coordinates[0] // longitude
+            b.location.coordinates[0], // latitude
+            b.location.coordinates[1] // longitude
           );
           return distA - distB;
         })
