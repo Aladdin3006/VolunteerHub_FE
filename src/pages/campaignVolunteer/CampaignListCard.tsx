@@ -19,7 +19,7 @@ import {
   LocationOnOutlined,
 } from "@mui/icons-material";
 
-interface Campaign {
+export interface Campaign {
   location: {
     address: string;
   };

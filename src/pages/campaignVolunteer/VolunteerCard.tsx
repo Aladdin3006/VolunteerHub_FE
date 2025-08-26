@@ -23,13 +23,56 @@ import {
 interface Props {
   campaign: CampaignVolunteer;
   style?: React.CSSProperties;
+  userLocation?: { latitude: number; longitude: number } | null;
 }
 
-const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
+const VolunteerCard: React.FC<Props> = ({ campaign, style, userLocation }) => {
   const navigate = useNavigate();
 
   const volunteersJoined = campaign.volunteers?.length || 0;
-  const progress = Math.min(volunteersJoined * 100, 100);
+  const calculateProgress = () => {
+    const now = new Date();
+    const start = new Date(campaign.startDate);
+    const end = new Date(campaign.endDate);
+
+    if (now < start) return 0;
+    if (now > end) return 100;
+
+    const total = end.getTime() - start.getTime();
+    const elapsed = now.getTime() - start.getTime();
+
+    return Math.round((elapsed / total) * 100);
+  };
+  const progress = calculateProgress();
+
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  };
+
+  const distance =
+    userLocation && campaign.location?.coordinates
+      ? calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          campaign.location.coordinates[1], // latitude
+          campaign.location.coordinates[0] // longitude
+        ).toFixed(1)
+      : null;
 
   const categoryLetters = "ABCDEFGHIMNYT".split("");
   const categoriesWithLetters =
@@ -129,7 +172,8 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           <Box display="flex" alignItems="center">
             <EventOutlined fontSize="small" sx={{ mr: 1 }} />
             <Typography variant="body2">
-              {new Date(campaign.startDate).toLocaleDateString()}
+              {new Date(campaign.startDate).toLocaleDateString()} đến{" "}
+              {new Date(campaign.endDate).toLocaleDateString()}
             </Typography>
           </Box>
           <Box display="flex" alignItems="center">
@@ -181,7 +225,7 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
           </Box>
         </Stack>
 
-        <Box sx={{ mt: "auto" }}>
+        <Box>
           <Box
             display="flex"
             justifyContent="space-between"
@@ -199,11 +243,37 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style }) => {
             </Typography>
           </Box>
 
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{ height: 8, borderRadius: 4 }}
-          />
+          {distance && (
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={1}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>
+                Cách bạn
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>
+                {distance} km
+              </Typography>
+            </Box>
+          )}
+
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>
+              Đã diễn ra
+            </Typography>
+            <Box display="flex" alignItems="center">
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                sx={{ flex: 1, mr: 1, height: 8, borderRadius: 4 }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {progress}%
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       </CardContent>
 
