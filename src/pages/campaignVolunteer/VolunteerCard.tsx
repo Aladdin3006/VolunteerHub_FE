@@ -258,22 +258,6 @@ const VolunteerCard: React.FC<Props> = ({ campaign, style, userLocation }) => {
               </Typography>
             </Box>
           )}
-
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 1 }}>
-              Đã diễn ra
-            </Typography>
-            <Box display="flex" alignItems="center">
-              <LinearProgress
-                variant="determinate"
-                value={progress}
-                sx={{ flex: 1, mr: 1, height: 8, borderRadius: 4 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {progress}%
-              </Typography>
-            </Box>
-          </Box>
         </Box>
       </CardContent>
 
