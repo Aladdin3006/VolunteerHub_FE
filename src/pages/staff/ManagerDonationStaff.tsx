@@ -319,7 +319,7 @@ const ManagerDonationStaff: React.FC = () => {
                     </Typography>
                     <Typography variant="body2" color="textSecondary">
                       {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
-                      {new Date(campaign.updatedAt).toLocaleDateString()}
+                      {new Date(campaign.endDate || "2025-12-31").toLocaleDateString()}
                     </Typography>
                     <Typography variant="body2" color="textSecondary" mt={1}>
                       Tiến độ quyên góp

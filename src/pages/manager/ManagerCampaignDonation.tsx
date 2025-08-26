@@ -473,7 +473,7 @@ const ManagerDonationStaff: React.FC = () => {
                         }}
                       >
                         {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
-                        {new Date(campaign.updatedAt).toLocaleDateString()}
+                        {new Date(campaign.endDate || "2025-12-31").toLocaleDateString()}
                       </Typography>
                     </Box>
                     <Box

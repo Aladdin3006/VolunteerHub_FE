@@ -295,10 +295,10 @@ const DonationDetailDialog: React.FC<Props> = ({ open, campaign, onClose }) => {
                                 <DateRange color="primary" />
                                 <Box>
                                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {formatDate(campaign.createdAt)} - {formatDate(campaign.updatedAt)}
+                                        {formatDate(campaign.createdAt)} - {formatDate(campaign.endDate || "2025-12-31")}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        {calculateDateDifference(campaign.createdAt, campaign.updatedAt)} ngày
+                                        {calculateDateDifference(campaign.createdAt, campaign.endDate || "2025-12-31")} ngày
                                     </Typography>
                                 </Box>
                             </Box>
