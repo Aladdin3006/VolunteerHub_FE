@@ -25,9 +25,8 @@ const Home: React.FC = () => {
         }}
       >
         <StatsSection />
-        <VolunteerMarqueeFeedback/>
         <VolunteerHubFeatureGrid/>
-        <CampaignDashboard/>
+        <VolunteerMarqueeFeedback/>
       </Box>
       <Footer />
     </div>

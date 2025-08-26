@@ -191,19 +191,41 @@ const CampaignDonationView: React.FC = () => {
                 />
               </ListItem>
               <Divider sx={{ my: 1 }} />
-              <ListItem>
-                <LocationOnIcon sx={{ mr: 2, color: "primary.main" }} />
-                <ListItemText
-                  primary="Tiến độ quyên góp"
-                  secondary={`${campaign.currentAmount.toLocaleString()} / ${campaign.goalAmount.toLocaleString()} VNĐ`}
-                />
-              </ListItem>
-              <Box sx={{ px: 2, py: 1 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={(campaign.currentAmount / campaign.goalAmount) * 100}
-                />
-              </Box>
+              {campaign.status === "completed" ? (
+                <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
+                  <Typography variant="h6" color="success.main" gutterBottom>
+                    Chiến dịch đã kết thúc ✅
+                  </Typography>
+                  <Typography>
+                    <strong>Tổng quyên góp:</strong> {campaign.totalEnd.toLocaleString()} VNĐ
+                  </Typography>
+                  <Typography>
+                    <strong>Còn lại:</strong> {campaign.currentAmount.toLocaleString()} VNĐ
+                  </Typography>
+                  <Typography>
+                    <strong>Đã chi:</strong>{" "}
+                    {(campaign.totalEnd - campaign.currentAmount).toLocaleString()} VNĐ
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ p: 2 }}>
+                  <ListItem disablePadding>
+                    <LocationOnIcon sx={{ mr: 2, color: "primary.main" }} />
+                    <ListItemText
+                      primary="Tiến độ quyên góp"
+                      secondary={`${campaign.currentAmount.toLocaleString()} / ${campaign.goalAmount.toLocaleString()} VNĐ`}
+                    />
+                  </ListItem>
+                  <Box sx={{ mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={(campaign.currentAmount / campaign.goalAmount) * 100}
+                      sx={{ height: 10, borderRadius: 5 }}
+                    />
+                  </Box>
+                </Box>
+              )}
+
             </List>
           </Box>
         </Box>
