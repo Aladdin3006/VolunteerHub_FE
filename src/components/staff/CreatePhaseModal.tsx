@@ -81,11 +81,11 @@ interface PhaseData {
   description: string;
   startDate: Date;
   endDate: Date;
-  status: "upcoming" | "in-progress" | "completed"; // Added status field
+  status: "upcoming" | "in-progress" | "completed";
   phaseDays: PhaseDayData[];
 }
 
-const MapClickHandler: React.FC<{
+interface MapClickHandlerProps {
   phaseId: string;
   dayId: string;
   updateDayLocation: (
@@ -94,7 +94,13 @@ const MapClickHandler: React.FC<{
     coordinates: [number, number],
     address: string
   ) => void;
-}> = ({ phaseId, dayId, updateDayLocation }) => {
+}
+
+const MapClickHandler: React.FC<MapClickHandlerProps> = ({
+  phaseId,
+  dayId,
+  updateDayLocation,
+}) => {
   useMapEvent("click", (e) => {
     updateDayLocation(
       phaseId,
@@ -113,7 +119,12 @@ interface CreatePhaseModalProps {
   open: boolean;
   onClose: () => void;
   campaignId: string;
-  selectedCampaign: { name: string };
+  selectedCampaign: {
+    name: string;
+    location?: { coordinates: [number, number] | null; address: string };
+    startDate?: Date;
+    endDate?: Date;
+  };
   onTabChange?: (tabIndex: number) => void;
   onPhaseCreated?: () => void;
 }
@@ -172,7 +183,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             description: phase.description || "",
             startDate: phase.startDate ? new Date(phase.startDate) : new Date(),
             endDate: phase.endDate ? new Date(phase.endDate) : new Date(),
-            status: phase.status || "upcoming", // Added status mapping
+            status: phase.status || "upcoming",
             phaseDays: phase.phaseDays.map((day) => ({
               id: day._id,
               date: day.date ? new Date(day.date) : new Date(),
@@ -202,29 +213,36 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         campaignId,
         name: "",
         description: "",
-        startDate: new Date(),
-        endDate: new Date(),
-        status: "upcoming", // Set default status for new phases
+        startDate: selectedCampaign.startDate || new Date(),
+        endDate: selectedCampaign.endDate || new Date(),
+        status: "upcoming",
         phaseDays: [],
       },
     ]);
   };
 
   const addPhaseDay = (phaseId: string) => {
+    const campaignLocation = selectedCampaign.location || {
+      coordinates: null,
+      address: "",
+    };
     setPhases(
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-            ...phase,
-            phaseDays: [
-              ...phase.phaseDays,
-              {
-                id: `new-day-${Date.now()}`,
-                date: new Date(),
-                location: { coordinates: null, address: "" },
-              } as PhaseDayData,
-            ],
-          }
+              ...phase,
+              phaseDays: [
+                ...phase.phaseDays,
+                {
+                  id: `new-day-${Date.now()}`,
+                  date: new Date(),
+                  location: {
+                    coordinates: campaignLocation.coordinates,
+                    address: campaignLocation.address,
+                  },
+                } as PhaseDayData,
+              ],
+            }
           : phase
       )
     );
@@ -235,9 +253,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-            ...phase,
-            phaseDays: phase.phaseDays.filter((day) => day.id !== dayId),
-          }
+              ...phase,
+              phaseDays: phase.phaseDays.filter((day) => day.id !== dayId),
+            }
           : phase
       )
     );
@@ -253,16 +271,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           phases.map((phase) =>
             phase._id === phaseId
               ? {
-                ...phase,
-                phaseDays: [
-                  ...phase.phaseDays,
-                  {
-                    id: dayId,
-                    date: new Date(),
-                    location: { coordinates: null, address: "" },
-                  },
-                ],
-              }
+                  ...phase,
+                  phaseDays: [
+                    ...phase.phaseDays,
+                    {
+                      id: dayId,
+                      date: new Date(),
+                      location: { coordinates: null, address: "" },
+                    },
+                  ],
+                }
               : phase
           )
         );
@@ -279,12 +297,12 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-            ...phase,
-            [field]:
-              field === "startDate" || field === "endDate"
-                ? new Date(value)
-                : value,
-          }
+              ...phase,
+              [field]:
+                field === "startDate" || field === "endDate"
+                  ? new Date(value)
+                  : value,
+            }
           : phase
       )
     );
@@ -300,16 +318,16 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       phases.map((phase) =>
         phase._id === phaseId
           ? {
-            ...phase,
-            phaseDays: phase.phaseDays.map((day) =>
-              day.id === dayId
-                ? {
-                  ...day,
-                  [field]: field === "date" ? new Date(value) : value,
-                }
-                : day
-            ),
-          }
+              ...phase,
+              phaseDays: phase.phaseDays.map((day) =>
+                day.id === dayId
+                  ? {
+                      ...day,
+                      [field]: field === "date" ? new Date(value) : value,
+                    }
+                  : day
+              ),
+            }
           : phase
       )
     );
@@ -333,6 +351,13 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
       return "Valid end date is required";
     if (phase.startDate >= phase.endDate)
       return "End date must be after start date";
+    if (
+      selectedCampaign.startDate &&
+      phase.startDate < selectedCampaign.startDate
+    )
+      return "Phase start date cannot be before campaign start date";
+    if (selectedCampaign.endDate && phase.endDate > selectedCampaign.endDate)
+      return "Phase end date cannot be after campaign end date";
     return null;
   };
 
@@ -358,9 +383,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         phases.map((phase) =>
           phase._id === phaseId
             ? {
-              ...phase,
-              status: updatedPhase.status,
-            }
+                ...phase,
+                status: updatedPhase.status,
+              }
             : phase
         )
       );
@@ -379,7 +404,6 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
     setError(null);
 
     try {
-      // Validate all phases first
       for (const phase of phases) {
         const validationError = validatePhase(phase);
         if (validationError) {
@@ -394,11 +418,9 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         }
       }
 
-      // Process each phase
       const updatedPhases = [];
       for (const phase of phases) {
         if (phase._id.startsWith("new-phase-")) {
-          // This is a new phase that needs to be created
           const createdPhase = await createPhase({
             campaignId,
             name: phase.name.trim(),
@@ -407,7 +429,6 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
             endDate: phase.endDate,
           });
 
-          // Create phase days for this new phase
           for (const day of phase.phaseDays) {
             if (day.id.startsWith("new-day-")) {
               await createPhaseDay(createdPhase._id, {
@@ -422,7 +443,6 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
 
           updatedPhases.push(createdPhase);
         } else {
-          // This is an existing phase - just update phase days if needed
           const existingPhase = phase;
           for (const day of phase.phaseDays) {
             if (day.id.startsWith("new-day-")) {
@@ -443,7 +463,6 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
         }
       }
 
-      // Refresh the phases list after all operations
       const refreshedPhases = await getPhasesByCampaignId(campaignId);
       setPhases(
         refreshedPhases.map((phase) => ({
@@ -453,7 +472,7 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           description: phase.description || "",
           startDate: phase.startDate ? new Date(phase.startDate) : new Date(),
           endDate: phase.endDate ? new Date(phase.endDate) : new Date(),
-          status: phase.status || "upcoming", // Added status mapping
+          status: phase.status || "upcoming",
           phaseDays: phase.phaseDays.map((day) => ({
             id: day._id,
             date: day.date ? new Date(day.date) : new Date(),
@@ -483,6 +502,26 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
     return `${d.getFullYear()}-${(d.getMonth() + 1)
       .toString()
       .padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+  };
+
+  const getMinDateForPhase = () => {
+    return selectedCampaign.startDate
+      ? formatDateForInput(selectedCampaign.startDate)
+      : "";
+  };
+
+  const getMaxDateForPhase = () => {
+    return selectedCampaign.endDate
+      ? formatDateForInput(selectedCampaign.endDate)
+      : "";
+  };
+
+  const getMinDateForPhaseDay = (phase: PhaseData) => {
+    return formatDateForInput(phase.startDate);
+  };
+
+  const getMaxDateForPhaseDay = (phase: PhaseData) => {
+    return formatDateForInput(phase.endDate);
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -622,14 +661,23 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                               }
                               required
                               InputLabelProps={{ shrink: true }}
+                              inputProps={{
+                                min: getMinDateForPhase(),
+                                max: getMaxDateForPhase(),
+                              }}
                               error={
                                 !phase.startDate ||
-                                isNaN(phase.startDate.getTime())
+                                isNaN(phase.startDate.getTime()) ||
+                                (selectedCampaign.startDate &&
+                                  phase.startDate < selectedCampaign.startDate)
                               }
                               helperText={
                                 !phase.startDate ||
-                                  isNaN(phase.startDate.getTime())
+                                isNaN(phase.startDate.getTime())
                                   ? "Start date is required"
+                                  : selectedCampaign.startDate &&
+                                    phase.startDate < selectedCampaign.startDate
+                                  ? "Start date cannot be before campaign start"
                                   : ""
                               }
                             />
@@ -649,12 +697,18 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                               }
                               required
                               InputLabelProps={{ shrink: true }}
+                              inputProps={{
+                                min: getMinDateForPhase(),
+                                max: getMaxDateForPhase(),
+                              }}
                               error={
                                 !phase.endDate ||
                                 isNaN(phase.endDate.getTime()) ||
                                 (phase.startDate &&
                                   phase.endDate &&
-                                  phase.startDate >= phase.endDate)
+                                  phase.startDate >= phase.endDate) ||
+                                (selectedCampaign.endDate &&
+                                  phase.endDate > selectedCampaign.endDate)
                               }
                               helperText={
                                 !phase.endDate || isNaN(phase.endDate.getTime())
@@ -662,8 +716,11 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                   : phase.startDate &&
                                     phase.endDate &&
                                     phase.startDate >= phase.endDate
-                                    ? "End date must be after start date"
-                                    : ""
+                                  ? "End date must be after start date"
+                                  : selectedCampaign.endDate &&
+                                    phase.endDate > selectedCampaign.endDate
+                                  ? "End date cannot be after campaign end"
+                                  : ""
                               }
                             />
                           </Grid>
@@ -715,19 +772,28 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                           ? "Date is required"
                                           : ""
                                       }
+                                      inputProps={{
+                                        min: getMinDateForPhaseDay(phase),
+                                        max: getMaxDateForPhaseDay(phase),
+                                      }}
                                     />
                                   </Grid>
                                   <Grid>
                                     <Typography variant="body2" gutterBottom>
                                       Check-in Location
                                     </Typography>
-
                                     <MapLocationPicker
-                                      defaultLocation={{ lat: 21.0278, lng: 105.8342 }}
+                                      defaultLocation={{
+                                        lat: 21.0278,
+                                        lng: 105.8342,
+                                      }}
                                       mapHeight="250px"
                                       center={
                                         day.location.coordinates
-                                          ? { lat: day.location.coordinates[0], lng: day.location.coordinates[1] }
+                                          ? {
+                                              lat: day.location.coordinates[0],
+                                              lng: day.location.coordinates[1],
+                                            }
                                           : null
                                       }
                                       onPick={(coords) => {
@@ -735,18 +801,19 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
                                           phase._id,
                                           day.id,
                                           [coords.lat, coords.lng],
-                                          coords.address || `Lat: ${coords.lat}, Lng: ${coords.lng}`
+                                          coords.address ||
+                                            `Lat: ${coords.lat}, Lng: ${coords.lng}`
                                         );
                                       }}
-                                    // 👉 bỏ hideSearchInput
                                     />
-
-                                    <Typography variant="body2" color="textSecondary">
-                                      {day.location.address || "Click map or search to select location"}
+                                    <Typography
+                                      variant="body2"
+                                      color="textSecondary"
+                                    >
+                                      {day.location.address ||
+                                        "Click map or search to select location"}
                                     </Typography>
                                   </Grid>
-
-
                                 </Grid>
                               </Paper>
                             ))}
@@ -812,7 +879,6 @@ const CreatePhaseModal: React.FC<CreatePhaseModalProps> = ({
           />
         </TabPanel>
       </DialogContent>
-
       <DialogActions>
         <Button onClick={onClose} color="secondary">
           Cancel
