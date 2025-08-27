@@ -243,12 +243,13 @@ const ManagerCampaign: React.FC = () => {
   const fetchCampaignDetails = async (campaignId: string) => {
     try {
       const data = await managerCampaignService.getCampaignById(campaignId);
-      setSelectedCampaign({
+      const updatedCampaign = {
         ...data,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-      });
-      return data;
+      };
+      setSelectedCampaign(updatedCampaign);
+      return updatedCampaign;
     } catch (error) {
       console.error("Error fetching campaign details:", error);
       setAlertMessage("Failed to load campaign details.");
@@ -430,7 +431,26 @@ const ManagerCampaign: React.FC = () => {
 
       // Refresh the campaign details to show updated phase status
       if (selectedCampaign) {
-        await fetchCampaignDetails(selectedCampaign._id);
+        const updatedCampaign = await fetchCampaignDetails(
+          selectedCampaign._id
+        );
+
+        // Also update the incompletePhases state to remove the completed phase
+        if (updatedCampaign) {
+          const updatedIncompletePhases = incompletePhases.filter(
+            (phase) => phase._id !== phaseId
+          );
+          setIncompletePhases(updatedIncompletePhases);
+
+          // If all phases are now completed, you might want to automatically proceed
+          if (
+            updatedIncompletePhases.length === 0 &&
+            incompleteTasks.length === 0
+          ) {
+            setOpenIncompleteDialog(false);
+            setOpenEvaluateDialog(true);
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to end phase:", error);
@@ -1403,7 +1423,10 @@ const ManagerCampaign: React.FC = () => {
       />
 
       <CampaignModal
-        key={selectedCampaign?._id}
+        key={
+          selectedCampaign?._id +
+          (selectedCampaign?.phases ? selectedCampaign.phases.length : 0)
+        }
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         campaign={selectedCampaign}
@@ -1412,8 +1435,6 @@ const ManagerCampaign: React.FC = () => {
           selectedCampaign ? renderActionButtons(selectedCampaign) : null
         }
         formatDate={formatDate}
-        onEndPhase={handleEndPhase}
-        loadingPhaseActions={loadingPhaseActions}
       />
     </Box>
   );
