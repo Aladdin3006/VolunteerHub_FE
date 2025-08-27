@@ -366,14 +366,16 @@ const CampaignVolunteerDetail: React.FC = () => {
   const handleFaceRegistrationSuccess = () => {
     // Update user data in localStorage
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        ...storedUser,
-        faceDescriptor: true, // Assume faceDescriptor is set to true or actual value
-      })
-    );
+    const updatedUser = {
+      ...storedUser,
+      faceDescriptor: true, // Or the actual descriptor value
+    };
+
+    localStorage.setItem("user", JSON.stringify(updatedUser));
     setHasRegistered(true); // Update state to reflect registration
+
+    // Also update the user object in the component scope
+    user.faceDescriptor = true;
   };
 
   const handleOpenWithdrawalDialog = () => {
@@ -739,7 +741,9 @@ const CampaignVolunteerDetail: React.FC = () => {
                   </Typography>
                 </Box>
               </Stack>
-              {!myVolunteer && <RegisterFaceModal />}
+              {!myVolunteer && !hasRegistered && (
+                <RegisterFaceModal onSuccess={handleFaceRegistrationSuccess} />
+              )}
               <Button
                 disabled={joinDisabled}
                 onClick={

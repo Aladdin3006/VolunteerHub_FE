@@ -90,7 +90,10 @@ const StormTrigger: React.FC = () => {
     };
   }, []);
 
-  const showToast = (message: string, severity: "success" | "error" | "warning") => {
+  const showToast = (
+    message: string,
+    severity: "success" | "error" | "warning"
+  ) => {
     setToast({ open: true, message, severity });
   };
 
@@ -100,7 +103,8 @@ const StormTrigger: React.FC = () => {
       const allStorms = await StormAPI.getAllStorms();
       const isDuplicate = allStorms.some(
         (storm: any) =>
-          storm.name?.toLowerCase().trim() === stormForm.name.toLowerCase().trim()
+          storm.name?.toLowerCase().trim() ===
+          stormForm.name.toLowerCase().trim()
       );
 
       if (isDuplicate) {
@@ -167,7 +171,7 @@ const StormTrigger: React.FC = () => {
           },
         }}
       >
-        🌀<span> Kích Hoạt Bão</span>
+        🌀<span> Kích Hoạt Cảnh Báo</span>
       </Button>
       {/* Modal nhập thông tin bão */}
       <Modal open={open} onClose={() => setOpen(false)}>
@@ -192,24 +196,46 @@ const StormTrigger: React.FC = () => {
               🌀 Cảnh Báo Bão: {alertData?.headline}
             </Typography>
 
-            <Typography><strong>⏰ Hiệu lực:</strong> {alertData?.effective}</Typography>
-            <Typography><strong>⏳ Hết hạn:</strong> {alertData?.expires}</Typography>
-            <Typography><strong>📍 Khu vực:</strong> {alertData?.areas}</Typography>
-            <Typography><strong>📢 Mô tả:</strong> {alertData?.desc}</Typography>
-            <Typography><strong>📌 Hướng dẫn:</strong> {alertData?.instruction}</Typography>
+            <Typography>
+              <strong>⏰ Hiệu lực:</strong> {alertData?.effective}
+            </Typography>
+            <Typography>
+              <strong>⏳ Hết hạn:</strong> {alertData?.expires}
+            </Typography>
+            <Typography>
+              <strong>📍 Khu vực:</strong> {alertData?.areas}
+            </Typography>
+            <Typography>
+              <strong>📢 Mô tả:</strong> {alertData?.desc}
+            </Typography>
+            <Typography>
+              <strong>📌 Hướng dẫn:</strong> {alertData?.instruction}
+            </Typography>
 
             <Divider sx={{ my: 2 }} />
 
-            <Typography variant="subtitle1" fontWeight="bold">🌤️ Thời tiết hiện tại:</Typography>
-            <Typography>🌡️ {weatherData?.temp_c}°C (cảm giác: {weatherData?.feelslike_c}°C)</Typography>
-            <Typography>💨 Gió: {weatherData?.wind_kph} km/h ({weatherData?.windLevel})</Typography>
+            <Typography variant="subtitle1" fontWeight="bold">
+              🌤️ Thời tiết hiện tại:
+            </Typography>
+            <Typography>
+              🌡️ {weatherData?.temp_c}°C (cảm giác: {weatherData?.feelslike_c}
+              °C)
+            </Typography>
+            <Typography>
+              💨 Gió: {weatherData?.wind_kph} km/h ({weatherData?.windLevel})
+            </Typography>
             <Typography>💧 Độ ẩm: {weatherData?.humidity}%</Typography>
             <Typography>📈 Áp suất: {weatherData?.pressure_mb} mb</Typography>
             <Typography>☀️ UV: {weatherData?.uv}</Typography>
 
             {!showForm && (
-              <Button variant="contained" color="error" sx={{ mt: 3 }} onClick={() => setShowForm(true)}>
-               💨 Tạo Cảnh báo cho cơn bão
+              <Button
+                variant="contained"
+                color="error"
+                sx={{ mt: 3 }}
+                onClick={() => setShowForm(true)}
+              >
+                💨 Tạo Cảnh báo cho cơn bão
               </Button>
             )}
           </Box>
@@ -224,7 +250,9 @@ const StormTrigger: React.FC = () => {
                 fullWidth
                 margin="normal"
                 value={stormForm.name}
-                onChange={(e) => setStormForm({ ...stormForm, name: e.target.value })}
+                onChange={(e) =>
+                  setStormForm({ ...stormForm, name: e.target.value })
+                }
               />
               <TextField
                 label="Mô tả"
@@ -233,7 +261,9 @@ const StormTrigger: React.FC = () => {
                 multiline
                 minRows={2}
                 value={stormForm.description}
-                onChange={(e) => setStormForm({ ...stormForm, description: e.target.value })}
+                onChange={(e) =>
+                  setStormForm({ ...stormForm, description: e.target.value })
+                }
               />
               <TextField
                 label="Hướng dẫn"
@@ -242,7 +272,9 @@ const StormTrigger: React.FC = () => {
                 multiline
                 minRows={2}
                 value={stormForm.instruction}
-                onChange={(e) => setStormForm({ ...stormForm, instruction: e.target.value })}
+                onChange={(e) =>
+                  setStormForm({ ...stormForm, instruction: e.target.value })
+                }
               />
               <TextField
                 label="Thời gian bắt đầu"

@@ -153,11 +153,20 @@ const MyCampaignList: React.FC = () => {
   };
 
   const categorizedCampaigns = useMemo(() => {
-    const ongoing = campaigns.filter((c) => c.status === "in-progress");
-    const upcoming = campaigns.filter((c) => c.status === "upcoming");
-    const completed = campaigns.filter((c) => c.status === "completed");
+    // Sort all campaigns by registration date (newest first)
+    const sortedCampaigns = [...campaigns].sort((a, b) => {
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+      return dateB - dateA; // Newest first
+    });
+
+    const ongoing = sortedCampaigns.filter((c) => c.status === "in-progress");
+    const upcoming = sortedCampaigns.filter((c) => c.status === "upcoming");
+    const completed = sortedCampaigns.filter((c) => c.status === "completed");
+
     return { ongoing, upcoming, completed };
   }, [campaigns]);
+  console.log(categorizedCampaigns);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

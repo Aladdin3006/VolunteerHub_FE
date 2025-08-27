@@ -141,6 +141,9 @@ const ManagerCampaign: React.FC = () => {
   const [volunteerEvaluations, setVolunteerEvaluations] = useState<{
     [userId: string]: { evaluation: string; feedback: string };
   }>({});
+  const [loadingActions, setLoadingActions] = useState<{
+    [campaignId: string]: boolean;
+  }>({});
   const [hasEvaluated, setHasEvaluated] = useState(false);
   const [volunteersWithCertificates, setVolunteersWithCertificates] = useState<
     Set<string>
@@ -267,6 +270,7 @@ const ManagerCampaign: React.FC = () => {
     templateUrl?: string
   ) => {
     try {
+      setLoadingActions((prev) => ({ ...prev, [id]: true }));
       if (action === managerCampaignService.startCampaign) {
         setIsStartingCampaign(true);
       } else if (action === managerCampaignService.endCampaign) {
@@ -275,6 +279,11 @@ const ManagerCampaign: React.FC = () => {
 
       const response = await action(id, generateCert, templateUrl);
       await fetchAllCampaigns();
+
+      if (selectedCampaign && selectedCampaign._id === id) {
+        await fetchCampaignDetails(id);
+      }
+
       setAlertMessage(response.message);
       setTimeout(() => setAlertMessage(null), 5000);
     } catch (error) {
@@ -282,6 +291,7 @@ const ManagerCampaign: React.FC = () => {
       setAlertMessage("Action failed. Please try again.");
       setTimeout(() => setAlertMessage(null), 5000);
     } finally {
+      setLoadingActions((prev) => ({ ...prev, [id]: false }));
       setIsStartingCampaign(false);
       setIsEndingCampaign(false);
     }
@@ -376,8 +386,11 @@ const ManagerCampaign: React.FC = () => {
     setActiveTab(newValue as any);
   };
 
-  const openCampaignDetail = (campaign: Campaign) => {
-    fetchCampaignDetails(campaign._id);
+  const openCampaignDetail = async (campaign: Campaign) => {
+    const updatedCampaign = await fetchCampaignDetails(campaign._id);
+    if (updatedCampaign) {
+      setSelectedCampaign(updatedCampaign);
+    }
     setIsDialogOpen(true);
   };
 
@@ -439,6 +452,8 @@ const ManagerCampaign: React.FC = () => {
   };
 
   const renderActionButtons = (campaign: Campaign) => {
+    const isCampaignLoading = loadingActions[campaign._id];
+
     if (campaign.acceptStatus === "pending") {
       return (
         <>
@@ -446,7 +461,13 @@ const ManagerCampaign: React.FC = () => {
             size="small"
             variant="contained"
             color="success"
-            startIcon={<CheckCircle />}
+            startIcon={
+              isCampaignLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <CheckCircle />
+              )
+            }
             onClick={(e) => {
               e.stopPropagation();
               handleAction(
@@ -454,8 +475,9 @@ const ManagerCampaign: React.FC = () => {
                 campaign._id
               );
             }}
+            disabled={isCampaignLoading}
           >
-            Approve
+            {isCampaignLoading ? "Approving..." : "Approve"}
           </Button>
           <Button
             size="small"
@@ -466,6 +488,7 @@ const ManagerCampaign: React.FC = () => {
               e.stopPropagation();
               handleAction(managerCampaignService.rejectCampaign, campaign._id);
             }}
+            disabled={isCampaignLoading}
           >
             Reject
           </Button>
@@ -480,14 +503,21 @@ const ManagerCampaign: React.FC = () => {
             size="small"
             variant="contained"
             color="primary"
-            startIcon={<PlayCircle />}
+            startIcon={
+              isCampaignLoading ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <PlayCircle />
+              )
+            }
             onClick={(e) => {
               e.stopPropagation();
               setCurrentCampaignId(campaign._id);
               setOpenStartDialog(true);
             }}
+            disabled={isCampaignLoading}
           >
-            Start Campaign
+            {isCampaignLoading ? "Starting..." : "Start Campaign"}
           </Button>
         );
       }
@@ -503,6 +533,7 @@ const ManagerCampaign: React.FC = () => {
               e.stopPropagation();
               handleEndCampaign(campaign._id);
             }}
+            disabled={isCampaignLoading}
           >
             End Campaign
           </Button>
@@ -1150,6 +1181,7 @@ const ManagerCampaign: React.FC = () => {
       />
 
       <CampaignModal
+        key={selectedCampaign?._id}
         open={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         campaign={selectedCampaign}

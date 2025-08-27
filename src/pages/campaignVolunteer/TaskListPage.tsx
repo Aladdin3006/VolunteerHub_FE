@@ -277,39 +277,6 @@ const TaskListPage: React.FC = () => {
     setCheckinModalOpen(true);
   };
 
-  const handleRefreshCheckIn = (
-    phaseId: string,
-    phaseDayId: string,
-    checkinLocation: { coordinates: [number, number]; address: string }
-  ) => {
-    // Remove phaseDayId from checkedInPhaseDays to allow re-check-in
-    setCheckedInPhaseDays((prev) =>
-      prev.filter((id) => id !== String(phaseDayId))
-    );
-
-    // Update phases state to reset check-in status
-    setPhases((prevPhases) =>
-      prevPhases.map((phase) => ({
-        ...phase,
-        phaseDays: phase.phaseDays.map((day) =>
-          day._id === phaseDayId
-            ? {
-                ...day,
-                checkinStatus: {
-                  hasCheckedIn: false,
-                  checkinTime: null,
-                  method: null,
-                },
-              }
-            : day
-        ),
-      }))
-    );
-
-    // Open check-in modal again
-    handleCheckIn(phaseId, phaseDayId, checkinLocation);
-  };
-
   const handleCheckinSuccess = (phaseDayId: string) => {
     const idStr = String(phaseDayId);
     setCheckedInPhaseDays((prev) => {
@@ -779,30 +746,6 @@ const TaskListPage: React.FC = () => {
                                 >
                                   ✅ Đã điểm danh
                                 </Button>
-                                {isToday(day.date) && (
-                                  <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    startIcon={<RefreshIcon />}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRefreshCheckIn(
-                                        phase._id,
-                                        day._id,
-                                        day.checkinLocation
-                                      );
-                                    }}
-                                    sx={{
-                                      borderRadius: 3,
-                                      textTransform: "none",
-                                      fontWeight: 600,
-                                      px: 3,
-                                    }}
-                                    className="border-blue-500 text-blue-500 hover:bg-blue-50"
-                                  >
-                                    Làm mới
-                                  </Button>
-                                )}
                               </>
                             ) : (
                               <Button
