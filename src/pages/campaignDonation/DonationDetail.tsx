@@ -117,7 +117,7 @@ const DonationDetail: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [expensePage, setExpensePage] = useState(0);
-  const [expenseRowsPerPage, setExpenseRowsPerPage] = useState(10);
+  const [expenseRowsPerPage, setExpenseRowsPerPage] = useState(2);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>("");
 
@@ -371,7 +371,7 @@ const DonationDetail: React.FC = () => {
                               onRowsPerPageChange={
                                 handleChangeExpenseRowsPerPage
                               }
-                              rowsPerPageOptions={[3]}
+                              rowsPerPageOptions={[2]}
                               labelRowsPerPage="Số hàng mỗi trang:"
                             />
                           </TableContainer>
