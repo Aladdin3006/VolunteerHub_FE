@@ -13,7 +13,12 @@ import {
   Chip,
   Button,
   LinearProgress,
-  Avatar
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 
 import { useNavigate } from "react-router-dom";
@@ -27,8 +32,9 @@ import {
   completeDonationCampaign,
 } from "@/apis/donation";
 import ManagerTabs from "./ManagerTabs";
-import CheckIcon from "@mui/icons-material/Check"; // Import CheckIcon
+import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 interface Campaign {
   _id: string;
@@ -43,6 +49,7 @@ interface Campaign {
   updatedAt: string;
   tags?: { _id: string; name: string; color: string; icon: string }[];
   approvalStatus?: string;
+  endDate?: string;
 }
 
 const ManagerDonationStaff: React.FC = () => {
@@ -57,6 +64,8 @@ const ManagerDonationStaff: React.FC = () => {
     useState<CampaignDetailResponse | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [endDialogOpen, setEndDialogOpen] = useState<boolean>(false);
+  const [campaignToEnd, setCampaignToEnd] = useState<Campaign | null>(null);
 
   const navigate = useNavigate();
 
@@ -128,23 +137,52 @@ const ManagerDonationStaff: React.FC = () => {
   };
 
   const handleEndCampaign = async (id: string) => {
+    const campaign = campaigns.find((c) => c._id === id);
+    if (!campaign) return;
+
+    const today = new Date();
+    const endDate = campaign.endDate
+      ? new Date(campaign.endDate)
+      : new Date("2025-12-31");
+
+    if (today < endDate) {
+      setCampaignToEnd(campaign);
+      setEndDialogOpen(true);
+    } else {
+      try {
+        await completeDonationCampaign(id);
+        alert("Chiến dịch đã được kết thúc");
+        const updated = campaigns.map((c) =>
+          c._id === id ? { ...c, status: "completed" } : c
+        );
+        setCampaigns(updated);
+      } catch (err: any) {
+        alert(err.message || "Lỗi khi kết thúc chiến dịch");
+      }
+    }
+  };
+
+  const handleConfirmEndCampaign = async () => {
+    if (!campaignToEnd) return;
+
     try {
-      const confirm = window.confirm(
-        "Bạn có chắc chắn muốn kết thúc chiến dịch này?"
-      );
-      if (!confirm) return;
-
-      await completeDonationCampaign(id); // Call the API
-
+      await completeDonationCampaign(campaignToEnd._id);
       alert("Chiến dịch đã được kết thúc");
-
       const updated = campaigns.map((c) =>
-        c._id === id ? { ...c, status: "completed" } : c
+        c._id === campaignToEnd._id ? { ...c, status: "completed" } : c
       );
       setCampaigns(updated);
     } catch (err: any) {
       alert(err.message || "Lỗi khi kết thúc chiến dịch");
+    } finally {
+      setEndDialogOpen(false);
+      setCampaignToEnd(null);
     }
+  };
+
+  const handleCloseEndDialog = () => {
+    setEndDialogOpen(false);
+    setCampaignToEnd(null);
   };
 
   const handleCardClick = (campaign: Campaign) => {
@@ -190,10 +228,9 @@ const ManagerDonationStaff: React.FC = () => {
       {/* Navigation Tabs */}
       <Box sx={{ mb: 3 }}>
         <ManagerTabs
-          activeTab={activeLink === "ongoing" ? "donations" : "storms"} // Ánh xạ "ongoing" -> "donations", "finished" -> "storms"
+          activeTab={activeLink === "ongoing" ? "donations" : "storms"}
           onTabChange={(value) => {
             setActiveLink(value === "donations" ? "ongoing" : "finished");
-            // Thêm logic navigate nếu cần
           }}
         />
       </Box>
@@ -385,41 +422,35 @@ const ManagerDonationStaff: React.FC = () => {
                 </Box>
 
                 {/* Status Bar */}
-
                 <Box
                   sx={{
                     backgroundColor:
                       campaign.approvalStatus === "rejected"
-                        ? "#c03e3eff" // Màu đỏ cho trạng thái rejected
+                        ? "#c03e3eff"
                         : campaign.status === "draft"
-                          ? "#f57c00"
-                          : campaign.status === "active"
-                            ? "#2e7d32"
-                            : campaign.status === "completed"
-                              ? "#0288d1"
-                              : "#2e7d32",
+                        ? "#f57c00"
+                        : campaign.status === "active"
+                        ? "#2e7d32"
+                        : campaign.status === "completed"
+                        ? "#0288d1"
+                        : "#2e7d32",
                     py: 0.5,
                     textAlign: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <Typography
-                    variant="caption"
-                    color="white"
-                    fontWeight="bold"
-                  >
+                  <Typography variant="caption" color="white" fontWeight="bold">
                     {campaign.approvalStatus === "rejected"
                       ? "REJECTED"
                       : campaign.status === "draft"
-                        ? "WAITING"
-                        : campaign.status === "active"
-                          ? "IN-PROGRESS"
-                          : campaign.status === "completed"
-                            ? "COMPLETED"
-                            : "IN-PROGRESS"}
+                      ? "WAITING"
+                      : campaign.status === "active"
+                      ? "IN-PROGRESS"
+                      : campaign.status === "completed"
+                      ? "COMPLETED"
+                      : "IN-PROGRESS"}
                   </Typography>
                 </Box>
-
 
                 {/* Nội dung thẻ */}
                 <CardContent
@@ -473,7 +504,9 @@ const ManagerDonationStaff: React.FC = () => {
                         }}
                       >
                         {new Date(campaign.createdAt).toLocaleDateString()} -{" "}
-                        {new Date(campaign.endDate || "2025-12-31").toLocaleDateString()}
+                        {new Date(
+                          campaign.endDate || "2025-12-31"
+                        ).toLocaleDateString()}
                       </Typography>
                     </Box>
                     <Box
@@ -508,7 +541,7 @@ const ManagerDonationStaff: React.FC = () => {
                         gap: 1,
                       }}
                     >
-                      {campaign.tags.map((tag) => (
+                      {campaign.tags?.map((tag) => (
                         <Chip
                           key={tag._id}
                           label={tag.name}
@@ -551,7 +584,7 @@ const ManagerDonationStaff: React.FC = () => {
                               e.stopPropagation();
                               handleApproveCampaign(campaign._id);
                             }}
-                            sx={{ padding: "4px 8px", textTransform: "none" }} // Điều chỉnh padding và loại bỏ flex: 1
+                            sx={{ padding: "4px 8px", textTransform: "none" }}
                             startIcon={<CheckIcon />}
                           >
                             APPROVE
@@ -564,7 +597,7 @@ const ManagerDonationStaff: React.FC = () => {
                               e.stopPropagation();
                               handleRejectCampaign(campaign._id);
                             }}
-                            sx={{ padding: "4px 8px", textTransform: "none" }} // Điều chỉnh padding và loại bỏ flex: 1
+                            sx={{ padding: "4px 8px", textTransform: "none" }}
                             startIcon={<CloseIcon />}
                           >
                             REJECT
@@ -586,7 +619,7 @@ const ManagerDonationStaff: React.FC = () => {
                             backgroundColor: "#9c27b0",
                             color: "#fff",
                             textTransform: "none",
-                          }} // Điều chỉnh padding
+                          }}
                         >
                           END CAMPAIGN
                         </Button>
@@ -605,6 +638,76 @@ const ManagerDonationStaff: React.FC = () => {
         campaign={selectedCampaign}
         onClose={handleCloseDialog}
       />
+
+      {/* End Campaign Confirmation Dialog */}
+      <Dialog
+        open={endDialogOpen}
+        onClose={handleCloseEndDialog}
+        aria-labelledby="end-campaign-dialog-title"
+        aria-describedby="end-campaign-dialog-description"
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 2,
+            padding: 2,
+            maxWidth: 500,
+          },
+        }}
+      >
+        <DialogTitle
+          id="end-campaign-dialog-title"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            fontWeight: "bold",
+            color: "#d32f2f",
+          }}
+        >
+          <WarningAmberIcon sx={{ color: "#d32f2f" }} />
+          Xác nhận kết thúc chiến dịch
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText
+            id="end-campaign-dialog-description"
+            sx={{ color: "#424242", lineHeight: 1.6 }}
+          >
+            Chiến dịch quyên góp{" "}
+            <strong>{campaignToEnd?.title || "này"}</strong> chưa đến ngày kết
+            thúc (
+            {new Date(
+              campaignToEnd?.endDate || "2025-12-31"
+            ).toLocaleDateString()}
+            ). Bạn có chắc chắn muốn kết thúc chiến dịch này ngay bây giờ?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "16px 24px" }}>
+          <Button
+            onClick={handleCloseEndDialog}
+            variant="outlined"
+            color="primary"
+            sx={{
+              textTransform: "none",
+              borderRadius: 1,
+              minWidth: 100,
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleConfirmEndCampaign}
+            variant="contained"
+            color="error"
+            sx={{
+              textTransform: "none",
+              borderRadius: 1,
+              minWidth: 100,
+            }}
+            autoFocus
+          >
+            Kết thúc
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -714,8 +714,17 @@ const TaskListPage: React.FC = () => {
                               gutterBottom
                               className="text-gray-800"
                             >
-                              {formatDate(day.date)}
+                              {formatDate(day.date)}{" "}
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                className="text-gray-600"
+                                fontWeight="larger"
+                              >
+                                (từ 7am - 6pm)
+                              </Typography>
                             </Typography>
+
                             <Typography
                               variant="body2"
                               color="text.secondary"

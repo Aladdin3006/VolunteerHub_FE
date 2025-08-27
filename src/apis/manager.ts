@@ -1,5 +1,6 @@
 // Updated manager.ts
 import { Category } from "./campaign";
+import { Phase } from "./staff";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -24,6 +25,34 @@ export interface Campaign {
     coordinates: [number, number];
     address: string;
   };
+  phases?: {
+    _id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    description?: string;
+    phaseDays?: {
+      _id: string;
+      date: string;
+      name?: string;
+      description?: string;
+      tasks?: {
+        _id: string;
+        phaseDayId: string;
+        title: string;
+        description?: string;
+        status: {
+          status: string;
+        };
+        assignedUsers: {
+          _id: string;
+          userId: string;
+          checkinTime: string | null;
+          checkoutTime: string | null;
+        }[];
+      }[];
+    }[];
+  }[];
   startDate: Date;
   endDate: Date;
   gallery: string[];
@@ -125,6 +154,7 @@ export const managerCampaignService = {
         startDate: new Date(campaign.startDate),
         endDate: new Date(campaign.endDate),
         gallery: campaign.gallery || [],
+        phases: campaign.phases || [],
         categories: campaign.categories || [],
         status: campaign.status || "pending",
         acceptStatus: campaign.acceptStatus || "pending",
@@ -237,5 +267,29 @@ export const managerCampaignService = {
     }
 
     return await response.json();
+  },
+
+  endPhase: async (
+    phaseId: string
+  ): Promise<{ message: string; phase: Phase }> => {
+    try {
+      const response = await fetch(`${API_BASE}/phase/${phaseId}/end`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to end phase: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Error ending phase:", error);
+      throw error;
+    }
   },
 };

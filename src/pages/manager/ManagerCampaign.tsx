@@ -74,6 +74,8 @@ interface Task {
   assignedUsers: { userId: string }[];
   staffReview?: { finalScore: number };
   peerReviews: { reviewer: string; reviewee: string; score: number }[];
+  title: string;
+  status: string;
 }
 
 interface PhaseDay {
@@ -82,6 +84,8 @@ interface PhaseDay {
 
 interface Phase {
   phaseDays: PhaseDay[];
+  status: string;
+  name: string;
 }
 
 export interface Campaign {
@@ -128,6 +132,9 @@ const ManagerCampaign: React.FC = () => {
   const [openStartDialog, setOpenStartDialog] = useState(false);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
   const [openEvaluateDialog, setOpenEvaluateDialog] = useState(false);
+  const [openIncompleteDialog, setOpenIncompleteDialog] = useState(false);
+  const [incompleteTasks, setIncompleteTasks] = useState<Task[]>([]);
+  const [incompletePhases, setIncompletePhases] = useState<Phase[]>([]);
   const [generateCertificate, setGenerateCertificate] = useState(true);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(
     null
@@ -143,6 +150,9 @@ const ManagerCampaign: React.FC = () => {
   }>({});
   const [loadingActions, setLoadingActions] = useState<{
     [campaignId: string]: boolean;
+  }>({});
+  const [loadingPhaseActions, setLoadingPhaseActions] = useState<{
+    [phaseId: string]: boolean;
   }>({});
   const [hasEvaluated, setHasEvaluated] = useState(false);
   const [volunteersWithCertificates, setVolunteersWithCertificates] = useState<
@@ -251,7 +261,7 @@ const ManagerCampaign: React.FC = () => {
     try {
       const { data: certificates } = await usersService.getAllCertificates({
         searchCampaign: campaignId,
-        limit: 1000, // Adjust based on expected number of volunteers
+        limit: 1000,
       });
 
       const volunteerIds = new Set(
@@ -325,6 +335,30 @@ const ManagerCampaign: React.FC = () => {
     setCurrentCampaignId(campaignId);
     const campaign = await fetchCampaignDetails(campaignId);
     if (campaign) {
+      // Check for incomplete tasks and phases
+      const incompleteTasks: Task[] = [];
+      const incompletePhases: Phase[] = [];
+
+      campaign.phases?.forEach((phase) => {
+        if (phase.status !== "completed") {
+          incompletePhases.push(phase);
+        }
+        phase.phaseDays.forEach((phaseDay) => {
+          phaseDay.tasks.forEach((task) => {
+            if (task.status !== "completed") {
+              incompleteTasks.push(task);
+            }
+          });
+        });
+      });
+
+      if (incompleteTasks.length > 0 || incompletePhases.length > 0) {
+        setIncompleteTasks(incompleteTasks);
+        setIncompletePhases(incompletePhases);
+        setOpenIncompleteDialog(true);
+        return;
+      }
+
       await fetchCertificatesForCampaign(campaignId);
       setVolunteerEvaluations(
         campaign.volunteers?.reduce((acc, volunteer) => {
@@ -384,6 +418,27 @@ const ManagerCampaign: React.FC = () => {
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
     setActiveTab(newValue as any);
+  };
+
+  const handleEndPhase = async (phaseId: string) => {
+    try {
+      setLoadingPhaseActions((prev) => ({ ...prev, [phaseId]: true }));
+      const response = await managerCampaignService.endPhase(phaseId);
+
+      setAlertMessage(response.message);
+      setTimeout(() => setAlertMessage(null), 5000);
+
+      // Refresh the campaign details to show updated phase status
+      if (selectedCampaign) {
+        await fetchCampaignDetails(selectedCampaign._id);
+      }
+    } catch (error) {
+      console.error("Failed to end phase:", error);
+      setAlertMessage("Không thể kết thúc giai đoạn. Vui lòng thử lại.");
+      setTimeout(() => setAlertMessage(null), 5000);
+    } finally {
+      setLoadingPhaseActions((prev) => ({ ...prev, [phaseId]: false }));
+    }
   };
 
   const openCampaignDetail = async (campaign: Campaign) => {
@@ -584,6 +639,172 @@ const ManagerCampaign: React.FC = () => {
     { value: "average", label: "Trung bình" },
     { value: "poor", label: "Kém" },
   ];
+
+  const renderIncompleteDialog = () => (
+    <Dialog
+      open={openIncompleteDialog}
+      onClose={() => setOpenIncompleteDialog(false)}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: 2 },
+      }}
+    >
+      <DialogTitle
+        fontWeight="bold"
+        sx={{
+          backgroundColor: "primary.main",
+          color: "white",
+          py: 2,
+        }}
+      >
+        <WarningAmber sx={{ mr: 1, verticalAlign: "middle" }} />
+        Chiến dịch còn nhiệm vụ và giai đoạn chưa kết thúc
+      </DialogTitle>
+      <DialogContent sx={{ mt: 2 }}>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Chiến dịch còn các nhiệm vụ và giai đoạn chưa kết thúc. Vui lòng kiểm
+          tra và hoàn thành trước khi kết thúc chiến dịch.
+        </Alert>
+
+        {incompletePhases.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 1, display: "flex", alignItems: "center" }}
+            >
+              <Cancel color="error" sx={{ mr: 1, fontSize: "1.2rem" }} />
+              Giai đoạn chưa hoàn thành:
+            </Typography>
+            <Stack spacing={1}>
+              {incompletePhases.map((phase) => (
+                <Paper
+                  key={phase._id}
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    backgroundColor: "grey.50",
+                    justifyContent: "space-between", // Added to space out items
+                  }}
+                >
+                  <Box
+                    sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}
+                  >
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="subtitle2" fontWeight="medium">
+                        {phase.name}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={
+                        phase.status === "in-progress"
+                          ? "Chưa kết thúc"
+                          : phase.status
+                      }
+                      color="warning"
+                      size="small"
+                      sx={{ mr: 1 }} // Added margin to separate from button
+                    />
+                    {phase.status === "in-progress" && (
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        size="small"
+                        startIcon={
+                          loadingPhaseActions[phase._id] ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <StopCircle />
+                          )
+                        }
+                        onClick={() => handleEndPhase(phase._id)}
+                        disabled={loadingPhaseActions[phase._id]}
+                      >
+                        {loadingPhaseActions[phase._id]
+                          ? "Đang xử lý..."
+                          : "Kết thúc"}
+                      </Button>
+                    )}
+                  </Box>
+                </Paper>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
+        {incompleteTasks.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="h6"
+              sx={{ mb: 1, display: "flex", alignItems: "center" }}
+            >
+              <Cancel color="error" sx={{ mr: 1, fontSize: "1.2rem" }} />
+              Nhiệm vụ chưa hoàn thành:
+            </Typography>
+            <Stack spacing={1}>
+              {incompleteTasks.map((task) => (
+                <Paper
+                  key={task._id}
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    backgroundColor: "grey.50",
+                  }}
+                >
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="subtitle2" fontWeight="medium">
+                      {task.title}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={
+                      task.status === "in-progress"
+                        ? "Chưa nộp"
+                        : task.status === "submitted"
+                        ? "Chưa đánh giá"
+                        : task.status
+                    }
+                    color={
+                      task.status === "in-progress"
+                        ? "warning"
+                        : task.status === "submitted"
+                        ? "info"
+                        : "default"
+                    }
+                    size="small"
+                  />
+                </Paper>
+              ))}
+            </Stack>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button
+          onClick={() => setOpenIncompleteDialog(false)}
+          disabled={isEndingCampaign}
+          variant="outlined"
+        >
+          Đóng
+        </Button>
+        <Button
+          onClick={() => {
+            setOpenIncompleteDialog(false);
+            setOpenEvaluateDialog(true);
+          }}
+          color="primary"
+          disabled={isEndingCampaign}
+          variant="contained"
+        >
+          Tiếp tục
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 
   const renderEvaluateDialog = () => (
     <Dialog
@@ -1170,6 +1391,7 @@ const ManagerCampaign: React.FC = () => {
       </Grid>
 
       {renderStartDialog()}
+      {renderIncompleteDialog()}
       {renderEvaluateDialog()}
       <RenderEndDialog
         open={openConfirmDialog}
@@ -1190,6 +1412,8 @@ const ManagerCampaign: React.FC = () => {
           selectedCampaign ? renderActionButtons(selectedCampaign) : null
         }
         formatDate={formatDate}
+        onEndPhase={handleEndPhase}
+        loadingPhaseActions={loadingPhaseActions}
       />
     </Box>
   );
