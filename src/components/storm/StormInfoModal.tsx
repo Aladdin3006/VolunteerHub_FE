@@ -164,9 +164,14 @@ const StormInfoModal: React.FC<StormInfoModalProps> = ({
                                 và cập nhật tình hình để giúp mọi người nhanh chóng ổn định.
                             </Typography>
                         ) : (
-                            <Typography fontWeight="bold" color="error">
+                            <>
+                             <Typography fontWeight="bold" color="error">
                                 🕒 Dự kiến bão đến trong: {countdown}
                             </Typography>
+                            <Typography fontWeight="bold">
+                                {storm.instruction}
+                            </Typography>
+                            </>
                         )}
 
                         <Button
