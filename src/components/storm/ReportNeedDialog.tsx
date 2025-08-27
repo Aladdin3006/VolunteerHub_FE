@@ -39,6 +39,7 @@ export default function ReportNeedDialog({
     name: '',
     description: '',
     address: '',
+    contact: '',
     lat: '',
     lng: '',
     needs: [{ type: '', quantity: '', note: '' }] as SupplyNeedItem[]
@@ -74,6 +75,7 @@ export default function ReportNeedDialog({
         description: formData.description,
         address: formData.address,
         type: 'need',
+        contact: formData.contact,
         stormId,
         needs: formData.needs.map((n) => ({
           type: n.type,
@@ -141,6 +143,14 @@ export default function ReportNeedDialog({
                 : null
             }
           />
+                   <TextField
+              label="Thông tin liên hệ"
+              value={formData.contact}
+              onChange={(e) => handleChange('contact', e.target.value)}
+              fullWidth
+              margin="dense"
+              required
+            />
         </Box>
 
         <Typography variant="subtitle1" sx={{ mt: 2 }}>Nhu cầu cứu trợ</Typography>
