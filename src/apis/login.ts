@@ -29,3 +29,22 @@ export const loginUser = async (data: { email: string; password: string }) => {
     },
   };
 };
+
+export const getDashboardStats = async () => {
+  const response = await fetch(`${API_BASE}/dashboard/stats`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      // Add authorization token if required, e.g., from loginUser
+      // "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch dashboard stats");
+  }
+
+  return result.result;
+};

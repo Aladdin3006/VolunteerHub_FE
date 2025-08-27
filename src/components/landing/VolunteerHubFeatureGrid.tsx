@@ -32,50 +32,88 @@ const featuresVM: Feature[] = [
   {
     icon: <CampaignIcon />,
     title: "Tuyển dụng Tình nguyện viên",
-    desc:
-      "Tăng cường tuyển dụng với trang giới thiệu chuyên nghiệp, gửi email/SMS, đăng ký tự động trên mọi thiết bị và quản lý hồ sơ dễ dàng.",
+    desc: "Tăng cường tuyển dụng với trang giới thiệu chuyên nghiệp, gửi email/SMS, đăng ký tự động trên mọi thiết bị và quản lý hồ sơ dễ dàng.",
   },
   {
     icon: <EventAvailableIcon />,
     title: "Lịch trình Tình nguyện",
-    desc:
-      "Tạo sự kiện, xem danh sách đăng ký, quản lý danh sách chờ và cho phép tình nguyện viên đăng ký từ bất kỳ đâu có Internet.",
+    desc: "Tạo sự kiện, xem danh sách đăng ký, quản lý danh sách chờ và cho phép tình nguyện viên đăng ký từ bất kỳ đâu có Internet.",
   },
   {
     icon: <SpeedIcon />,
     title: "Theo dõi Giờ tình nguyện",
-    desc:
-      "Tự động ghi nhận hoạt động và số giờ tình nguyện, loại bỏ việc nhập liệu thủ công và dễ dàng xem thống kê theo sự kiện hoặc cá nhân.",
+    desc: "Tự động ghi nhận hoạt động và số giờ tình nguyện, loại bỏ việc nhập liệu thủ công và dễ dàng xem thống kê theo sự kiện hoặc cá nhân.",
   },
   {
     icon: <StorageIcon />,
     title: "Cơ sở dữ liệu Tình nguyện viên",
-    desc:
-      "Lưu trữ toàn bộ thông tin: liên hệ, kỹ năng, lịch rảnh… và truy cập trên mọi thiết bị.",
+    desc: "Lưu trữ toàn bộ thông tin: liên hệ, kỹ năng, lịch rảnh… và truy cập trên mọi thiết bị.",
   },
   {
     icon: <AttachMoneyOutlinedIcon />,
     title: "Gây quỹ Tình nguyện",
-    desc:
-      "Tổ chức các chiến dịch gây quỹ gắn liền với chương trình tình nguyện để tăng sự gắn kết và tác động xã hội.",
+    desc: "Tổ chức các chiến dịch gây quỹ gắn liền với chương trình tình nguyện để tăng sự gắn kết và tác động xã hội.",
   },
   {
     icon: <GppMaybeOutlinedIcon />,
     title: "Quản lý Trách nhiệm pháp lý",
-    desc:
-      "Tập trung quản lý giấy tờ miễn trừ, kiểm tra và hồ sơ tuân thủ để giảm rủi ro và luôn sẵn sàng kiểm toán.",
+    desc: "Tập trung quản lý giấy tờ miễn trừ, kiểm tra và hồ sơ tuân thủ để giảm rủi ro và luôn sẵn sàng kiểm toán.",
   },
   {
     icon: <StarOutlineIcon />,
     title: "Khen thưởng & Ghi nhận",
-    desc:
-      "Ghi nhận đóng góp với huy hiệu, cột mốc và các chương trình khen thưởng.",
+    desc: "Ghi nhận đóng góp với huy hiệu, cột mốc và các chương trình khen thưởng.",
   },
   {
     icon: <BarChartOutlinedIcon />,
     title: "Báo cáo & Thống kê",
-    desc:
-      "Tạo báo cáo tùy chỉnh về số giờ, sự kiện, mức độ tham gia và các hoạt động cộng đồng.",
+    desc: "Tạo báo cáo tùy chỉnh về số giờ, sự kiện, mức độ tham gia và các hoạt động cộng đồng.",
+  },
+];
+
+const featuresOM: Feature[] = [
+  {
+    icon: <CampaignIcon />,
+    title: "Quản lý Cơ hội Tình nguyện",
+    desc: "Tạo và quản lý các cơ hội tình nguyện mới, phân loại theo khu vực và kỹ năng, đảm bảo sự phù hợp với nhu cầu cộng đồng.",
+  },
+  {
+    icon: <EventAvailableIcon />,
+    title: "Lịch trình Cơ hội",
+    desc: "Lên kế hoạch và theo dõi các cơ hội tình nguyện, thông báo lịch trình đến tình nguyện viên một cách hiệu quả.",
+  },
+  {
+    icon: <SpeedIcon />,
+    title: "Đánh giá Hiệu quả Cơ hội",
+    desc: "Theo dõi và đánh giá tác động của từng cơ hội, cung cấp dữ liệu để cải thiện trong tương lai.",
+  },
+  {
+    icon: <StorageIcon />,
+    title: "Lưu trữ Cơ hội",
+    desc: "Lưu giữ lịch sử các cơ hội đã tổ chức, cho phép tìm kiếm và tái sử dụng thông tin.",
+  },
+];
+
+const featuresVC: Feature[] = [
+  {
+    icon: <CampaignIcon />,
+    title: "Giao tiếp với Tình nguyện viên",
+    desc: "Gửi thông báo, cập nhật và phản hồi qua email, SMS hoặc ứng dụng, đảm bảo thông tin được truyền đạt kịp thời.",
+  },
+  {
+    icon: <EventAvailableIcon />,
+    title: "Phản hồi Sự kiện",
+    desc: "Thu thập ý kiến từ tình nguyện viên sau mỗi sự kiện để cải thiện trải nghiệm.",
+  },
+  {
+    icon: <SpeedIcon />,
+    title: "Cập nhật Nhanh",
+    desc: "Cung cấp bản tin hoặc thông báo khẩn cấp đến toàn bộ đội ngũ tình nguyện viên.",
+  },
+  {
+    icon: <StorageIcon />,
+    title: "Lịch sử Giao tiếp",
+    desc: "Lưu trữ toàn bộ lịch sử giao tiếp để tham khảo và phân tích hiệu quả liên lạc.",
   },
 ];
 
@@ -101,7 +139,7 @@ function FeatureCard({ icon, title, desc, href = "#" }: Feature) {
   return (
     <motion.div
       variants={itemVariants}
-      whileHover={{ y: -6 }} // card nâng lên khi hover
+      whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 200, damping: 12 }}
     >
       <Card
@@ -116,7 +154,10 @@ function FeatureCard({ icon, title, desc, href = "#" }: Feature) {
       >
         <CardHeader
           avatar={
-            <motion.div whileHover={{ scale: 1.15 }} transition={{ duration: 0.3 }}>
+            <motion.div
+              whileHover={{ scale: 1.15 }}
+              transition={{ duration: 0.3 }}
+            >
               <Avatar
                 sx={{
                   bgcolor: "grey.100",
@@ -142,7 +183,7 @@ function FeatureCard({ icon, title, desc, href = "#" }: Feature) {
             endIcon={<ArrowForwardIosRoundedIcon fontSize="small" />}
             sx={{ px: 0, textTransform: "none" }}
           >
-            Learn more
+            Tìm hiểu thêm
           </Button>
         </CardContent>
       </Card>
@@ -171,17 +212,18 @@ export default function VolunteerHubFeatureGrid() {
               px: { xs: 2, sm: 3 },
               py: 1,
               minHeight: 40,
-            },
-            ".Mui-selected": {
-              bgcolor: "primary.main",
-              color: "primary.contrastText",
+              color: "inherit", // Fix text color
+              "&.Mui-selected": {
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+              },
             },
             ".MuiTabs-indicator": { display: "none" },
           }}
         >
-          <Tab label="Volunteer Management" />
-          <Tab label="Opportunity Management" />
-          <Tab label="Volunteer Communication" />
+          <Tab label="Quản lý Tình nguyện viên" />
+          <Tab label="Quản lý Cơ hội" />
+          <Tab label="Giao tiếp Tình nguyện viên" />
         </Tabs>
       </Box>
 
@@ -190,7 +232,7 @@ export default function VolunteerHubFeatureGrid() {
           variants={containerVariants}
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, amount: 0.2 }} // chỉ chạy khi cuộn xuống
+          viewport={{ once: true, amount: 0.2 }}
           style={{
             display: "grid",
             gap: "20px",
@@ -204,15 +246,39 @@ export default function VolunteerHubFeatureGrid() {
       )}
 
       {tab === 1 && (
-        <Box sx={{ textAlign: "center", color: "text.secondary", py: 8 }}>
-          Opportunity Management content
-        </Box>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          style={{
+            display: "grid",
+            gap: "20px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          }}
+        >
+          {featuresOM.map((f, i) => (
+            <FeatureCard key={i} {...f} />
+          ))}
+        </motion.div>
       )}
 
       {tab === 2 && (
-        <Box sx={{ textAlign: "center", color: "text.secondary", py: 8 }}>
-          Volunteer Communication content
-        </Box>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          style={{
+            display: "grid",
+            gap: "20px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          }}
+        >
+          {featuresVC.map((f, i) => (
+            <FeatureCard key={i} {...f} />
+          ))}
+        </motion.div>
       )}
     </Box>
   );
