@@ -65,7 +65,7 @@ const StaffHeader: React.FC = () => {
             </Avatar>
             <Box sx={{ ml: 1 }}>
               <Typography variant="body2">{user?.fullName || "StaffAd"}</Typography>
-              <Typography variant="body2">{user?.role || "Staff"}</Typography>
+              <Typography variant="body2"> Staff</Typography>
             </Box>
           </Box>
           {isDropdownOpen && (

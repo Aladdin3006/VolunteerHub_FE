@@ -396,14 +396,15 @@ const ReliefPointMapLeaflet: React.FC<ReliefPointMapLeafletProps> = ({
                 />
               )}
             </Stack>
-            <Button
+            {selectedPoint.type === "supply" ? <></> : <Button
               size="small"
               variant="outlined"
               color="info"
               onClick={() => openRescueHistory(selectedPoint._id)}
             >
               {(selectedPoint.rescueList?.length ?? 0)} lượt cứu trợ
-            </Button>
+            </Button>}
+            
             {/* Danh sách nhu cầu/cung cấp */}
             <Stack spacing={1} mb={2} pt={1}>
               {(selectedPoint.type === "need" ? selectedPoint.needs : selectedPoint.surplus)?.map((it, i) => (
